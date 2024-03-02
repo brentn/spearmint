@@ -1,1 +1,60 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --primary: 78, 167, 250;
+  --primaryColor: rgb(var(--primary));
+  --secondaryColor: rgb(184, 215, 244);
+}
+
+.larger {
+  font-size: 1.5em;
+}
+
+.text-primary {
+  color: var(--primaryColor) !important;
+}
+
+.text-secondary {
+  color: var(--secondaryColor) !important;
+}
+
+.bg-primary {
+  background-color: var(--primaryColor) !important;
+}
+
+.bg-secondary {
+  background-color: var(--secondaryColor) !important;
+}
+
+.border-primary {
+  border-color: var(--primaryColor) !important;
+}
+
+.btn-primary {
+  background-color: var(--primaryColor) !important;
+  border-color: darkgray;
+  box-shadow: 3px 3px 5px 1px #88888888;
+}
+
+.btn-primary:disabled {
+  opacity: .5;
+  filter: grayscale(80%);
+}
+
+.btn-primary:hover {
+  filter: grayscale(30%);
+  border-color: rgba(--var(--primary), .5);
+}
+
+.btn-outline-primary {
+  color: var(--primaryColor) !important;
+  background-color: white;
+  border-color: var(--primaryColor) !important;
+}
+
+.btn-outline-primary:hover {
+  color: white !important;
+  background-color: var(--primaryColor) !important;
+}
+
+.badge-primary {
+  background-color: var(--primaryColor) !important;
+}

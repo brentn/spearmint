@@ -1,0 +1,18 @@
+<div class="group bg-light rounded p-3">
+  <div class="d-flex justify-content-between larger" role="button" (click)="onToggle()">
+    <div class="text-primary">{{accountType|titlecase}}</div>
+    <div>{{totalBalance|currency}}</div>
+  </div>
+  <div *ngFor="let account of accounts" class="item" [class.hidden]="isCollapsed">
+    <home-account [account]="account"></home-account>
+  </div>
+  <div class="item" role="button" [class.hidden]="isCollapsed" [routerLink]="['accounts/new']">
+    <div class="new d-flex align-items-center bg-light my-auto">
+      <div class="d-flex bg-secondary text-primary justify-content-center align-items-center me-2 larger rounded-circle"
+        style="height:2em;width:2em;">
+        <fa-icon [icon]="addIcon"></fa-icon>
+      </div>
+      <div class="text-primary">Connect another account</div>
+    </div>
+  </div>
+</div>

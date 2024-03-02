@@ -1,0 +1,15 @@
+<div *ngIf="account" class="account bg-light rounded" role="button">
+  <div class="d-flex justify-content-between">
+    <div class="d-flex">
+      <account-icon [type]="account.type"></account-icon>
+      <div class="d-flex flex-column">
+        <div class="small">{{account.name|titlecase}}</div>
+        <div class="small text-muted fst-italic">{{account.institution|titlecase}}</div>
+      </div>
+    </div>
+    <div class="d-flex flex-column align-items-end">
+      <div>{{account.balance|currency}}</div>
+      <div class="small text-muted">{{account.lastUpdated|date}}</div>
+    </div>
+  </div>
+</div>

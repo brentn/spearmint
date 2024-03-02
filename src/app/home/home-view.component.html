@@ -1,0 +1,26 @@
+<div class="background bg-secondary"></div>
+
+<home-navbar></home-navbar>
+<home-graph></home-graph>
+
+<!-- accounts -->
+<div class="position-absolute bg-primary" style="z-index:-1;width:100%;height:3em;"></div>
+<div *ngFor="let accountType of accountTypes" class="m-3">
+  <home-account-type [accountType]="accountType" [accounts]="accountsOfType(accountType)"></home-account-type>
+</div>
+
+<!-- transactions -->
+<div class="transactions bg-light m-3 rounded">
+  <div class="d-flex justify-content-between p-3">
+    <div class="larger text-nowrap overflow-hidden me-2">{{uncategorizedTransactions?"Unategorized":"Recent"}}
+      transactions
+    </div>
+    <div class="d-flex align-items-center text-primary text-nowrap" role="button" [routerLink]="['transactions']">See
+      all</div>
+  </div>
+  <div *ngFor="let transaction of (uncategorizedTransactions||recentTransactions)" class="m-3">
+    <transaction [transaction]="transaction" [categories]="categories"></transaction>
+  </div>
+</div>
+
+<!-- budgets -->

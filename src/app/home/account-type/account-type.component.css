@@ -1,0 +1,15 @@
+.item {
+  height: 3em;
+  margin: 1em 0;
+  padding-bottom: 3.5em !important;
+  border-bottom: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color);
+  overflow: hidden;
+  transition: height .3s, margin .3s, padding .3s;
+}
+
+.item.hidden {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  height: 0;
+}

@@ -6,6 +6,10 @@
       "type": "npm",
       "script": "start",
       "isBackground": true,
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": {
         "owner": "typescript",
         "pattern": "$tsc",
@@ -24,6 +28,10 @@
       "type": "npm",
       "script": "test",
       "isBackground": true,
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
       "problemMatcher": {
         "owner": "typescript",
         "pattern": "$tsc",
