@@ -1,18 +1,20 @@
 import { Action, createReducer } from "@ngrx/store";
-import { AppState } from ".";
+import { MainState } from ".";
 import { DEFAULT_CONFIGURATION } from "./types/configuration.type";
+import { DEFAULT_CATEGORIES } from "./types/category.type";
 
-const initialState: AppState = {
+const initialState: MainState = {
   configuration: DEFAULT_CONFIGURATION,
   accounts: [],
   transactions: [],
-  categories: [],
+  categories: DEFAULT_CATEGORIES,
+  budgets: [],
 }
 
-const reducer = createReducer(initialState,
+const reducer = createReducer(initialState
 );
 
-export function appReducer(state: AppState | undefined, action: Action) {
+export function mainReducer(state: MainState | undefined, action: Action) {
   return reducer(state, action);
 }
 

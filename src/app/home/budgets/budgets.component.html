@@ -1,0 +1,34 @@
+<div *ngIf="budgets.length" class="m-3" role="button" [routerLink]="['budgets']">
+  <div class="bg-light p-3 rounded">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="larger text-nowrap">{{currentMonth}} Budget</span>
+      <span class="d-flex align-items-center">
+        <span>{{expenseBudget-totalExpenses|currency}}</span>
+        <span *ngIf="expenseBudget>=totalExpenses" class="badge bg-primary ms-3">left</span>
+        <span *ngIf="expenseBudget < totalExpenses" class="badge bg-danger ms-3">over</span>
+      </span>
+    </div>
+    <div *ngIf="incomeBudget" class="mb-2">
+      Income
+      <div class="position-relative">
+        <div class="progress">
+          <div class="progress-bar bg-primary" role="progressbar" [style]="'width: '+incomeProgress+'%'"></div>
+        </div>
+        <div class="position-absolute text-dark fst-bold" [style]="'top:-.29em; left: '+monthProgress+'%'">|</div>
+      </div>
+      <div class="text-muted ms-3">{{totalIncome|currency}} of {{incomeBudget|currency}}</div>
+    </div>
+    <div *ngIf="expenseBudget" class="mb-3">
+      Expenses
+      <div class="position-relative">
+        <div class="progress">
+          <div class="progress-bar bg-primary" role="progressbar" [style]="'width: '+expenseProgress+'%'"></div>
+        </div>
+        <div class="position-absolute text-dark fst-bold" [style]="'top:-.29em; left: '+monthProgress+'%'">|</div>
+      </div>
+      <div class="text-muted ms-3">{{totalExpenses|currency}} of {{expenseBudget|currency}}</div>
+    </div>
+    <div class="position-relative" [style]="'margin-top:-1em; margin-left: '+monthProgress+'%'">
+    </div>
+  </div>
+</div>

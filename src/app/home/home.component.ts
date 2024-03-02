@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { AppState } from '../state';
-import { accounts, categories, configuration, transactions } from '../state/selectors';
-import { map, of } from 'rxjs';
+import { accounts, budgets, categories, configuration, transactions } from '../state/selectors';
+import { map, of, tap } from 'rxjs';
+import { AppState } from '../app.module';
 
 @Component({
   template: `
@@ -11,18 +11,24 @@ import { map, of } from 'rxjs';
     [accounts]="(accounts$|async)!"
     [transactions]="(transactions$|async)!"
     [categories]="(categories$|async)!"
+    [budgets]="(budgets$|async)!"
   ></app-home>
   `
 })
 export class HomeComponent {
   configuration$ = this.store.select(configuration);
+  budgets$ = this.store.select(budgets);
   accounts$ = this.store.select(accounts);
-  transactions$ = this.store.select(transactions).pipe(map(a => [...a].sort((a, b) => b.date.getTime() - a.date.getTime())));
   categories$ = this.store.select(categories);
+  transactions$ = this.store.select(transactions).pipe(map(a => [...a].sort((a, b) => b.date.getTime() - a.date.getTime())));
 
   constructor(private store: Store<AppState>) { }
 
   ngOnInit(): void {
+    this.budgets$ = of([
+      { categoryId: undefined, amount: 2000 },
+      { categoryId: 12, amount: 1000 }
+    ]);
     this.accounts$ = of([
       { id: '1', name: 'Out', balance: 3091.14, active: true, type: 'bank', institution: 'Envision Financial', lastUpdated: new Date() },
       { id: '3', name: 'Savings', balance: 1000.08, active: true, type: 'bank', institution: 'Envision Financial', lastUpdated: new Date() },
@@ -35,6 +41,7 @@ export class HomeComponent {
       { id: '4', categoryId: undefined, date: new Date(2024, 3, 14), description: 'Starbucks', amount: 55.90, accountId: '2' },
       { id: '5', categoryId: undefined, date: new Date(2024, 3, 11), description: 'Dollar Smart!', amount: 117.10, accountId: '2' },
       { id: '6', categoryId: undefined, date: new Date(2024, 2, 21), description: 'HBC Alone', amount: 393.44, accountId: '2' },
+      { id: '7', categoryId: 12, date: new Date(2024, 2, 21), description: 'Wages', amount: 800.44, accountId: '1' },
     ])
   }
 

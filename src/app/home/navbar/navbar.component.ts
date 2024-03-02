@@ -7,6 +7,7 @@ import { faCog, faPlus } from '@fortawesome/free-solid-svg-icons';
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent {
+  showDropdown = false;
   settingsIcon = faCog;
   addIcon = faPlus;
 

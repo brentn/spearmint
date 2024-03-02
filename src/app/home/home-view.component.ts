@@ -4,6 +4,7 @@ import { Configuration, DEFAULT_CONFIGURATION } from '../state/types/configurati
 import { AccountType } from '../state/types/accountType.type';
 import { Transaction } from '../state/types/transaction.type';
 import { Category } from '../state/types/category.type';
+import { Budget } from '../state/types/budget.type';
 
 @Component({
   selector: 'app-home',
@@ -15,6 +16,7 @@ export class HomeViewComponent {
   @Input() accounts: Account[] = [];
   @Input() transactions: Transaction[] = [];
   @Input() categories: Category[] = [];
+  @Input() budgets: Budget[] = [];
 
   accountTypes: AccountType[] = [];
 

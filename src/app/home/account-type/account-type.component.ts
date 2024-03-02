@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { AppState } from 'src/app/state';
+import { MainState } from 'src/app/state';
 import { Account } from 'src/app/state/types/account.type';
 
 @Component({
@@ -15,7 +15,7 @@ export class AccountTypeComponent {
   isCollapsed = true;
   addIcon = faPlus;
 
-  constructor(private store: Store<AppState>) { }
+  constructor(private store: Store<MainState>) { }
 
   get totalBalance(): number { return this.accounts.reduce((acc, account) => acc + account.balance, 0); }
 

@@ -6,10 +6,11 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
 import { GraphComponent } from './home/graph/graph.component';
+import { MainState } from './state';
 import { StoreModule } from '@ngrx/store';
-import { appReducer } from './state/reducer';
+import { mainReducer } from './state/reducer';
 import { EffectsModule } from '@ngrx/effects';
-import { AppEffects } from './state/effects';
+import { MainEffects } from './state/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { HomeViewComponent } from './home/home-view.component';
 import { AccountComponent } from './home/account/account.component';
@@ -22,6 +23,11 @@ import { TransactionComponent } from './transactions/transaction/transaction.com
 import { AccountIconComponent } from './home/account/account-icon/account-icon.component';
 import { CategoryIconComponent } from './transactions/transaction/category-icon/category-icon.component';
 import { BudgetsComponent } from './budgets/budgets.component';
+import { HomeBudgetsComponent } from './home/budgets/budgets.component';
+
+export type AppState = {
+  main: MainState
+}
 
 @NgModule({
   declarations: [
@@ -38,16 +44,15 @@ import { BudgetsComponent } from './budgets/budgets.component';
     TransactionComponent,
     AccountIconComponent,
     CategoryIconComponent,
-    BudgetsComponent
+    BudgetsComponent,
+    HomeBudgetsComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     FontAwesomeModule,
-    StoreModule.forRoot({
-      appReducer,
-    }),
-    EffectsModule.forRoot([AppEffects]),
+    StoreModule.forRoot({ main: mainReducer }),
+    EffectsModule.forRoot([MainEffects]),
     StoreDevtoolsModule.instrument({
       maxAge: 25, // Retains last 25 states
       logOnly: !isDevMode(), // Restrict extension to log-only mode

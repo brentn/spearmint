@@ -1,6 +1,9 @@
-import { AppState } from ".";
+import { AppState } from "../app.module";
 
-export const configuration = (state: AppState) => state.configuration;
-export const accounts = (state: AppState) => state.accounts;
-export const transactions = (state: AppState) => state.transactions;
-export const categories = (state: AppState) => state.categories;
+;
+
+export const configuration = (state: AppState) => state.main.configuration;
+export const accounts = (state: AppState) => state.main.accounts;
+export const transactions = (state: AppState) => state.main.transactions;
+export const categories = (state: AppState) => state.main.categories;
+export const budgets = (state: AppState) => state.main.budgets;

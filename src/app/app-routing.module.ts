@@ -4,6 +4,7 @@ import { HomeComponent } from './home/home.component';
 import { SettingsComponent } from './settings/settings.component';
 import { NewAccountComponent } from './new-account/new-account.component';
 import { TransactionsComponent } from './transactions/transactions.component';
+import { BudgetsComponent } from './budgets/budgets.component';
 
 const routes: Routes = [
   {
@@ -20,6 +21,11 @@ const routes: Routes = [
     path: 'transactions',
     pathMatch: 'full',
     component: TransactionsComponent
+  },
+  {
+    path: 'budgets',
+    pathMatch: 'full',
+    component: BudgetsComponent
   },
   {
     path: 'settings',
