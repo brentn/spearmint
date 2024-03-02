@@ -1,6 +1,7 @@
 * Mobile only
 * Display home page
-* Require authentication
+* Require authentication (google)
+* Save in Google Drive
 * Biometrics
 * Download balances
 * Download transactions

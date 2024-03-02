@@ -1,5 +1,6 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { SocialLoginModule, SocialAuthServiceConfig, GoogleLoginProvider, GoogleSigninButtonModule } from "@abacritt/angularx-social-login";
 
 import { AppRoutingModule } from './app-routing.module';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
@@ -24,6 +25,7 @@ import { AccountIconComponent } from './home/account/account-icon/account-icon.c
 import { CategoryIconComponent } from './transactions/transaction/category-icon/category-icon.component';
 import { BudgetsComponent } from './budgets/budgets.component';
 import { HomeBudgetsComponent } from './home/budgets/budgets.component';
+import { LoginComponent } from './login/login.component';
 
 export type AppState = {
   main: MainState
@@ -45,12 +47,15 @@ export type AppState = {
     AccountIconComponent,
     CategoryIconComponent,
     BudgetsComponent,
-    HomeBudgetsComponent
+    HomeBudgetsComponent,
+    LoginComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     FontAwesomeModule,
+    SocialLoginModule,
+    GoogleSigninButtonModule,
     StoreModule.forRoot({ main: mainReducer }),
     EffectsModule.forRoot([MainEffects]),
     StoreDevtoolsModule.instrument({
@@ -58,7 +63,25 @@ export type AppState = {
       logOnly: !isDevMode(), // Restrict extension to log-only mode
     }),
   ],
-  providers: [],
+  providers: [
+    {
+      provide: 'SocialAuthServiceConfig',
+      useValue: {
+        autoLogin: false,
+        providers: [
+          {
+            id: GoogleLoginProvider.PROVIDER_ID,
+            provider: new GoogleLoginProvider('316624811771-jugmh69v4b636shvv1c9gtj6glr5i9e7.apps.googleusercontent.com', {
+              scopes: 'openid profile',
+            }),
+          },
+        ],
+        onError: (err: any) => {
+          console.error(err);
+        },
+      } as SocialAuthServiceConfig,
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

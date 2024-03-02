@@ -3,7 +3,7 @@
     <div class="d-flex">
       <category-icon [categoryId]="transaction.categoryId"></category-icon>
       <div class="d-flex flex-column">
-        <div class="small">{{transaction.description}}</div>
+        <div class="small">{{transaction.merchant}}</div>
         <div class="small text-muted fst-italic">{{category?.name||"Uncategorized"|titlecase}}</div>
       </div>
     </div>

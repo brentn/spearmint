@@ -3,9 +3,9 @@
     <div class="d-flex justify-content-between align-items-center">
       <span class="larger text-nowrap">{{currentMonth}} Budget</span>
       <span class="d-flex align-items-center">
-        <span>{{expenseBudget-totalExpenses|currency}}</span>
-        <span *ngIf="expenseBudget>=totalExpenses" class="badge bg-primary ms-3">left</span>
-        <span *ngIf="expenseBudget < totalExpenses" class="badge bg-danger ms-3">over</span>
+        <span class="larger">{{expenseBudget-totalExpenses|currency}}</span>
+        <span *ngIf="expenseBudget>=totalExpenses" class="border border-secondary rounded px-2 ms-3">left</span>
+        <span *ngIf="expenseBudget < totalExpenses" class="border border-danger rounded px-2 ms-3">over</span>
       </span>
     </div>
     <div *ngIf="incomeBudget" class="mb-2">

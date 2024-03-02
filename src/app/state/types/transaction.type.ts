@@ -1,8 +1,9 @@
 export type Transaction = {
   id: string;
   date: Date;
-  description: string;
+  merchant: string;
   amount: number;
   accountId: string;
-  categoryId: number | undefined;
+  categoryId?: number;
+  notes?: string;
 }
