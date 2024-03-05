@@ -6,4 +6,5 @@ export type Transaction = {
   accountId: string;
   categoryId?: number;
   notes?: string;
+  hideFromBudget?: boolean;
 }

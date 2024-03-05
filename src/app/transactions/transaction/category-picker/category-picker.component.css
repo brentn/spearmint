@@ -1,0 +1,9 @@
+.scroll {
+  max-height: calc(100% - 5em);
+  overflow-y: auto;
+}
+
+.category:hover {
+  cursor: pointer;
+  background-color: rgba(var(--primary), 0.3);
+}

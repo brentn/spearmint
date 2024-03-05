@@ -58,3 +58,7 @@
 .badge-primary {
   background-color: var(--primaryColor) !important;
 }
+
+.cursor-pointer {
+  cursor: pointer;
+}

@@ -1,0 +1,34 @@
+<div class="mt-2"><span class="p-3"><fa-icon [icon]="backIcon" (click)="onClose($event)"></fa-icon></span></div>
+
+<form *ngIf="transaction scroll" [formGroup]="form" class="p-3 pe-3">
+  <div class="text-center">
+    <div class="h1">{{transaction.amount|currency}}</div>
+    <div>{{transaction.merchant|uppercase}}</div>
+    <div class="small text-muted">{{transaction.date|date:'long'}}</div>
+    <div *ngIf="account" class="small text-muted">{{account.institution}}: {{account.name}}</div>
+  </div>
+  <div>
+    <label>
+      Merchant:
+      <input type="text" formControlName="merchant" class="form-control larger">
+    </label>
+  </div>
+  <div>
+    <label>
+      Transaction Date:
+      <input type="date" formControlName="dateString" class="form-control larger" required>
+    </label>
+  </div>
+  <div>
+    <label>
+      Category:
+      <div class="d-flex align-items-center bg-light text-dark rounded p-1 cursor-pointer" (click)="onPickCategory()">
+        <category-item [category]="category" [parentName]="parentCategoryName"></category-item>
+      </div>
+    </label>
+  </div>
+</form>
+
+<div class="picker bg-light shadow" [class.picking]="picking">
+  <category-picker (select)="onSelectCategory($event)" (cancel)="onCancelCategory()"></category-picker>
+</div>

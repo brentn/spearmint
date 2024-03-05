@@ -1,5 +1,6 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule } from '@angular/forms';
 import { SocialLoginModule, SocialAuthServiceConfig, GoogleLoginProvider, GoogleSigninButtonModule } from "@abacritt/angularx-social-login";
 
 import { AppRoutingModule } from './app-routing.module';
@@ -26,6 +27,11 @@ import { CategoryIconComponent } from './transactions/transaction/category-icon/
 import { BudgetsComponent } from './budgets/budgets.component';
 import { HomeBudgetsComponent } from './home/budgets/budgets.component';
 import { LoginComponent } from './login/login.component';
+import { TransactionsViewComponent } from './transactions/transactions-view.component';
+import { NgxPlaidLinkModule } from 'ngx-plaid-link';
+import { TransactionFormComponent } from './transactions/transaction/form/transaction-form.component';
+import { CategoryPickerComponent } from './transactions/transaction/category-picker/category-picker.component';
+import { CategoryItemComponent } from './transactions/transaction/category-picker/item/category.component';
 
 export type AppState = {
   main: MainState
@@ -49,13 +55,19 @@ export type AppState = {
     BudgetsComponent,
     HomeBudgetsComponent,
     LoginComponent,
+    TransactionsViewComponent,
+    TransactionFormComponent,
+    CategoryPickerComponent,
+    CategoryItemComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
+    ReactiveFormsModule,
     FontAwesomeModule,
     SocialLoginModule,
     GoogleSigninButtonModule,
+    NgxPlaidLinkModule,
     StoreModule.forRoot({ main: mainReducer }),
     EffectsModule.forRoot([MainEffects]),
     StoreDevtoolsModule.instrument({

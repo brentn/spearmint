@@ -1,0 +1,23 @@
+<div class="background bg-secondary"></div>
+
+<div class="uncategorized bg-light m-3 rounded">
+  <div class="d-flex justify-content-between p-3">
+    <div class="larger text-nowrap overflow-hidden me-2">
+      Uncategorized transactions
+    </div>
+  </div>
+  <div *ngFor="let transaction of uncategorizedTransactions" class="m-3">
+    <transaction [transaction]="transaction" [categories]="categories"></transaction>
+  </div>
+</div>
+
+<div class="transactions bg-light m-3 rounded">
+  <div class="d-flex justify-content-between p-3">
+    <div class="larger text-nowrap overflow-hidden me-2">
+      Transactions
+    </div>
+  </div>
+  <div *ngFor="let transaction of transactions" class="m-3">
+    <transaction [transaction]="transaction" [categories]="categories"></transaction>
+  </div>
+</div>
