@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { user } from './state/selectors';
+import { take, tap } from 'rxjs';
+import { saveState } from './state/actions';
 
 @Component({
   selector: 'app-root',
@@ -12,5 +14,14 @@ export class AppComponent {
   user$ = this.store.select(user);
 
   constructor(private store: Store<AppState>) { }
+
+  @HostListener('window:beforeunload')
+  saveState(): void {
+    this.store.select(state => state).pipe(
+      take(1),
+      tap(() => console.log('HERE')),
+      tap(() => this.store.dispatch(saveState()))
+    ).subscribe()
+  }
 
 }
