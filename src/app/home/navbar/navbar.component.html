@@ -10,8 +10,8 @@
           <fa-icon [icon]="addIcon"></fa-icon>
         </div>
         <div class="dropdown-menu dropdown-menu-end" [class.show]="showDropdown">
-          <span class="dropdown-item">Add Account</span>
-          <span class="dropdown-item">Add Transaction</span>
+          <span class="dropdown-item" [routerLink]="['accounts/new']">Add Account</span>
+          <span *ngIf="accounts?.length" class="dropdown-item">Add Transaction</span>
           <span class="dropdown-item">Add Budget</span>
         </div>
       </div>

@@ -1,6 +1,6 @@
 <div class="background bg-secondary"></div>
 
-<home-navbar></home-navbar>
+<home-navbar [accounts]="accounts"></home-navbar>
 
 <home-graph></home-graph>
 
@@ -14,7 +14,7 @@
 <div class="transactions bg-light m-3 rounded">
   <div class="d-flex justify-content-between p-3">
     <div class="larger text-nowrap overflow-hidden me-2">{{uncategorizedTransactions?"Unategorized":"Recent"}}
-      transactions
+      Transactions
     </div>
     <div class="d-flex align-items-center text-primary text-nowrap" role="button" [routerLink]="['transactions']">See
       all</div>

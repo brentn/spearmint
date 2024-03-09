@@ -1,4 +1,4 @@
-<app-login></app-login>
+<app-login *ngIf="!(user$|async)"></app-login>
 <div *ngIf="(user$|async)">
   <router-outlet></router-outlet>
 </div>
