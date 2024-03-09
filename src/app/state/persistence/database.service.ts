@@ -12,7 +12,7 @@ export class DatabaseService {
   constructor(private http: HttpClient) { }
 
   getTokens(authorizationToken: string): Observable<void> {
-    const headers = { headers: new HttpHeaders().set('Authoriztion', `Bearer ${authorizationToken}`) };
+    const headers = { headers: new HttpHeaders().set('Authorization', `Bearer ${authorizationToken}`) };
     return this.http.post(API + '/auth', null, headers).pipe(
       tap(response => console.log('RESPONSE', response)),
       map(() => void (0))
