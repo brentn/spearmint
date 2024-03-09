@@ -10,11 +10,17 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
+app.get('/status', (request, response) => {
+  const status = {
+    'Status': 'Running'
+  };
+  response.send(status);
+});
+
 // 1. Call the Google SDK from the frontend using whatever frontend
 //2. Extract the code or access token and send to your backend for verification.
 //3. Use your backend Google api to verify the code or token.
 //4. If verified, sign them in the backend and then send a response to frontend
-
 app.post('/auth', async (req, res) => {
   try {
     // get the code from frontend
