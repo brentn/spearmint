@@ -8,7 +8,7 @@ import { Time } from 'src/app/utilities/timeUtilities';
   styleUrls: ['./account.component.css']
 })
 export class AccountComponent {
-  @Input() account!: Account;
+  @Input() account: Account | undefined;
 
-  get howRecent(): string { return Time.Ago(this.account.lastUpdated) }
+  get howRecent(): string { return Time.Ago(this.account?.lastUpdated) }
 }

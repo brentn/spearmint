@@ -23,15 +23,15 @@ import { NavbarComponent } from './home/navbar/navbar.component';
 import { TransactionsComponent } from './transactions/transactions.component';
 import { TransactionComponent } from './transactions/transaction/transaction.component';
 import { AccountIconComponent } from './home/account/account-icon/account-icon.component';
-import { CategoryIconComponent } from './transactions/transaction/category-icon/category-icon.component';
+import { CategoryIconComponent } from './categories/category-icon/category-icon.component';
 import { BudgetsComponent } from './budgets/budgets.component';
 import { HomeBudgetsComponent } from './home/budgets/budgets.component';
 import { LoginComponent } from './login/login.component';
 import { TransactionsViewComponent } from './transactions/transactions-view.component';
 import { NgxPlaidLinkModule } from 'ngx-plaid-link';
 import { TransactionFormComponent } from './transactions/transaction/form/transaction-form.component';
-import { CategoryPickerComponent } from './transactions/transaction/category-picker/category-picker.component';
-import { CategoryItemComponent } from './transactions/transaction/category-picker/item/category.component';
+import { CategoryPickerComponent } from './categories/category-picker/category-picker.component';
+import { CategoryItemComponent } from './categories/category-picker/item/category.component';
 
 export type AppState = {
   main: MainState

@@ -8,7 +8,7 @@ import { Category } from 'src/app/state/types/category.type';
 })
 export class CategoryItemComponent {
   @Input() category: Category | undefined;
-  @Input() parentName!: string | null | undefined;
+  @Input() parentName: string | null | undefined;
   @Input() isSelected = false;
   @Output() select = new EventEmitter();
 

@@ -1,6 +1,6 @@
 <div class="background bg-secondary"></div>
 
-<div class="uncategorized bg-light m-3 rounded">
+<div *ngIf="uncategorizedTransactions?.length" class="uncategorized bg-light m-3 rounded">
   <div class="d-flex justify-content-between p-3">
     <div class="larger text-nowrap overflow-hidden me-2">
       Uncategorized transactions

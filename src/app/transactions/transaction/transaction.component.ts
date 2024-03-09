@@ -9,17 +9,17 @@ import { Transaction } from 'src/app/state/types/transaction.type';
   styleUrls: ['./transaction.component.css']
 })
 export class TransactionComponent {
-  @Input() transaction!: Transaction;
-  @Input() categories!: Category[];
-  @Input() accounts!: Account[];
+  @Input() transaction!: Transaction | null;
+  @Input() categories!: Category[] | null;
+  @Input() accounts!: Account[] | null;
   editing = false;
 
   get category(): Category | undefined {
-    return this.categories?.find(a => a.id === this.transaction.categoryId)
+    return this.categories?.find(a => a.id === this.transaction?.categoryId)
   }
 
   get iconCategoryId(): number | undefined {
-    return this.category?.parentId || this.transaction.categoryId;
+    return this.category?.parentId || this.transaction?.categoryId;
   }
 
   onEdit(): void {

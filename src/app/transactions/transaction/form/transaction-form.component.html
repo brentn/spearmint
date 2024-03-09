@@ -32,3 +32,12 @@
 <div class="picker bg-light shadow" [class.picking]="picking">
   <category-picker (select)="onSelectCategory($event)" (cancel)="onCancelCategory()"></category-picker>
 </div>
+
+<div *ngIf="form.dirty && !picking" class="bottom d-flex justify-content-end p-2">
+  <button class="btn btn-danger rounded-circle me-2" (click)="onClose($event)">
+    <fa-icon [icon]="cancelIcon" size="2x"></fa-icon>
+  </button>
+  <button class="btn btn-success rounded-circle me-2" (click)="onSave()">
+    <fa-icon [icon]="saveIcon" size="2x"></fa-icon>
+  </button>
+</div>

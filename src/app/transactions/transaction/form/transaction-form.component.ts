@@ -1,7 +1,10 @@
 import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { faArrowLeft, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
+import { AppState } from 'src/app/app.module';
+import { updateTransaction } from 'src/app/state/actions';
 import { Account } from 'src/app/state/types/account.type';
 import { Category } from 'src/app/state/types/category.type';
 import { Transaction } from 'src/app/state/types/transaction.type';
@@ -12,13 +15,15 @@ import { Transaction } from 'src/app/state/types/transaction.type';
   styleUrls: ['./transaction-form.component.css']
 })
 export class TransactionFormComponent {
-  @Input() transaction!: Transaction;
-  @Input() accounts!: Account[];
-  @Input() categories!: Category[];
+  @Input() transaction: Transaction | null = null;
+  @Input() accounts: Account[] | null = null;
+  @Input() categories: Category[] | null = null;
   @Output() close = new EventEmitter();
   subscriptions: Subscription[] = [];
   picking = false;
   backIcon = faArrowLeft;
+  cancelIcon = faTimes;
+  saveIcon = faCheck;
 
   form = new FormGroup({
     merchant: new FormControl<string>(''),
@@ -28,6 +33,8 @@ export class TransactionFormComponent {
     notes: new FormControl<string | undefined>(undefined),
     hideFromBudget: new FormControl<boolean | undefined>(undefined),
   });
+
+  constructor(private store: Store<AppState>) { }
 
   ngOnInit(): void {
     this.subscriptions = [
@@ -40,7 +47,7 @@ export class TransactionFormComponent {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['transaction'] && this.transaction) {
+    if (changes['transaction']) {
       this.updateFormFields();
     }
   }
@@ -49,7 +56,7 @@ export class TransactionFormComponent {
     this.subscriptions.forEach(s => s.unsubscribe());
   }
 
-  get account(): Account | undefined { return this.accounts?.find(a => a.id === this.transaction.accountId); }
+  get account(): Account | undefined { return this.accounts?.find(a => a.id === this.transaction?.accountId); }
   get category(): Category | undefined { return this.categories?.find(a => a.id === this.form.get('categoryId')!.value); }
   get parentCategoryName(): string | undefined { return this.categories?.find(a => a.id === this.category?.parentId)?.name; }
 
@@ -58,13 +65,18 @@ export class TransactionFormComponent {
     this.close.emit();
   }
 
+  onSave(): void {
+    this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value } as Transaction));
+    this.close.emit();
+  }
+
   onPickCategory(): void {
     this.picking = true;
   }
 
   onSelectCategory(id: number | undefined): void {
-    console.log('CATEGORY', id);
-    this.form.get('categoryId')?.setValue(id);
+    this.form.get('categoryId')!.setValue(id);
+    this.form.get('categoryId')!.markAsDirty();
     this.picking = false;
   }
 
@@ -73,13 +85,15 @@ export class TransactionFormComponent {
   }
 
   private updateFormFields(): void {
-    this.form.patchValue({
-      merchant: this.transaction.merchant,
-      date: this.transaction.date,
-      dateString: this.transaction.date.toISOString().split('T')[0],
-      categoryId: this.transaction.categoryId,
-      notes: this.transaction.notes,
-      hideFromBudget: this.transaction.hideFromBudget,
-    });
+    if (this.transaction) {
+      this.form.patchValue({
+        merchant: this.transaction.merchant,
+        date: new Date(this.transaction.date),
+        dateString: new Date(this.transaction.date).toISOString().split('T')[0],
+        categoryId: this.transaction.categoryId,
+        notes: this.transaction.notes,
+        hideFromBudget: this.transaction.hideFromBudget,
+      });
+    }
   }
 }

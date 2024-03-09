@@ -10,8 +10,8 @@ import { Account } from 'src/app/state/types/account.type';
   styleUrls: ['./account-type.component.css']
 })
 export class AccountTypeComponent {
-  @Input() accountType!: string;
-  @Input() accounts!: Account[];
+  @Input() accountType: string | undefined;
+  @Input() accounts: Account[] = [];
   isCollapsed = true;
   addIcon = faPlus;
 

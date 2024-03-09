@@ -2,7 +2,7 @@ import { Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { user } from './state/selectors';
-import { take, tap } from 'rxjs';
+import { filter, take, tap } from 'rxjs';
 import { saveState } from './state/actions';
 
 @Component({
@@ -19,7 +19,7 @@ export class AppComponent {
   saveState(): void {
     this.store.select(state => state).pipe(
       take(1),
-      tap(() => console.log('HERE')),
+      filter(state => state.main.accounts.length > 0),
       tap(() => this.store.dispatch(saveState()))
     ).subscribe()
   }

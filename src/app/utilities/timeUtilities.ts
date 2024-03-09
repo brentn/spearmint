@@ -1,5 +1,7 @@
 export class Time {
-  static Ago(pastDate: Date): string {
+  static Ago(pastDate: Date | undefined): string {
+    if (!pastDate) return '';
+    if (!(pastDate instanceof Date)) pastDate = new Date(pastDate);
     const now = new Date();
     if (pastDate > now) throw new Error('Date not in the past');
     const seconds = (now.getTime() - pastDate.getTime()) / 1000;

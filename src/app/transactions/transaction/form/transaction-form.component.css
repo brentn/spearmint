@@ -3,6 +3,12 @@
   overflow-y: auto;
 }
 
+.bottom {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
 label {
   width: 100%;
   color: white;
