@@ -4,6 +4,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { SocialLoginModule, SocialAuthServiceConfig, GoogleLoginProvider, GoogleSigninButtonModule } from "@abacritt/angularx-social-login";
 
 import { AppRoutingModule } from './app-routing.module';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
@@ -32,6 +33,7 @@ import { NgxPlaidLinkModule } from 'ngx-plaid-link';
 import { TransactionFormComponent } from './transactions/transaction/form/transaction-form.component';
 import { CategoryPickerComponent } from './categories/category-picker/category-picker.component';
 import { CategoryItemComponent } from './categories/category-picker/item/category.component';
+import { DatabaseService } from './state/persistence/database.service';
 
 export type AppState = {
   main: MainState
@@ -63,6 +65,7 @@ export type AppState = {
   imports: [
     BrowserModule,
     AppRoutingModule,
+    HttpClientModule,
     ReactiveFormsModule,
     FontAwesomeModule,
     SocialLoginModule,
@@ -92,7 +95,8 @@ export type AppState = {
           console.error(err);
         },
       } as SocialAuthServiceConfig,
-    }
+    },
+    DatabaseService
   ],
   bootstrap: [AppComponent]
 })
