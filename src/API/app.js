@@ -19,6 +19,7 @@ app.get('/status', (request, response) => {
 
 app.post('/auth', async (req, res) => {
   try {
+    console.log('Headers', req.headers);
     const code = req.headers.authorization;
     console.log('Authorization Code:', code);
 
