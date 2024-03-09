@@ -19,7 +19,7 @@ app.get('/status', (request, response) => {
 
 app.post('/auth', async (req, res) => {
   try {
-    const code = req.headers.authorization.split('earer ')[1];
+    const code = req.headers.authorization.substring(6);
     console.log('Authorization Code:', code);
 
     // Exchange the authorization code for an access token
