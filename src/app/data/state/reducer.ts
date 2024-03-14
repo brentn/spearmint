@@ -1,8 +1,9 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
-import { DEFAULT_CONFIGURATION } from "./types/configuration.type";
-import { DEFAULT_CATEGORIES } from "./types/category.type";
+
 import { addAccount, addTransactions, loggedIn, restoreState, updateTransaction } from "./actions";
+import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
+import { DEFAULT_CATEGORIES } from "../types/category.type";
 
 export const initialState: MainState = {
   user: undefined,

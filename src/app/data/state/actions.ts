@@ -1,8 +1,8 @@
 import { createAction } from "@ngrx/store";
 import { SocialUser } from "@abacritt/angularx-social-login";
-import { Transaction } from "./types/transaction.type";
-import { AppState } from "../app.module";
-import { Account } from "./types/account.type";
+import { AppState } from "src/app/app.module";
+import { Account } from "../models/account";
+import { Transaction } from "../models/transaction";
 
 export const loggedIn = createAction('[Main] Logged in', (user: SocialUser) => user);
 

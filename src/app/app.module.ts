@@ -9,11 +9,8 @@ import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
 import { GraphComponent } from './home/graph/graph.component';
-import { MainState } from './state';
 import { StoreModule } from '@ngrx/store';
-import { mainReducer } from './state/reducer';
 import { EffectsModule } from '@ngrx/effects';
-import { MainEffects } from './state/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { HomeViewComponent } from './home/home-view.component';
 import { AccountComponent } from './home/account/account.component';
@@ -33,7 +30,10 @@ import { NgxPlaidLinkModule } from 'ngx-plaid-link';
 import { TransactionFormComponent } from './transactions/transaction/form/transaction-form.component';
 import { CategoryPickerComponent } from './categories/category-picker/category-picker.component';
 import { CategoryItemComponent } from './categories/category-picker/item/category.component';
-import { DatabaseService } from './state/persistence/database.service';
+import { MainState } from './data/state';
+import { mainReducer } from './data/state/reducer';
+import { MainEffects } from './data/state/effects';
+import { DatabaseService } from './data/database/database.service';
 
 export type AppState = {
   main: MainState

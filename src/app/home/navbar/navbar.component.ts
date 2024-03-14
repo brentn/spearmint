@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { faCog, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { Account } from 'src/app/state/types/account.type';
+import { Account } from 'src/app/data/models/account';
 
 @Component({
   selector: 'home-navbar',

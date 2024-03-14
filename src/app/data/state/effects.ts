@@ -1,10 +1,10 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
 import { loggedIn, restoreState, saveState } from "./actions";
-import { filter, map, switchMap, tap, withLatestFrom } from "rxjs";
-import { LocalStorageService } from "./persistence/local-storage.service";
+import { map, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
-import { AppState } from "../app.module";
+import { AppState } from "src/app/app.module";
+import { LocalStorageService } from "../database/local-storage.service";
 
 @Injectable()
 export class MainEffects {

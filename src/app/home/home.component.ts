@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { accounts, budgets, categories, configuration, transactions } from '../state/selectors';
-import { map, of, tap } from 'rxjs';
+import { map, of } from 'rxjs';
 import { AppState } from '../app.module';
+import { configuration, budgets, accounts, categories, transactions } from '../data/state/selectors';
 
 @Component({
   template: `
@@ -29,7 +29,7 @@ export class HomeComponent {
   ngOnInit(): void {
     this.budgets$ = of([
       { categoryId: undefined, amount: 2000 },
-      { categoryId: 12, amount: 1000 }
+      { categoryId: 'INCOME', amount: 1000 }
     ]);
   }
 

@@ -1,4 +1,4 @@
 export type Budget = {
-  categoryId: number | undefined;
+  categoryId: string | undefined;
   amount: number;
 }

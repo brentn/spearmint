@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
-import { accounts, categories, transactions } from '../state/selectors';
-import { addAccount, addTransactions } from '../state/actions';
-import { Account } from '../state/types/account.type';
+import { accounts, categories, transactions } from '../data/state/selectors';
+
 
 
 @Component({

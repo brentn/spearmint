@@ -1,4 +1,4 @@
-import { AppState } from "../app.module";
+import { AppState } from "src/app/app.module";
 
 export const user = (state: AppState) => state.main.user;
 export const configuration = (state: AppState) => state.main.configuration;

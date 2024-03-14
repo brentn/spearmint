@@ -1,9 +1,9 @@
 import { Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
-import { user } from './state/selectors';
 import { filter, take, tap } from 'rxjs';
-import { saveState } from './state/actions';
+import { saveState } from './data/state/actions';
+import { user } from './data/state/selectors';
 
 @Component({
   selector: 'app-root',

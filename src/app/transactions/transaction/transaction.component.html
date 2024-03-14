@@ -1,7 +1,7 @@
 <div *ngIf="transaction" class="transaction bg-light my-2 border-bottom" role="button" (click)="onEdit()">
   <div class="d-flex justify-content-between my-3">
     <div class="d-flex">
-      <category-icon [categoryId]="iconCategoryId"></category-icon>
+      <category-icon [categoryId]="category?.group"></category-icon>
       <div class="d-flex flex-column">
         <div class="small">{{transaction.merchant}}</div>
         <div class="small text-muted fst-italic">{{category?.name||"Uncategorized"|titlecase}}</div>

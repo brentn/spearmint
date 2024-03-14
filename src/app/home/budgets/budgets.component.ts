@@ -1,8 +1,8 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
 import { faCaretUp } from '@fortawesome/free-solid-svg-icons';
-import { Budget } from 'src/app/state/types/budget.type';
-import { Category } from 'src/app/state/types/category.type';
-import { Transaction } from 'src/app/state/types/transaction.type';
+import { Transaction } from 'src/app/data/models/transaction';
+import { Budget } from 'src/app/data/types/budget.type';
+import { Category } from 'src/app/data/types/category.type';
 import { Currency } from 'src/app/utilities/currencyUtils';
 
 @Component({
@@ -14,7 +14,7 @@ export class HomeBudgetsComponent {
   @Input() budgets: Budget[] | null = null;
   @Input() categories: Category[] | null = null;
   @Input() transactions: Transaction[] | null = null;
-  incomeCategories: (number | undefined)[] | null = null;
+  incomeCategories: (string | undefined)[] | null = null;
   todayIcon = faCaretUp;
   initialized = false;
 
@@ -24,7 +24,7 @@ export class HomeBudgetsComponent {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['categories']) {
-      this.incomeCategories = this.categories?.filter(a => a.isIncome).map(a => a.id) ?? [];
+      this.incomeCategories = this.categories?.filter(a => a.group === 'INCOME' || a.group === 'TRANSFER_IN').map(a => a.id) ?? [];
     }
   }
 

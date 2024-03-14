@@ -4,10 +4,10 @@ import { faArrowLeft, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons
 import { Store } from '@ngrx/store';
 import { Subscription } from 'rxjs';
 import { AppState } from 'src/app/app.module';
-import { updateTransaction } from 'src/app/state/actions';
-import { Account } from 'src/app/state/types/account.type';
-import { Category } from 'src/app/state/types/category.type';
-import { Transaction } from 'src/app/state/types/transaction.type';
+import { Account } from 'src/app/data/models/account';
+import { Transaction } from 'src/app/data/models/transaction';
+import { updateTransaction } from 'src/app/data/state/actions';
+import { Category } from 'src/app/data/types/category.type';
 
 @Component({
   selector: 'transaction-form',
@@ -29,7 +29,7 @@ export class TransactionFormComponent {
     merchant: new FormControl<string>(''),
     date: new FormControl<Date>(new Date(), Validators.required),
     dateString: new FormControl<string>('', Validators.required),
-    categoryId: new FormControl<number | undefined>(undefined),
+    categoryId: new FormControl<string | undefined>(undefined),
     notes: new FormControl<string | undefined>(undefined),
     hideFromBudget: new FormControl<boolean | undefined>(undefined),
   });
@@ -58,7 +58,7 @@ export class TransactionFormComponent {
 
   get account(): Account | undefined { return this.accounts?.find(a => a.id === this.transaction?.accountId); }
   get category(): Category | undefined { return this.categories?.find(a => a.id === this.form.get('categoryId')!.value); }
-  get parentCategoryName(): string | undefined { return this.categories?.find(a => a.id === this.category?.parentId)?.name; }
+  get parentCategoryName(): string | undefined { return this.categories?.find(a => a.id === this.category?.group)?.name; }
 
   onClose(evt: Event): void {
     evt.stopPropagation();
@@ -74,7 +74,7 @@ export class TransactionFormComponent {
     this.picking = true;
   }
 
-  onSelectCategory(id: number | undefined): void {
+  onSelectCategory(id: string | undefined): void {
     this.form.get('categoryId')!.setValue(id);
     this.form.get('categoryId')!.markAsDirty();
     this.picking = false;

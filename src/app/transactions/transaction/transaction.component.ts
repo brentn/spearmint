@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
-import { Account } from 'src/app/state/types/account.type';
-import { Category } from 'src/app/state/types/category.type';
-import { Transaction } from 'src/app/state/types/transaction.type';
+import { Account } from 'src/app/data/models/account';
+import { Transaction } from 'src/app/data/models/transaction';
+import { Category } from 'src/app/data/types/category.type';
 
 @Component({
   selector: 'transaction',
@@ -16,10 +16,6 @@ export class TransactionComponent {
 
   get category(): Category | undefined {
     return this.categories?.find(a => a.id === this.transaction?.categoryId)
-  }
-
-  get iconCategoryId(): number | undefined {
-    return this.category?.parentId || this.transaction?.categoryId;
   }
 
   onEdit(): void {

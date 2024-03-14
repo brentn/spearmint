@@ -1,11 +1,11 @@
-import { Component, ElementRef, EventEmitter, Input, Output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { Observable, Subscription, filter, map, take, tap, withLatestFrom } from 'rxjs';
+import { Observable, Subscription, map } from 'rxjs';
 import { AppState } from 'src/app/app.module';
-import { categories } from 'src/app/state/selectors';
-import { Category } from 'src/app/state/types/category.type';
+import { categories } from 'src/app/data/state/selectors';
+import { Category } from 'src/app/data/types/category.type';
 
 @Component({
   selector: 'category-picker',
@@ -13,9 +13,9 @@ import { Category } from 'src/app/state/types/category.type';
   styleUrls: ['./category-picker.component.css']
 })
 export class CategoryPickerComponent {
-  @Input() categoryId: number | undefined;
+  @Input() categoryId: string | undefined;
   @Output() cancel = new EventEmitter();
-  @Output() select = new EventEmitter<number | undefined>();
+  @Output() select = new EventEmitter<string | undefined>();
   backIcon = faArrowLeft;
   subscriptions: Subscription[] = [];
   sortedCategories: Category[] = [];
@@ -35,8 +35,8 @@ export class CategoryPickerComponent {
     this.subscriptions = [
       this.store.select(categories).pipe(
         map(categories => {
-          const parents = categories.filter(a => a.parentId === undefined).sort((a, b) => b.name < a.name ? 1 : -1);
-          this.sortedCategories = parents.reduce((acc: Category[], parent) => [...acc, parent, ...categories.filter(a => a.parentId === parent.id).sort((a, b) => b.name < a.name ? 1 : -1)], []);
+          const groups = [...new Set(categories.map((a: Category) => a.group))];
+          this.sortedCategories = groups.reduce((acc: Category[], group) => [...acc, ...categories.filter((a: Category) => a.group === group).sort((a: Category, b: Category) => b.id < a.id ? 1 : -1)], []);
           this.filterCategories();
         }),
       ).subscribe(),
@@ -54,10 +54,10 @@ export class CategoryPickerComponent {
   }
 
   parentName$(category: Category): Observable<string | undefined> {
-    return this.categories$.pipe(map(cats => cats?.find(a => a.id === category.parentId)?.name));
+    return this.categories$.pipe(map(cats => cats?.find(a => a.id === category.group)?.name));
   }
 
-  onSelect(id: number): void {
+  onSelect(id: string): void {
     this.select.emit(id);
   }
 
@@ -68,7 +68,7 @@ export class CategoryPickerComponent {
 
   private filterCategories(): void {
     this.filteredCategories = this.sortedCategories.filter(category => {
-      const parentName = this.sortedCategories.find(a => a.id === category.parentId)?.name.toLowerCase() ?? '';
+      const parentName = this.sortedCategories.find(a => a.id === category.group)?.name.toLowerCase() ?? '';
       return (parentName + ' - ' + category.name.toLowerCase()).includes(this.searchText);
     });
   }

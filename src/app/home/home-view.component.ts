@@ -1,10 +1,10 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
-import { Account } from '../state/types/account.type';
-import { Configuration, DEFAULT_CONFIGURATION } from '../state/types/configuration.type';
-import { AccountType } from '../state/types/accountType.type';
-import { Transaction } from '../state/types/transaction.type';
-import { Category } from '../state/types/category.type';
-import { Budget } from '../state/types/budget.type';
+import { Configuration, DEFAULT_CONFIGURATION } from '../data/types/configuration.type';
+import { AccountType } from '../data/types/accountType';
+import { Category } from '../data/types/category.type';
+import { Budget } from '../data/types/budget.type';
+import { Account } from '../data/models/account';
+import { Transaction } from '../data/models/transaction';
 
 @Component({
   selector: 'app-home',

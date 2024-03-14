@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { Account } from 'src/app/state/types/account.type';
+import { Account } from 'src/app/data/models/account';
 import { Time } from 'src/app/utilities/timeUtilities';
 
 @Component({

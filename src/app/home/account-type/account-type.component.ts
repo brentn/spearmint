@@ -1,8 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { MainState } from 'src/app/state';
-import { Account } from 'src/app/state/types/account.type';
+import { Account } from 'src/app/data/models/account';
+import { MainState } from 'src/app/data/state';
 
 @Component({
   selector: 'home-account-type',

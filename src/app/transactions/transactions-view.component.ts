@@ -1,7 +1,7 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
-import { Transaction } from '../state/types/transaction.type';
-import { Category } from '../state/types/category.type';
-import { Account } from '../state/types/account.type';
+import { Category } from '../data/types/category.type';
+import { Account } from '../data/models/account';
+import { Transaction } from '../data/models/transaction';
 
 @Component({
   selector: 'transactions-view',

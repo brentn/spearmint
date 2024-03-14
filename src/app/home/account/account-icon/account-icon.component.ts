@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { faBuildingColumns, faCreditCard } from '@fortawesome/free-solid-svg-icons';
-import { AccountType } from 'src/app/state/types/accountType.type';
+import { AccountType } from 'src/app/data/types/accountType';
 
 @Component({
   selector: 'account-icon',

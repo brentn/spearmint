@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { IPersistence } from './iPersistence.ingerface';
 import { AppState } from 'src/app/app.module';
-import { initialState as mainState } from '../reducer';
+import { initialState as mainState } from '../state/reducer';
 
 const KEY = 'SpearmintData';
 
