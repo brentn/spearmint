@@ -1,12 +1,16 @@
 <div class="mt-2"><span class="p-3"><fa-icon [icon]="backIcon" (click)="onCancel($event)"></fa-icon></span></div>
 
-<form [formGroup]="form" class="larger m-2 w-100">
-  <input type="search" formControlName="search" class="form-control" placeholder="Search Categories">
+<form [formGroup]="form" class="d-flex larger mb-3">
+  <input #search type="search" formControlName="search" class="form-control mx-2" placeholder="Search Categories">
 </form>
 
 <div class="scroll">
-  <div *ngFor="let category of filteredCategories" class="category">
-    <category-item [category]="category" [isSelected]="category.id===categoryId"
-      (select)="onSelect(category.id)"></category-item>
+  <div *ngFor="let group of groups">
+    <div class="text-primary fw-bold p-3 larger border-bottom" (click)="onToggle(group)">{{group}}</div>
+    <div *ngFor="let category of categoriesInGroup(group)" class="category"
+      [class.hidden]="!isExpanded(group) && filteredCategories.length>10">
+      <category-item [category]="category" [isSelected]="category.id===categoryId"
+        (select)="onSelect(category.id)"></category-item>
+    </div>
   </div>
 </div>

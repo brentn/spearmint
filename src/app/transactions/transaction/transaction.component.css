@@ -1,7 +1,7 @@
 .form {
   position: fixed;
   top: 0;
-  left: -100vw;
+  left: 100vw;
   width: 100vw;
   min-height: 100vh;
   overflow: hidden;

@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { faArrowLeft, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { AppState } from 'src/app/app.module';
 import { Account } from 'src/app/data/models/account';
 import { Transaction } from 'src/app/data/models/transaction';
@@ -19,6 +19,7 @@ export class TransactionFormComponent {
   @Input() accounts: Account[] | null = null;
   @Input() categories: Category[] | null = null;
   @Output() close = new EventEmitter();
+  focus = new Subject();
   subscriptions: Subscription[] = [];
   picking = false;
   backIcon = faArrowLeft;
@@ -71,6 +72,7 @@ export class TransactionFormComponent {
 
   onPickCategory(): void {
     this.picking = true;
+    this.focus.next(0);
   }
 
   onSelectCategory(id: string | undefined): void {

@@ -20,7 +20,7 @@ label {
 .picker {
   position: absolute;
   top: .5em;
-  left: -100vw;
+  left: 100vw;
   height: calc(100vh - 2em);
   width: calc(100vw - 3em);
   overflow: hidden;

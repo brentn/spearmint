@@ -1,8 +1,8 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { Observable, Subscription, map } from 'rxjs';
+import { Observable, Subject, Subscription, map } from 'rxjs';
 import { AppState } from 'src/app/app.module';
 import { categories } from 'src/app/data/state/selectors';
 import { Category } from 'src/app/data/types/category.type';
@@ -14,12 +14,15 @@ import { Category } from 'src/app/data/types/category.type';
 })
 export class CategoryPickerComponent {
   @Input() categoryId: string | undefined;
+  @Input() focus: Observable<any> | undefined;
   @Output() cancel = new EventEmitter();
   @Output() select = new EventEmitter<string | undefined>();
+  @ViewChild('search') search: ElementRef | undefined;
   backIcon = faArrowLeft;
   subscriptions: Subscription[] = [];
   sortedCategories: Category[] = [];
   filteredCategories: Category[] = [];
+  expandedGroups: string[] = [];
   searchText = '';
 
   form = new FormGroup({
@@ -34,8 +37,7 @@ export class CategoryPickerComponent {
     this.subscriptions = [
       this.store.select(categories).pipe(
         map(categories => {
-          const groups = [...new Set(categories.map((a: Category) => a.group))].sort();
-          this.sortedCategories = groups.reduce((acc: Category[], group) => [...acc, ...categories.filter((a: Category) => a.group === group).sort((a: Category, b: Category) => b.id < a.id ? 1 : -1)], []);
+          this.sortedCategories = [...categories].sort((a, b) => a.id.localeCompare(b.id));
           this.filterCategories();
         }),
       ).subscribe(),
@@ -44,12 +46,36 @@ export class CategoryPickerComponent {
           this.searchText = searchText?.toLowerCase() ?? '';
           this.filterCategories();
         })
-      ).subscribe()
+      ).subscribe(),
     ]
+    if (this.focus) {
+      this.subscriptions.push(this.focus?.subscribe(() => this.search?.nativeElement.focus()));
+    }
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(a => a.unsubscribe());
+  }
+
+  get groups(): string[] {
+    console.log('HERE', this.sortedCategories, this.filteredCategories)
+    return [...new Set(this.filteredCategories.map(category => category.group))];
+  }
+
+  categoriesInGroup(group: string): Category[] {
+    return this.filteredCategories.filter(category => category.group === group);
+  }
+
+  isExpanded(group: string): boolean {
+    return this.expandedGroups.includes(group);
+  }
+
+  onToggle(group: string): void {
+    if (this.expandedGroups.includes(group)) {
+      this.expandedGroups = this.expandedGroups.filter(g => g !== group);
+    } else {
+      this.expandedGroups.push(group);
+    }
   }
 
   onSelect(id: string): void {

@@ -7,3 +7,13 @@
   cursor: pointer;
   background-color: rgba(var(--primary), 0.3);
 }
+
+.category {
+  max-height: 12em;
+  transition: max-height .5s;
+}
+
+.category.hidden {
+  max-height: 0;
+  overflow: hidden;
+}

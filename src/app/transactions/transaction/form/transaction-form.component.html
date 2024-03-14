@@ -30,7 +30,7 @@
 </form>
 
 <div class="picker bg-light shadow" [class.picking]="picking">
-  <category-picker (select)="onSelectCategory($event)" (cancel)="onCancelCategory()"></category-picker>
+  <category-picker [focus]="focus" (select)="onSelectCategory($event)" (cancel)="onCancelCategory()"></category-picker>
 </div>
 
 <div *ngIf="form.dirty && !picking" class="bottom d-flex justify-content-end p-2">
