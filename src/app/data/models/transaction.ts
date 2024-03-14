@@ -10,13 +10,13 @@ export class Transaction {
   notes?: string;
   hideFromBudget?: boolean;
 
-  constructor(dto: TransactionDTO) {
-    this.id = dto.transaction_id;
-    this.date = new Date(dto.datetime);
-    this.merchant = dto.merchant_name;
-    this.amount = dto.amount;
-    this.accountId = dto.account_id;
-    this.categoryId = dto.personal_finance_category.detailed;
+  constructor(incoming: Transaction | TransactionDTO) {
+    this.id = (incoming as any).id || (incoming as any).transaction_id;
+    this.date = (incoming as any).date || new Date((incoming as any).datetime);
+    this.merchant = (incoming as any).merchant || (incoming as any).merchant_name;
+    this.amount = incoming.amount;
+    this.accountId = (incoming as any).accountId || (incoming as any).account_id;
+    this.categoryId = (incoming as any).categoryId || (incoming as any).personal_finance_category.detailed;
   }
 }
 

@@ -18,6 +18,7 @@ export class TransactionComponent {
     return this.categories?.find(a => a.id === this.transaction?.categoryId)
   }
 
+
   onEdit(): void {
     this.editing = true;
   }

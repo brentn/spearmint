@@ -4,6 +4,7 @@ import { MainState } from ".";
 import { addAccount, addTransactions, loggedIn, restoreState, updateTransaction } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 import { DEFAULT_CATEGORIES } from "../types/category.type";
+import { Transaction } from "../models/transaction";
 
 export const initialState: MainState = {
   user: undefined,
@@ -30,10 +31,10 @@ const reducer = createReducer(initialState,
   })),
   on(updateTransaction, (state, action) => ({
     ...state,
-    transactions: state.transactions.map(transaction => transaction.id === action.payload.id ? {
+    transactions: state.transactions.map(transaction => transaction.id === action.payload.id ? new Transaction({
       ...transaction,
       ...action.payload
-    } : transaction)
+    } as Transaction) : transaction)
   }))
 );
 

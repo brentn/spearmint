@@ -34,6 +34,7 @@ import { MainState } from './data/state';
 import { mainReducer } from './data/state/reducer';
 import { MainEffects } from './data/state/effects';
 import { DatabaseService } from './data/database/database.service';
+import { SnakecasePipe } from './utilities/snakecase.pipe';
 
 export type AppState = {
   main: MainState
@@ -61,6 +62,7 @@ export type AppState = {
     TransactionFormComponent,
     CategoryPickerComponent,
     CategoryItemComponent,
+    SnakecasePipe,
   ],
   imports: [
     BrowserModule,

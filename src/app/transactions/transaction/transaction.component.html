@@ -4,7 +4,9 @@
       <category-icon [categoryId]="category?.group"></category-icon>
       <div class="d-flex flex-column">
         <div class="small">{{transaction.merchant}}</div>
-        <div class="small text-muted fst-italic">{{category?.name||"Uncategorized"|titlecase}}</div>
+        <div class="small text-muted fst-italic">
+          {{(transaction.categoryId||"Uncategorized")|snakecase:'undo'|titlecase}}
+        </div>
       </div>
     </div>
     <div class="d-flex flex-column align-items-end">
