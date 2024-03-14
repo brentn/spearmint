@@ -6,7 +6,7 @@
 
 <div class="scroll">
   <div *ngFor="let category of filteredCategories" class="category">
-    <category-item [category]="category" [parentName]="parentName$(category)|async"
-      [isSelected]="category.id===categoryId" (select)="onSelect(category.id)"></category-item>
+    <category-item [category]="category" [isSelected]="category.id===categoryId"
+      (select)="onSelect(category.id)"></category-item>
   </div>
 </div>

@@ -26,8 +26,7 @@ export class CategoryPickerComponent {
     search: new FormControl(''),
   });
 
-  categories$ = this.store.select(categories).pipe(
-  )
+  categories$ = this.store.select(categories);
 
   constructor(private store: Store<AppState>) { };
 
@@ -35,7 +34,7 @@ export class CategoryPickerComponent {
     this.subscriptions = [
       this.store.select(categories).pipe(
         map(categories => {
-          const groups = [...new Set(categories.map((a: Category) => a.group))];
+          const groups = [...new Set(categories.map((a: Category) => a.group))].sort();
           this.sortedCategories = groups.reduce((acc: Category[], group) => [...acc, ...categories.filter((a: Category) => a.group === group).sort((a: Category, b: Category) => b.id < a.id ? 1 : -1)], []);
           this.filterCategories();
         }),
@@ -53,10 +52,6 @@ export class CategoryPickerComponent {
     this.subscriptions.forEach(a => a.unsubscribe());
   }
 
-  parentName$(category: Category): Observable<string | undefined> {
-    return this.categories$.pipe(map(cats => cats?.find(a => a.id === category.group)?.name));
-  }
-
   onSelect(id: string): void {
     this.select.emit(id);
   }
@@ -68,8 +63,7 @@ export class CategoryPickerComponent {
 
   private filterCategories(): void {
     this.filteredCategories = this.sortedCategories.filter(category => {
-      const parentName = this.sortedCategories.find(a => a.id === category.group)?.name.toLowerCase() ?? '';
-      return (parentName + ' - ' + category.name.toLowerCase()).includes(this.searchText);
+      return ((category.id + '|' + category.name).toLowerCase()).includes(this.searchText);
     });
   }
 }

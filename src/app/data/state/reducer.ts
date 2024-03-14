@@ -18,7 +18,7 @@ const reducer = createReducer(initialState,
   on(loggedIn, (state, action) => ({ ...state, user: action })),
   on(restoreState, (state, action) => ({
     ...action.payload.main,
-    user: state.user
+    user: state.user,
   })),
   on(addAccount, (state, action) => ({
     ...state,

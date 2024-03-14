@@ -2,9 +2,12 @@
 
   <ng-container *ngIf="category">
     <category-icon [categoryId]="category.group||category.id"></category-icon>
-    <span class="larger">
-      <span *ngIf="parentName">{{parentName|uppercase}}&nbsp;-&nbsp;</span>
-      <span>{{category.name|titlecase}}</span>
+    <span class="d-flex flex-column">
+      <span class="larger">
+        <span>{{group|uppercase}}&nbsp;-&nbsp;</span>
+        <span>{{label|titlecase}}</span>
+      </span>
+      <span class="small fst-italic text-muted">{{category.name}}</span>
     </span>
   </ng-container>
 

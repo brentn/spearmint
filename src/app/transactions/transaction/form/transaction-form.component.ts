@@ -58,7 +58,6 @@ export class TransactionFormComponent {
 
   get account(): Account | undefined { return this.accounts?.find(a => a.id === this.transaction?.accountId); }
   get category(): Category | undefined { return this.categories?.find(a => a.id === this.form.get('categoryId')!.value); }
-  get parentCategoryName(): string | undefined { return this.categories?.find(a => a.id === this.category?.group)?.name; }
 
   onClose(evt: Event): void {
     evt.stopPropagation();
