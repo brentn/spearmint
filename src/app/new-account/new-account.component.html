@@ -1,5 +1,6 @@
+<div class="background bg-secondary"></div>
 <div>
-  <!-- <button ngxPlaidLink env="sandbox" publicKey="YOURPUBLICKEY" institution="" [countryCodes]="['US', 'CA', 'GB']"
-    (Success)="onPlaidSuccess($event)" (Exit)="onPlaidExit($event)" (Load)="onPlaidLoad($event)"
-    (Event)="onPlaidEvent($event)" (Click)="onPlaidClick($event)">Link Your Bank Account</button> -->
+  <button #plaid ngxPlaidLink class="d-none" env="sandbox" [disabled]="!(linkToken$|async)"
+    [token]="(linkToken$|async)!" clientName="Spearmint" [countryCodes]="['CA']" [product]="['balance','transactions']"
+    (Success)="onPlaidSuccess($event)">Add</button>
 </div>
