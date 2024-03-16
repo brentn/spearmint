@@ -58,7 +58,6 @@ export class CategoryPickerComponent {
   }
 
   get groups(): string[] {
-    console.log('HERE', this.sortedCategories, this.filteredCategories)
     return [...new Set(this.filteredCategories.map(category => category.group))];
   }
 

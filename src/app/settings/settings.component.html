@@ -1,1 +1,27 @@
-<p>settings works!</p>
+<div class="mt-2"><span role="button" class="p-3"><fa-icon [icon]="backIcon" [routerLink]="['']"></fa-icon></span></div>
+<div [formGroup]="form" class="m-3">
+
+  <div class="d-flex">
+    <label>
+      Plaid link token`
+      <input class="form-control" formControlName="linkToken" placeholder="link token">
+    </label>
+  </div>
+  <hr />
+  Home Screen
+  <div class="form-check form-switch">
+    <label class="form-check-label">
+      Show Graph
+      <input class="form-check-input" type="checkbox" role="switch">
+    </label>
+  </div>
+  <hr />
+  Data
+  <div class="d-flex justify-content-end">
+    <button class="btn btn-danger" (click)="onResetAllData()">Reset All Data</button>
+  </div>
+  <!-- <button ngxPlaidLink env="sandbox" [disabled]="!form.value.linkToken" [token]="form.value.linkToken!"
+      [countryCodes]="['US', 'CA']" (Success)="onPlaidSuccess($event)">Link Your Bank
+      Account</button> -->
+  <!-- <mr-ngx-plaid-link-button env="sandbox" [token]="form.value.linkToken!" (Success)="onPlaidSuccess($event)"
+      className="launch-plaid-link-button" buttonText="Link Your Bank Account"></mr-ngx-plaid-link-button> -->

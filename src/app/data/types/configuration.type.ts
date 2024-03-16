@@ -9,7 +9,7 @@ export const DEFAULT_CONFIGURATION: Configuration = {
   showGraph: true,
   plaid: {
     environment: 'sandbox',
-    clientId: '',
-    secret: ''
+    linkToken: '',
+
   }
 };

@@ -1,7 +1,7 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { addAccount, addTransactions, loggedIn, restoreState, updateTransaction } from "./actions";
+import { addAccount, addTransactions, loggedIn, reset, restoreState, updateConfiguration, updateTransaction } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 import { DEFAULT_CATEGORIES } from "../types/category.type";
 import { Transaction } from "../models/transaction";
@@ -20,6 +20,15 @@ const reducer = createReducer(initialState,
   on(restoreState, (state, action) => ({
     ...action.payload.main,
     user: state.user,
+  })),
+  on(updateConfiguration, (state, action) => ({
+    ...state,
+    configuration: action.payload
+  })),
+  on(reset, (state) => ({
+    ...state,
+    accounts: [],
+    transactions: []
   })),
   on(addAccount, (state, action) => ({
     ...state,
