@@ -5,6 +5,8 @@ import { filter, take, tap } from 'rxjs';
 import { saveState } from './data/state/actions';
 import { user } from './data/state/selectors';
 
+export const ENVIRONMENT = 'sandbox';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',

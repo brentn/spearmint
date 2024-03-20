@@ -9,6 +9,7 @@ import { Transaction } from "../models/transaction";
 export interface MainState {
   user: SocialUser | undefined;
   configuration: Configuration;
+  loading: string[];
   accounts: Account[];
   transactions: Transaction[];
   categories: Category[];

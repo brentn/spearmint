@@ -9,31 +9,33 @@ export class Account {
   active: boolean;
   balance: number;
   currency: CurrencyType;
+  public_token: string;
   lastUpdated: Date;
 
-  constructor(dto: AccountDTO) {
-    this.id = dto.account_id;
-    this.institution = (dto as any).institution || 'Unknown Institution';
-    this.name = dto.name;
-    this.type = dto.type;
-    this.active = true;
-    this.balance = dto.balances.current;
-    this.currency = dto.balances.iso_currency_code;
-    this.lastUpdated = new Date();
+  constructor(incoming: Account) {
+    this.id = incoming.id;
+    this.institution = incoming.institution;
+    this.name = incoming.name;
+    this.type = incoming.type;
+    this.active = incoming.active;
+    this.balance = incoming.balance;
+    this.currency = incoming.currency;
+    this.public_token = incoming.public_token;
+    this.lastUpdated = incoming.lastUpdated;
   }
 
 }
 
-export type AccountDTO = {
-  "account_id": string,
-  "balances": {
-    "available": number,
-    "current": number,
-    "limit": null,
-    "iso_currency_code": CurrencyType,
-  },
-  "name": string,
-  "official_name": string,
-  "subtype": string,
-  "type": AccountType,
-}
+// export type AccountDTO = {
+//   "account_id": string,
+//   "balances": {
+//     "available": number,
+//     "current": number,
+//     "limit": null,
+//     "iso_currency_code": CurrencyType,
+//   },
+//   "name": string,
+//   "official_name": string,
+//   "subtype": string,
+//   "type": AccountType,
+// }

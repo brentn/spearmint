@@ -7,6 +7,8 @@ import { AppState } from '../app.module';
 import { Subscription } from 'rxjs';
 import { configuration } from '../data/state/selectors';
 import { reset, updateConfiguration } from '../data/state/actions';
+import { Router } from '@angular/router';
+import { ENVIRONMENT } from '../app.component';
 
 @Component({
   selector: 'app-settings',
@@ -18,11 +20,13 @@ export class SettingsComponent {
   subscriptions: Subscription[] = [];
 
   form = new FormGroup({
+    clientId: new FormControl<string>('', { updateOn: 'blur' }),
+    secret: new FormControl<string>('', { updateOn: 'blur' }),
     linkToken: new FormControl<string>('', { updateOn: 'blur' }),
     showGraph: new FormControl<boolean>(true, { updateOn: 'blur' }),
   });
 
-  constructor(private store: Store<AppState>) { }
+  constructor(private store: Store<AppState>, private router: Router) { }
 
   ngOnInit(): void {
     this.subscriptions = [
@@ -35,7 +39,8 @@ export class SettingsComponent {
       this.form.valueChanges.subscribe(value => {
         this.store.dispatch(updateConfiguration({
           plaid: {
-            environment: 'sandbox',
+            clientId: value.clientId || '',
+            secret: value.secret || '',
             linkToken: value.linkToken || ''
           },
           showGraph: !!value.showGraph
@@ -51,6 +56,7 @@ export class SettingsComponent {
   onResetAllData(): void {
     if (confirm('Are you sure you want to DELETE all account and transaction data?')) {
       this.store.dispatch(reset());
+      this.router.navigate(['/']);
     }
   }
 
