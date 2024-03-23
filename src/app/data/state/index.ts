@@ -8,7 +8,6 @@ import { Transaction } from "../models/transaction";
 
 export interface MainState {
   user: SocialUser | undefined;
-  accessToken: string | undefined;
   linkToken: string | undefined;
   configuration: Configuration;
   loading: string[];

@@ -2,7 +2,7 @@ import { Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { PlaidOnEventArgs, PlaidOnSuccessArgs } from 'ngx-plaid-link';
-import { addAccount } from '../data/state/actions';
+import { addAccount, getLinkToken } from '../data/state/actions';
 import { Account } from '../data/models/account';
 import { AccountType } from '../data/types/accountType';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
@@ -20,20 +20,23 @@ import { DatabaseService } from '../data/database/database.service';
 export class NewAccountComponent {
   @ViewChild('plaid') plaid: ElementRef | undefined;
   backIcon = faArrowLeft;
-  linkToken$ = this.store.select(plaidConfig).pipe(map(config => config.linkToken));
   environment = ENVIRONMENT;
 
   constructor(private router: Router, private store: Store<AppState>, private db: DatabaseService) { }
 
+  ngOnInit(): void {
+    this.store.dispatch(getLinkToken());
+  }
+
   ngAfterViewInit(): void {
-    const startTime = Date.now();
-    while (!this.plaid && (Date.now() - startTime < 1000)) { }
-    if (this.plaid) {
-      const button = this.plaid.nativeElement;
-      setTimeout(() => button.click(), 1000);
-    } else {
-      console.log('BUTTON NOT FOUND')
-    }
+    // const startTime = Date.now();
+    // while (!this.plaid && (Date.now() - startTime < 1000)) { }
+    // if (this.plaid) {
+    //   const button = this.plaid.nativeElement;
+    //   setTimeout(() => button.click(), 1000);
+    // } else {
+    //   console.log('BUTTON NOT FOUND')
+    // }
   }
 
   onClose(): void {

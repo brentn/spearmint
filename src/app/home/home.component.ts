@@ -27,10 +27,6 @@ export class HomeComponent {
   constructor(private store: Store<AppState>) { }
 
   ngOnInit(): void {
-    this.budgets$ = of([
-      { categoryId: undefined, amount: 2000 },
-      { categoryId: 'INCOME', amount: 1000 }
-    ]);
   }
 
 }

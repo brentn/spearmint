@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { endLoad, getAccountBalance, getLatestTransactions, loggedIn, refresh, restoreState, saveState, setAccessToken, setLinkToken, startLoad } from "./actions";
-import { concat, map, of, switchMap, tap, withLatestFrom } from "rxjs";
+import { endLoad, getAccountBalance, getLatestTransactions, getLinkToken, loggedIn, refreshAccounts, restoreState, saveState, setLinkToken, startLoad } from "./actions";
+import { concat, filter, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { LocalStorageService } from "../database/local-storage.service";
@@ -20,14 +20,15 @@ export class MainEffects {
   ) { }
 
   getLinkToken$ = createEffect(() => this.actions$.pipe(
-    ofType(loggedIn),
+    ofType(getLinkToken),
     switchMap(() => this.db.getLinkToken$().pipe(
-      map(token => setLinkToken(token))
+      map(linkToken => setLinkToken(linkToken))
     ))
-  ))
+  ));
 
-  refresh$ = createEffect(() => this.actions$.pipe(
-    ofType(refresh),
+
+  refreshAccounts$ = createEffect(() => this.actions$.pipe(
+    ofType(refreshAccounts),
     withLatestFrom(this.store.select(state => state.main)),
     switchMap(([_, state]) => concat(
       of(startLoad('refresh')),

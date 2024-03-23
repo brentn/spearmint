@@ -24,7 +24,6 @@ import { AccountIconComponent } from './home/account/account-icon/account-icon.c
 import { CategoryIconComponent } from './categories/category-icon/category-icon.component';
 import { BudgetsComponent } from './budgets/budgets.component';
 import { HomeBudgetsComponent } from './home/budgets/budgets.component';
-import { LoginComponent } from './login/login.component';
 import { TransactionsViewComponent } from './transactions/transactions-view.component';
 import { NgxPlaidLinkModule } from 'ngx-plaid-link';
 import { TransactionFormComponent } from './transactions/transaction/form/transaction-form.component';
@@ -35,7 +34,7 @@ import { mainReducer } from './data/state/reducer';
 import { MainEffects } from './data/state/effects';
 import { DatabaseService } from './data/database/database.service';
 import { SnakecasePipe } from './utilities/snakecase.pipe';
-import { TokenInterceptorService } from './login/interceptor/token-interceptor.service';
+import { TokenInterceptorService } from './auth/interceptor/token-interceptor.service';
 
 export type AppState = {
   main: MainState
@@ -58,7 +57,6 @@ export type AppState = {
     CategoryIconComponent,
     BudgetsComponent,
     HomeBudgetsComponent,
-    LoginComponent,
     TransactionsViewComponent,
     TransactionFormComponent,
     CategoryPickerComponent,
@@ -85,7 +83,7 @@ export type AppState = {
     {
       provide: 'SocialAuthServiceConfig',
       useValue: {
-        autoLogin: false,
+        autoLogin: true,
         providers: [
           {
             id: GoogleLoginProvider.PROVIDER_ID,

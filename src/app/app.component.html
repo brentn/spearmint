@@ -1,4 +1,5 @@
-<app-login *ngIf="!(user$|async)"></app-login>
+<div class="background bg-secondary"></div>
+
 <div *ngIf="(user$|async)">
   <router-outlet></router-outlet>
 </div>

@@ -1,10 +1,10 @@
-import { Component, HostListener } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
-import { filter, switchMap, take, tap } from 'rxjs';
-import { loggedIn, saveState, setAccessToken } from './data/state/actions';
-import { user } from './data/state/selectors';
-import { GoogleLoginProvider, SocialAuthService } from '@abacritt/angularx-social-login';
+import { filter, take, tap } from 'rxjs';
+import { loggedIn, saveState } from './data/state/actions';
+import { accounts, user } from './data/state/selectors';
+import { SocialAuthService } from '@abacritt/angularx-social-login';
 
 export const ENVIRONMENT = 'sandbox';
 
@@ -16,14 +16,13 @@ export const ENVIRONMENT = 'sandbox';
 export class AppComponent {
   user$ = this.store.select(user);
 
-  constructor(private store: Store<AppState>, private authService: SocialAuthService) { }
+  constructor(private store: Store<AppState>, private authService: SocialAuthService, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.authService.authState.pipe(
       tap(user => this.store.dispatch(loggedIn(user))),
-      switchMap(() => this.authService.getAccessToken(GoogleLoginProvider.PROVIDER_ID)),
-      tap(accessToken => this.store.dispatch(setAccessToken(accessToken)))
     ).subscribe();
+    this.refreshAfterStateRestored();
   }
 
   @HostListener('window:beforeunload')
@@ -35,4 +34,11 @@ export class AppComponent {
     ).subscribe()
   }
 
+  private refreshAfterStateRestored(): void {
+    this.store.select(accounts).pipe(
+      take(1),
+      tap(() => this.cd.detectChanges())
+    ).subscribe();
+
+  }
 }
