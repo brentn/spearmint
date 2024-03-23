@@ -26,7 +26,6 @@ export class MainEffects {
     ))
   ));
 
-
   refreshAccounts$ = createEffect(() => this.actions$.pipe(
     ofType(refreshAccounts),
     withLatestFrom(this.store.select(state => state.main)),

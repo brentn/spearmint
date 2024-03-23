@@ -10,18 +10,9 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
-app.get('/status', (request, response) => {
-  const status = {
-    'Status': 'Running'
-  };
-  response.send(status);
-});
-
-
 app.post('/linkToken', async (req, res) => {
   try {
     const accessToken = req.headers.authorization.substring(7);
-    console.log('Access Token:', accessToken);
 
     // Fetch user details using the access token
     const userResponse = await axios.get(
@@ -47,17 +38,38 @@ app.post('/linkToken', async (req, res) => {
         }
       }
     )
+    console.log('Plaid Response:', plaidResponse);
 
     res.status(200).json({
-      google_access_token: accessToken,
-      plaid_token: plaidResponse.data.link_token
+      link_token: plaidResponse.data.link_token
     });
   } catch (error) {
-    console.error('Error saving code:', error);
-    res.status(500).json({ message: 'Failed to save code' });
+    console.error('Error getting link token:', error);
+    res.status(500).json({ message: 'Failed to get link token' });
   }
 });
 
+app.post('/accessToken', async (req, res) => {
+  try {
+    const plaidResponse = await axios.post(
+      process.env.PlaidURL + '/item/public_token/exchange',
+      {
+        client_id: '65e630db59195c001ba33978',
+        secret: process.env.PlaidSecret,
+        public_token: req.body.public_token,
+      }
+    );
+    console.log('Plaid Response:', plaidResponse);
+    return res.status(200).json({
+      access_token: plaidResponse.data.access_token,
+      item_id: plaidResponse.data.item_id
+    });
+  } catch (error) {
+    console.error('Error exchanging public token:', error);
+    res.status(500).json({ message: 'Failed to exchange public token for access token' });
+  }
+
+});
 
 app.listen(process.env.PORT || 4000, () => {
   console.log('Server running on port', process.env.PORT || 4000);

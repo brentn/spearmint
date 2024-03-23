@@ -1,14 +1,14 @@
 import { Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
-import { PlaidOnEventArgs, PlaidOnSuccessArgs } from 'ngx-plaid-link';
+import { NgxPlaidLinkService, PlaidConfig, PlaidLinkHandler, PlaidOnEventArgs, PlaidOnSuccessArgs } from 'ngx-plaid-link';
 import { addAccount, getLinkToken } from '../data/state/actions';
 import { Account } from '../data/models/account';
 import { AccountType } from '../data/types/accountType';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Router } from '@angular/router';
 import { ENVIRONMENT } from '../app.component';
-import { plaidConfig } from '../data/state/selectors';
+import { linkToken, plaidConfig } from '../data/state/selectors';
 import { map } from 'rxjs';
 import { DatabaseService } from '../data/database/database.service';
 
@@ -18,25 +18,30 @@ import { DatabaseService } from '../data/database/database.service';
   styleUrls: ['./new-account.component.css']
 })
 export class NewAccountComponent {
+  plaidLinkHandler: PlaidLinkHandler | undefined;
+
   @ViewChild('plaid') plaid: ElementRef | undefined;
   backIcon = faArrowLeft;
   environment = ENVIRONMENT;
 
-  constructor(private router: Router, private store: Store<AppState>, private db: DatabaseService) { }
+  linkToken$ = this.store.select(linkToken).pipe(
+    map(token => {
+      this.plaidLinkService.createPlaid({
+        token: token,
+        onSuccess: (args: any) => this.onPlaidSuccess(args),
+        onExit: () => this.onClose(),
+        onEvent: (args: any) => this.onPlaidEvent(args)
+      }).then(handler => {
+        this.plaidLinkHandler = handler;
+      });
+    })
+  );
+
+
+  constructor(private router: Router, private store: Store<AppState>, private plaidLinkService: NgxPlaidLinkService, private db: DatabaseService) { }
 
   ngOnInit(): void {
     this.store.dispatch(getLinkToken());
-  }
-
-  ngAfterViewInit(): void {
-    // const startTime = Date.now();
-    // while (!this.plaid && (Date.now() - startTime < 1000)) { }
-    // if (this.plaid) {
-    //   const button = this.plaid.nativeElement;
-    //   setTimeout(() => button.click(), 1000);
-    // } else {
-    //   console.log('BUTTON NOT FOUND')
-    // }
   }
 
   onClose(): void {
