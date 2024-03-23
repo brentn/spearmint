@@ -17,7 +17,8 @@ app.get('/status', (request, response) => {
   response.send(status);
 });
 
-app.post('/auth', async (req, res) => {
+
+app.post('/linkToken', async (req, res) => {
   try {
     const code = req.headers.authorization.substring(7);
     console.log('Authorization Code:', code);

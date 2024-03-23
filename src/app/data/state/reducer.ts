@@ -1,13 +1,15 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, startLoad, updateConfiguration, updateTransaction } from "./actions";
+import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, setAccessToken, startLoad, updateConfiguration, updateTransaction } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 import { DEFAULT_CATEGORIES } from "../types/category.type";
 import { Transaction } from "../models/transaction";
 
 export const initialState: MainState = {
   user: undefined,
+  accessToken: undefined,
+  linkToken: undefined,
   configuration: DEFAULT_CONFIGURATION,
   loading: [],
   accounts: [],
@@ -17,7 +19,8 @@ export const initialState: MainState = {
 }
 
 const reducer = createReducer(initialState,
-  on(loggedIn, (state, action) => ({ ...state, user: action })),
+  on(loggedIn, (state, action) => ({ ...state, user: action.payload })),
+  on(setAccessToken, (state, action) => ({ ...state, accessToken: action.payload })),
   on(reset, (state) => ({ ...state, accounts: [], transactions: [] })),
   on(restoreState, (state, action) => ({ ...action.payload.main, user: state.user, })),
   on(updateConfiguration, (state, action) => ({ ...state, configuration: action.payload })),

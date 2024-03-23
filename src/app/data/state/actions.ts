@@ -5,7 +5,9 @@ import { Account } from "../models/account";
 import { Transaction } from "../models/transaction";
 import { Configuration } from "../types/configuration.type";
 
-export const loggedIn = createAction('[Main] Logged in', (user: SocialUser) => user);
+export const loggedIn = createAction('[Main] Logged in', (payload: SocialUser) => ({ payload }));
+export const setLinkToken = createAction('[Plaid] - Set link token', (payload: string) => ({ payload }));
+export const setAccessToken = createAction('[Google] Set access token', (payload: string) => ({ payload }));
 export const startLoad = createAction('[Main] Start loading...', (payload: string) => ({ payload }));
 export const endLoad = createAction('[Main] End loading', (payload: string) => ({ payload }));
 

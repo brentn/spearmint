@@ -59,9 +59,9 @@ export class NewAccountComponent {
         lastUpdated: new Date()
       })))
     });
-    this.db.exchangePublicToken$(args.metadata.public_token).subscribe(accessToken => {
-      console.log('ACCESS TOKEN', accessToken)
-    });
+    // this.db.exchangePublicToken$(args.metadata.public_token).subscribe(accessToken => {
+    //   console.log('ACCESS TOKEN', accessToken)
+    // });
     this.onClose();
   }
 

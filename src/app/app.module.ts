@@ -35,6 +35,7 @@ import { mainReducer } from './data/state/reducer';
 import { MainEffects } from './data/state/effects';
 import { DatabaseService } from './data/database/database.service';
 import { SnakecasePipe } from './utilities/snakecase.pipe';
+import { TokenInterceptorService } from './login/interceptor/token-interceptor.service';
 
 export type AppState = {
   main: MainState
@@ -97,6 +98,11 @@ export type AppState = {
           console.error(err);
         },
       } as SocialAuthServiceConfig,
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TokenInterceptorService,
+      multi: true
     },
     DatabaseService
   ],
