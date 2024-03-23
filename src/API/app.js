@@ -39,7 +39,7 @@ app.post('/linkToken', async (req, res) => {
         language: 'en',
         coutry_codes: ['CA'],
         user: {
-          client_user_id: userDetails
+          client_user_id: userDetails.sub
         }
       }
     )
