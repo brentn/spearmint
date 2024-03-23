@@ -1,15 +1,15 @@
-import { Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
-import { NgxPlaidLinkService, PlaidConfig, PlaidLinkHandler, PlaidOnEventArgs, PlaidOnSuccessArgs } from 'ngx-plaid-link';
+import { NgxPlaidLinkService, PlaidEventMetadata, PlaidLinkHandler, PlaidOnEventArgs, PlaidOnSuccessArgs, PlaidSuccessMetadata } from 'ngx-plaid-link';
 import { addAccount, getLinkToken } from '../data/state/actions';
 import { Account } from '../data/models/account';
 import { AccountType } from '../data/types/accountType';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Router } from '@angular/router';
 import { ENVIRONMENT } from '../app.component';
-import { linkToken, plaidConfig } from '../data/state/selectors';
-import { map } from 'rxjs';
+import { linkToken } from '../data/state/selectors';
+import { filter, map, take, tap } from 'rxjs';
 import { DatabaseService } from '../data/database/database.service';
 
 @Component({
@@ -25,18 +25,19 @@ export class NewAccountComponent {
   environment = ENVIRONMENT;
 
   linkToken$ = this.store.select(linkToken).pipe(
+    filter(token => token !== undefined),
     map(token => {
       this.plaidLinkService.createPlaid({
         token: token,
-        onSuccess: (args: any) => this.onPlaidSuccess(args),
+        onSuccess: (publicToken: string, metadata: PlaidSuccessMetadata) => this.onPlaidSuccess(publicToken, metadata),
         onExit: () => this.onClose(),
-        onEvent: (args: any) => this.onPlaidEvent(args)
+        onEvent: (publicToken: String, metadata: PlaidEventMetadata) => this.onPlaidEvent(metadata)
       }).then(handler => {
         this.plaidLinkHandler = handler;
+        handler.open();
       });
     })
   );
-
 
   constructor(private router: Router, private store: Store<AppState>, private plaidLinkService: NgxPlaidLinkService, private db: DatabaseService) { }
 
@@ -48,28 +49,29 @@ export class NewAccountComponent {
     this.router.navigate(['/']);
   }
 
-  onPlaidEvent(args: PlaidOnEventArgs): void {
-    console.log('EVENT', args)
+  onPlaidEvent(metadata: PlaidEventMetadata): void {
   }
 
-  onPlaidSuccess(args: PlaidOnSuccessArgs): void {
-    console.log('HERE', args)
-    args.metadata.accounts.forEach(account => {
-      this.store.dispatch(addAccount(new Account({
-        id: account.id,
-        institution: args.metadata.institution?.name ?? 'Unknown Institution',
-        name: account.name,
-        type: account.type as AccountType,
-        active: true,
-        balance: 0,
-        currency: 'CAD',
-        public_token: args.metadata.public_token,
-        lastUpdated: new Date()
-      })))
-    });
-    // this.db.exchangePublicToken$(args.metadata.public_token).subscribe(accessToken => {
-    //   console.log('ACCESS TOKEN', accessToken)
-    // });
+  onPlaidSuccess(publicToken: string, metadata: PlaidSuccessMetadata): void {
+    console.log('HERE', publicToken, metadata)
+    this.db.exchangePublicToken(publicToken).pipe(
+      tap((data: { accessToken: string, itemId: string }) => {
+        metadata.accounts.forEach(account => {
+          this.store.dispatch(addAccount(new Account({
+            id: account.id,
+            institution: metadata.institution?.name ?? 'Unknown Institution',
+            name: account.name,
+            type: account.type as AccountType,
+            active: true,
+            balance: 0,
+            currency: 'CAD',
+            accessToken: data.accessToken,
+            itemId: data.itemId,
+            lastUpdated: new Date()
+          })))
+        })
+      })
+    ).subscribe();
     this.onClose();
   }
 

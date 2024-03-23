@@ -1,7 +1,7 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, startLoad, updateConfiguration, updateTransaction } from "./actions";
+import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, setLinkToken, startLoad, updateConfiguration, updateTransaction } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 import { DEFAULT_CATEGORIES } from "../types/category.type";
 import { Transaction } from "../models/transaction";
@@ -20,10 +20,11 @@ export const initialState: MainState = {
 const reducer = createReducer(initialState,
   on(loggedIn, (state, action) => ({ ...state, user: action.payload })),
   on(reset, (state) => ({ ...state, accounts: [], transactions: [] })),
-  on(restoreState, (state, action) => ({ ...action.payload.main, user: state.user, })),
+  on(restoreState, (state, action) => ({ ...action.payload.main, linkToken: undefined, user: state.user, })),
   on(updateConfiguration, (state, action) => ({ ...state, configuration: action.payload })),
   on(startLoad, (state, action) => ({ ...state, loading: [...state.loading, action.payload] })),
   on(endLoad, (state, action) => ({ ...state, loading: state.loading.filter((_, i) => i !== state.loading.indexOf(action.payload)) })),
+  on(setLinkToken, (state, action) => ({ ...state, linkToken: action.payload })),
   on(addAccount, (state, action) => ({
     ...state,
     accounts: [...state.accounts, action.payload]

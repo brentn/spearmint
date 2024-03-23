@@ -9,7 +9,8 @@ export class Account {
   active: boolean;
   balance: number;
   currency: CurrencyType;
-  public_token: string;
+  accessToken: string;
+  itemId: string;
   lastUpdated: Date;
 
   constructor(incoming: Account) {
@@ -20,7 +21,8 @@ export class Account {
     this.active = incoming.active;
     this.balance = incoming.balance;
     this.currency = incoming.currency;
-    this.public_token = incoming.public_token;
+    this.accessToken = incoming.accessToken;
+    this.itemId = incoming.itemId;
     this.lastUpdated = incoming.lastUpdated;
   }
 

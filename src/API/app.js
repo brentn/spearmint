@@ -3,7 +3,7 @@ const axios = require('axios');
 const cors = require('cors');
 
 // const { OAuth2Client } = require('google-auth-library');
-// const oauth2Client = new OAuth2Client()
+// const googleClient = new OAuth2Client()
 
 const app = express();
 
@@ -51,6 +51,7 @@ app.post('/linkToken', async (req, res) => {
 
 app.post('/accessToken', async (req, res) => {
   try {
+    console.log('REQUEST', req)
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/item/public_token/exchange',
       {
