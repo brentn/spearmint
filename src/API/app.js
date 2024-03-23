@@ -37,7 +37,7 @@ app.post('/linkToken', async (req, res) => {
         secret: process.env.PlaidSecret,
         client_name: 'Spearmint',
         language: 'en',
-        coutry_codes: ['CA'],
+        country_codes: ['CA'],
         user: {
           client_user_id: userDetails.sub
         }
