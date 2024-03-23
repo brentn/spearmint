@@ -40,6 +40,10 @@ app.post('/linkToken', async (req, res) => {
         country_codes: ['CA'],
         user: {
           client_user_id: userDetails.sub
+        },
+        products: ['transactions'],
+        transactions: {
+          days_requested: 60
         }
       }
     )
