@@ -34,7 +34,7 @@ app.post('/linkToken', async (req, res) => {
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/link/token/create',
       {
-        client_id: '65e630db59195c001ba33978',
+        client_id: PLAID_CLIENT_ID,
         secret: process.env.PlaidSecret,
         client_name: 'Spearmint',
         language: 'en',
@@ -65,7 +65,7 @@ app.post('/accessToken', async (req, res) => {
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/item/public_token/exchange',
       {
-        client_id: '65e630db59195c001ba33978',
+        client_id: PLAID_CLIENT_ID,
         secret: process.env.PlaidSecret,
         public_token: public_token,
       }
