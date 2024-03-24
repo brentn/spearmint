@@ -1,20 +1,16 @@
 const PLAID_CLIENT_ID = '65e630db59195c001ba33978';
 
 const express = require('express');
-// const router = express.Router();
-// const bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 // const plaid = require('plaid');
 const axios = require('axios');
 const cors = require('cors');
 
-// const { OAuth2Client } = require('google-auth-library');
-// const googleClient = new OAuth2Client()
-
-
 const app = express();
 
-// Enable CORS for all routes
 app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/status', async (req, res) => {
   res.status(200).json({ message: 'Server is running' });
@@ -61,8 +57,8 @@ app.post('/linkToken', async (req, res) => {
 
 app.post('/accessToken', async (req, res) => {
   try {
-    console.log('REQUEST BODY', req.body)
-    const public_token = req.body.public_token;
+    console.log('REQUEST BODY', req)
+    const public_token = req.public_token;
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/item/public_token/exchange',
       {
