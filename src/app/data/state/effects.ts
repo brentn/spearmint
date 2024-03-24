@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { endLoad, getAccountBalance, getLatestTransactions, getLinkToken, loggedIn, refreshAccounts, restoreState, saveState, setLinkToken, startLoad } from "./actions";
-import { concat, filter, map, of, switchMap, tap, withLatestFrom } from "rxjs";
+import { endLoad, getAccountBalance, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, restoreState, saveState, setLinkToken, startLoad } from "./actions";
+import { concat, filter, map, of, switchMap, take, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { LocalStorageService } from "../database/local-storage.service";
@@ -18,6 +18,11 @@ export class MainEffects {
     private db: DatabaseService,
     private persistence: LocalStorageService
   ) { }
+
+  spinUpServer$ = createEffect(() => this.actions$.pipe(
+    ofType(initialize),
+    tap(() => this.db.spinUpServer$().subscribe())
+  ), { dispatch: false });
 
   getLinkToken$ = createEffect(() => this.actions$.pipe(
     ofType(getLinkToken),
@@ -56,6 +61,7 @@ export class MainEffects {
 
   loadState$ = createEffect(() => this.actions$.pipe(
     ofType(loggedIn),
+    filter(user => !!user),
     map(() => restoreState(this.persistence.restoreState()))
   ));
 

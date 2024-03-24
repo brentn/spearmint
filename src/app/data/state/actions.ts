@@ -5,6 +5,7 @@ import { Account } from "../models/account";
 import { Transaction } from "../models/transaction";
 import { Configuration } from "../types/configuration.type";
 
+export const initialize = createAction('[Main] Initialize');
 export const startLoad = createAction('[Main] Start loading...', (payload: string) => ({ payload }));
 export const endLoad = createAction('[Main] End loading', (payload: string) => ({ payload }));
 export const loggedIn = createAction('[Main] Logged in', (payload: SocialUser) => ({ payload }));

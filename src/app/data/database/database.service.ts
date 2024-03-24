@@ -1,9 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Store } from '@ngrx/store';
-import { AppState } from 'src/app/app.module';
 import { Observable, map } from 'rxjs';
-import { ENVIRONMENT } from 'src/app/app.component';
 
 const API = 'https://spearmint-imnj.onrender.com';
 
@@ -14,7 +11,13 @@ export class DatabaseService {
   headers = { headers: new HttpHeaders().set('Content-Type', 'application/json') };
 
 
-  constructor(private http: HttpClient, private store: Store<AppState>) { }
+  constructor(private http: HttpClient) { }
+
+  spinUpServer$(): Observable<void> {
+    return this.http.get(`${API}/status`).pipe(
+      map(() => void (0))
+    );
+  }
 
   getLinkToken$(): Observable<string> {
     return this.http.post(`${API}/linkToken`, null, this.headers).pipe(

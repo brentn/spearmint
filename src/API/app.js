@@ -10,6 +10,10 @@ const app = express();
 // Enable CORS for all routes
 app.use(cors());
 
+app.get('/status', async (req, res) => {
+  res.status(200).json({ message: 'Server is running' });
+})
+
 app.post('/linkToken', async (req, res) => {
   try {
     const accessToken = req.headers.authorization.substring(7);
@@ -51,7 +55,6 @@ app.post('/linkToken', async (req, res) => {
 
 app.post('/accessToken', async (req, res) => {
   try {
-    console.log('REQUEST', req)
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/item/public_token/exchange',
       {
@@ -67,7 +70,7 @@ app.post('/accessToken', async (req, res) => {
     });
   } catch (error) {
     console.error('Error exchanging public token:', error);
-    res.status(500).json({ message: 'Failed to exchange public token for access token' });
+    res.status(500).json({ error: error, message: 'Failed to exchange public token for access token' });
   }
 
 });

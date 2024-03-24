@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { filter, take, tap } from 'rxjs';
-import { loggedIn, saveState } from './data/state/actions';
+import { initialize, loggedIn, saveState } from './data/state/actions';
 import { accounts, user } from './data/state/selectors';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
 
@@ -19,6 +19,7 @@ export class AppComponent {
   constructor(private store: Store<AppState>, private authService: SocialAuthService, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
+    this.store.dispatch(initialize());
     this.authService.authState.pipe(
       tap(user => this.store.dispatch(loggedIn(user))),
     ).subscribe();
