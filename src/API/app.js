@@ -1,9 +1,15 @@
+const PLAID_CLIENT_ID = '65e630db59195c001ba33978';
+
 const express = require('express');
+// const router = express.Router();
+// const bodyParser = require('body-parser');
+// const plaid = require('plaid');
 const axios = require('axios');
 const cors = require('cors');
 
 // const { OAuth2Client } = require('google-auth-library');
 // const googleClient = new OAuth2Client()
+
 
 const app = express();
 
@@ -55,12 +61,13 @@ app.post('/linkToken', async (req, res) => {
 
 app.post('/accessToken', async (req, res) => {
   try {
+    const public_token = req.body.public_token;
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/item/public_token/exchange',
       {
         client_id: '65e630db59195c001ba33978',
         secret: process.env.PlaidSecret,
-        public_token: req.body.public_token,
+        public_token: public_token,
       }
     );
     console.log('Plaid Response:', plaidResponse);
@@ -70,7 +77,7 @@ app.post('/accessToken', async (req, res) => {
     });
   } catch (error) {
     console.error('Error exchanging public token:', error);
-    res.status(500).json({ error: error, message: 'Failed to exchange public token for access token' });
+    res.status(500).json({ message: 'Failed to exchange public token for access token' });
   }
 
 });
