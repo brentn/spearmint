@@ -57,8 +57,8 @@ app.post('/linkToken', async (req, res) => {
 
 app.post('/accessToken', async (req, res) => {
   try {
-    console.log('REQUEST BODY', req)
-    const public_token = req.public_token;
+    console.log('REQUEST BODY', req.body?.public_token)
+    const public_token = req.body?.public_token;
     const plaidResponse = await axios.post(
       process.env.PlaidURL + '/item/public_token/exchange',
       {
