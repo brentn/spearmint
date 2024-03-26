@@ -6,8 +6,7 @@ const bodyParser = require('body-parser');
 const axios = require('axios');
 const cors = require('cors');
 const { OAuth2Client } = require('google-auth-library');
-
-import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+const plaid = require('plaid');
 
 const app = express();
 app.use(cors());
@@ -33,8 +32,8 @@ app.use(async (req, res, next) => {
 })
 
 const googleClient = new OAuth2Client();
-const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+const configuration = new plaid.Configuration({
+  basePath: plaid.PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
@@ -85,6 +84,9 @@ app.post('/accessToken', async (req, res) => {
     console.error('Error exchanging public token:', error);
     res.status(500).json({ message: 'Failed to exchange public token for access token' });
   }
+});
+
+app.post('/transactions', async (req, res) => {
 
 });
 
