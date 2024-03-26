@@ -32,8 +32,8 @@ app.use(async (req, res, next) => {
 })
 
 const googleClient = new OAuth2Client();
-const configuration = new plaid.Configuration({
-  basePath: plaid.PlaidEnvironments.sandbox,
+const configuration = new Configuration({
+  basePath: PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
