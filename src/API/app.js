@@ -6,7 +6,7 @@ const bodyParser = require('body-parser');
 const axios = require('axios');
 const cors = require('cors');
 const { OAuth2Client } = require('google-auth-library');
-const plaid = require('plaid');
+import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 
 const app = express();
 app.use(cors());
