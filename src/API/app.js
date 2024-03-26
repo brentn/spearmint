@@ -8,6 +8,12 @@ const cors = require('cors');
 const { OAuth2Client } = require('google-auth-library');
 const { Configuration, PlaidApi, Products, PlaidEnvironments } = require('plaid');
 
+if (!process.env.PlaidSecret) {
+  throw new Error('Missing PlaidSecret')
+}
+
+var userId = null;
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -15,25 +21,23 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     const token = req.headers.authorization.split('Bearer ')[1];
-    console.log('Bearer Token:', token);
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken: token,
         audience: GOOGLE_CLIENT_ID,
       });
       const payload = ticket.getPayload();
-      let userid = payload['sub']; next();
-      console.log('User ID:', userid);
+      userId = payload['sub'];
+      next();
     } catch (error) {
       console.error('Error verifying token:', error);
     }
   }
-  res.status(401).json({ message: 'Unauthorized' });
-})
+});
 
 const googleClient = new OAuth2Client();
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+  basePath: PlaidEnvironments[(process.env.PlaidEnvironment || 'sandbox')],
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
@@ -49,7 +53,6 @@ app.get('/status', async (req, res) => {
 
 app.post('/linkToken', async (req, res) => {
   try {
-    console.log('User Details:', userId);
     const response = await plaidClient.linkTokenCreate({
       user: {
         client_user_id: userId,
@@ -73,7 +76,6 @@ app.post('/linkToken', async (req, res) => {
 app.post('/accessToken', async (req, res) => {
   try {
     const public_token = req.body?.public_token;
-    console.log('Public Token:', public_token)
     const response = await plaidClient.itemPublicTokenExchange({ public_token });
     console.log('Access Token:', response.data.access_token, 'Item ID:', response.data.item_id)
     return res.status(200).json({
@@ -86,8 +88,17 @@ app.post('/accessToken', async (req, res) => {
   }
 });
 
-app.post('/transactions', async (req, res) => {
-
+app.post('/balances', async (req, res) => {
+  try {
+    const request = { access_token: req.body?.access_token };
+    const response = await plaidClient.accountsBalanceGet(request);
+    return res.status(200).json({
+      accounts: response.data.accounts
+    });
+  } catch (error) {
+    console.error('Error getting account balances:', error);
+    res.status(500).json({ message: 'Failed to get account balances' });
+  }
 });
 
 app.listen(process.env.PORT || 4000, () => {

@@ -1,10 +1,11 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, setLinkToken, startLoad, updateConfiguration, updateTransaction } from "./actions";
+import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, setLinkToken, startLoad, updateAccount, updateConfiguration, updateTransaction } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 import { DEFAULT_CATEGORIES } from "../types/category.type";
 import { Transaction } from "../models/transaction";
+import { Account } from "../models/account";
 
 export const initialState: MainState = {
   user: undefined,
@@ -28,6 +29,10 @@ const reducer = createReducer(initialState,
   on(addAccount, (state, action) => ({
     ...state,
     accounts: [...state.accounts, action.payload]
+  })),
+  on(updateAccount, (state, action) => ({
+    ...state,
+    accounts: state.accounts.map(account => account.id === action.payload.id ? new Account(action.payload) : account)
   })),
   on(addTransactions, (state, action) => ({
     ...state,

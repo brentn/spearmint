@@ -1,8 +1,9 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 
 const API = 'https://spearmint-imnj.onrender.com';
+// const API = 'http://localhost:4000';
 
 @Injectable({
   providedIn: 'root'
@@ -25,11 +26,17 @@ export class DatabaseService {
     )
   }
 
-  exchangePublicToken(publicToken: string): Observable<{ accessToken: string, itemId: string }> {
+  exchangePublicToken$(publicToken: string): Observable<{ accessToken: string, itemId: string }> {
     return this.http.post(`${API}/accessToken`, {
       public_token: publicToken,
     }, this.headers).pipe(
       map((response: any) => ({ accessToken: response.access_token, itemId: response.item_id }))
+    )
+  }
+
+  accountBalances$(accessToken: string): Observable<{ account_id: string, balances: { current: number } }[]> {
+    return this.http.post(`${API}/balances`, { access_token: accessToken }, this.headers).pipe(
+      map((dto: any) => dto.accounts)
     )
   }
 

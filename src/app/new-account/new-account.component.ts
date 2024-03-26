@@ -2,7 +2,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { NgxPlaidLinkService, PlaidEventMetadata, PlaidLinkHandler, PlaidOnEventArgs, PlaidOnSuccessArgs, PlaidSuccessMetadata } from 'ngx-plaid-link';
-import { addAccount, getLinkToken } from '../data/state/actions';
+import { addAccount, getLinkToken, refreshAccounts } from '../data/state/actions';
 import { Account } from '../data/models/account';
 import { AccountType } from '../data/types/accountType';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
@@ -53,8 +53,7 @@ export class NewAccountComponent {
   }
 
   onPlaidSuccess(publicToken: string, metadata: PlaidSuccessMetadata): void {
-    console.log('HERE', publicToken, metadata)
-    this.db.exchangePublicToken(publicToken).pipe(
+    this.db.exchangePublicToken$(publicToken).pipe(
       tap((data: { accessToken: string, itemId: string }) => {
         metadata.accounts.forEach(account => {
           this.store.dispatch(addAccount(new Account({
@@ -69,7 +68,8 @@ export class NewAccountComponent {
             itemId: data.itemId,
             lastUpdated: new Date()
           })))
-        })
+        });
+        this.store.dispatch(refreshAccounts())
       })
     ).subscribe();
     this.onClose();

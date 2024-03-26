@@ -38,7 +38,7 @@ export class AppComponent {
   private refreshAfterStateRestored(): void {
     this.store.select(accounts).pipe(
       take(1),
-      tap(() => this.cd.detectChanges())
+      tap(() => this.cd.detectChanges()),
     ).subscribe();
 
   }
