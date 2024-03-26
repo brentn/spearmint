@@ -17,7 +17,7 @@ app.use(async (req, res, next) => {
     const token = req.headers.authorization.split('Bearer ')[1];
     console.log('Bearer Token:', token);
     try {
-      await googleClient.verifyIdToken({
+      const ticket = await googleClient.verifyIdToken({
         idToken: token,
         audience: GOOGLE_CLIENT_ID,
       });

@@ -2,26 +2,29 @@ import { GoogleLoginProvider, SocialAuthService } from '@abacritt/angularx-socia
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable, from, map, switchMap, tap } from 'rxjs';
+import { Observable, filter, from, map, switchMap, take, tap } from 'rxjs';
 import { AppState } from 'src/app/app.module';
+import { user } from 'src/app/data/state/selectors';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenInterceptorService implements HttpInterceptor {
-  accessToken: string | undefined;
+  idToken: string | undefined;
 
-  constructor(private authService: SocialAuthService) { }
+  constructor(private store: Store<AppState>, private authService: SocialAuthService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (this.accessToken) {
-      req = req.clone({ setHeaders: { Authorization: `Bearer ${this.accessToken}` } });
+    if (this.idToken) {
+      req = req.clone({ setHeaders: { Authorization: `Bearer ${this.idToken}` } });
       return next.handle(req);
     } else {
-      return from(this.authService.getAccessToken(GoogleLoginProvider.PROVIDER_ID)).pipe(
-        tap(accessToken => this.accessToken = accessToken),
+      return this.store.select(user).pipe(
+        filter(user => !!user),
+        take(1),
+        tap(user => this.idToken = user!.idToken),
         switchMap(() => {
-          req = req.clone({ setHeaders: { Authorization: `Bearer ${this.accessToken}` } });
+          req = req.clone({ setHeaders: { Authorization: `Bearer ${this.idToken}` } });
           return next.handle(req);
         })
       );
