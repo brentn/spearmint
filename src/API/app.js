@@ -1,16 +1,48 @@
+const GOOGLE_CLIENT_ID = '316624811771-jugmh69v4b636shvv1c9gtj6glr5i9e7.apps.googleusercontent.com';
 const PLAID_CLIENT_ID = '65e630db59195c001ba33978';
 
 const express = require('express');
 const bodyParser = require('body-parser');
-// const plaid = require('plaid');
 const axios = require('axios');
 const cors = require('cors');
+const { OAuth2Client } = require('google-auth-library');
+
+import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 
 const app = express();
-
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(async (req, res, next) => {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    const token = req.headers.authorization.split('Bearer ')[1];
+    console.log('Bearer Token:', token);
+    try {
+      await googleClient.verifyIdToken({
+        idToken: token,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      let userid = payload['sub']; next();
+      console.log('User ID:', userid);
+    } catch (error) {
+      console.error('Error verifying token:', error);
+    }
+  }
+  res.status(401).json({ message: 'Unauthorized' });
+})
+
+const googleClient = new OAuth2Client();
+const configuration = new Configuration({
+  basePath: PlaidEnvironments.sandbox,
+  baseOptions: {
+    headers: {
+      'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PlaidSecret,
+    },
+  },
+});
+const plaid = new PlaidApi(configuration);
 
 app.get('/status', async (req, res) => {
   res.status(200).json({ message: 'Server is running' });
@@ -18,37 +50,21 @@ app.get('/status', async (req, res) => {
 
 app.post('/linkToken', async (req, res) => {
   try {
-    const accessToken = req.headers.authorization.substring(7);
-
-    // Fetch user details using the access token
-    const userResponse = await axios.get(
-      'https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    const userDetails = userResponse.data;
-    console.log('User Details:', userDetails);
-
-    const plaidResponse = await axios.post(
-      process.env.PlaidURL + '/link/token/create',
-      {
-        client_id: PLAID_CLIENT_ID,
-        secret: process.env.PlaidSecret,
-        client_name: 'Spearmint',
-        language: 'en',
-        country_codes: ['CA'],
-        user: {
-          client_user_id: userDetails.sub
-        },
-        products: ['transactions'],
-        transactions: {
-          days_requested: 60
-        }
-      }
-    )
-    console.log('Plaid Response:', plaidResponse);
-
-    res.status(200).json({
-      link_token: plaidResponse.data.link_token
+    console.log('User Details:', userId);
+    const response = await plaidClient.linkTokenCreate({
+      user: {
+        client_user_id: userId,
+      },
+      client_name: 'Spearmint',
+      products: ['transactions'],
+      transactions: {
+        days_requested: 60
+      },
+      country_codes: ['CA'],
+      language: 'en',
     });
+    console.log('Link Token:', response.data.link_token)
+    res.status(200).json({ link_token: response.data.link_token });
   } catch (error) {
     console.error('Error getting link token:', error);
     res.status(500).json({ message: 'Failed to get link token' });
@@ -57,20 +73,13 @@ app.post('/linkToken', async (req, res) => {
 
 app.post('/accessToken', async (req, res) => {
   try {
-    console.log('REQUEST BODY', req.body?.public_token)
     const public_token = req.body?.public_token;
-    const plaidResponse = await axios.post(
-      process.env.PlaidURL + '/item/public_token/exchange',
-      {
-        client_id: PLAID_CLIENT_ID,
-        secret: process.env.PlaidSecret,
-        public_token: public_token,
-      }
-    );
-    console.log('Plaid Response:', plaidResponse);
+    console.log('Public Token:', public_token)
+    const response = await plaid.itemPublicTokenExchange({ public_token });
+    console.log('Access Token:', response.data.access_token, 'Item ID:', response.data.item_id)
     return res.status(200).json({
-      access_token: plaidResponse.data.access_token,
-      item_id: plaidResponse.data.item_id
+      access_token: response.data.access_token,
+      item_id: response.data.item_id
     });
   } catch (error) {
     console.error('Error exchanging public token:', error);
@@ -82,3 +91,5 @@ app.post('/accessToken', async (req, res) => {
 app.listen(process.env.PORT || 4000, () => {
   console.log('Server running on port', process.env.PORT || 4000);
 });
+
+

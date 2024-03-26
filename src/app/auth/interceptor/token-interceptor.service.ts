@@ -11,7 +11,7 @@ import { AppState } from 'src/app/app.module';
 export class TokenInterceptorService implements HttpInterceptor {
   accessToken: string | undefined;
 
-  constructor(private store: Store<AppState>, private authService: SocialAuthService) { }
+  constructor(private authService: SocialAuthService) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.accessToken) {
