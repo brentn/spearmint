@@ -1,6 +1,8 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
+import { BalanceDTO } from '../types/balanceDTO';
+import { TransactionsDTO } from '../types/transactionsDTO';
 
 const API = 'https://spearmint-imnj.onrender.com';
 // const API = 'http://localhost:4000';
@@ -34,9 +36,15 @@ export class DatabaseService {
     )
   }
 
-  accountBalances$(accessToken: string): Observable<{ account_id: string, balances: { current: number } }[]> {
+  accountBalances$(accessToken: string): Observable<BalanceDTO[]> {
     return this.http.post(`${API}/balances`, { access_token: accessToken }, this.headers).pipe(
       map((dto: any) => dto.accounts)
+    )
+  }
+
+  transactions$(params: { accessToken: string, cursor: string | undefined }): Observable<TransactionsDTO> {
+    return this.http.post(`${API}/transactions`, { access_token: params.accessToken, cursor: params.cursor }, this.headers).pipe(
+      map((dto: any) => dto.transactions)
     )
   }
 

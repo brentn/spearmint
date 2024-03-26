@@ -3,7 +3,7 @@
     <div class="d-flex">
       <category-icon [categoryId]="category?.group"></category-icon>
       <div class="d-flex flex-column">
-        <div class="small">{{transaction.merchant}}</div>
+        <div class="small">{{transaction.merchant||transaction.name}}</div>
         <div class="small text-muted fst-italic">
           {{(transaction.categoryId||"Uncategorized")|snakecase:'undo'|titlecase}}
         </div>

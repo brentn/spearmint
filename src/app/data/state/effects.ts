@@ -1,13 +1,14 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { endLoad, getAccountBalances, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, restoreState, saveState, setLinkToken, startLoad, stateRestored, updateAccount } from "./actions";
+import { addTransactions, endLoad, getAccountBalances, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, removeTransaction, restoreState, saveState, setLinkToken, startLoad, stateRestored, updateAccount, updateTransaction } from "./actions";
 import { concat, concatMap, filter, finalize, from, map, of, switchMap, take, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { LocalStorageService } from "../database/local-storage.service";
 import { DatabaseService } from "../database/database.service";
-import { accounts } from "./selectors";
+import { accounts, transactions } from "./selectors";
 import { Account } from "../models/account";
+import { Transaction } from "../models/transaction";
 
 const MIN_REFRESH_FREQUENCY = 120; //minutes
 
@@ -38,12 +39,12 @@ export class MainEffects {
     withLatestFrom(this.store.select(state => state.main)),
     switchMap(([_, state]) => concat(
       of(startLoad('refresh')),
-      state.accounts
-        // .filter(account => ((Date.now() - account.lastUpdated.getTime()) > (MIN_REFRESH_FREQUENCY * 60 * 1000)))
+      ...state.accounts
+        .filter(account => ((Date.now() - account.lastUpdated.getTime()) > (MIN_REFRESH_FREQUENCY * 60 * 1000)))
         .filter(account => !!account.accessToken)
-        .map(account => account.accessToken!)
-        .reduce((acc: string[], token) => acc.includes(token) ? acc : [...acc, token], [])
-        .map(access_token => (getAccountBalances(access_token))),
+        .map(account => ({ accessToken: account.accessToken!, cursor: account.cursor }))
+        .reduce((acc: { accessToken: string, cursor: string | undefined }[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
+        .map(item => [getAccountBalances(item.accessToken), getLatestTransactions(item)]),
       of(endLoad('refresh'))
     ))
   ));
@@ -70,7 +71,39 @@ export class MainEffects {
 
   getLatestTransactions$ = createEffect(() => this.actions$.pipe(
     ofType(getLatestTransactions),
-    //TODO:
+    withLatestFrom(this.store.select(accounts), this.store.select(transactions)),
+    switchMap(([action, accounts, transactions]) => concat(
+      of(startLoad('getTransactions')),
+      this.db.transactions$(action.payload).pipe(
+        switchMap(response => {
+          const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({ ...account, cursor: response.next_cursor })));
+          const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
+          const addAction = addTransactions(response.added.map(item => new Transaction({
+            id: item.transaction_id,
+            date: new Date(item.date),
+            accountId: item.account_id,
+            amount: item.amount,
+            categoryId: item.personal_finance_category.detailed,
+            merchant: item.merchant_name,
+            name: item.name,
+          })));
+          const updateActions = response.modified.map(item => {
+            const existing = transactions.find(t => t.id === item.transaction_id);
+            return updateTransaction(new Transaction({
+              ...existing,
+              id: item.transaction_id,
+              date: new Date(item.date),
+              accountId: item.account_id,
+              amount: item.amount,
+              categoryId: item.personal_finance_category.detailed,
+              merchant: item.merchant_name,
+              name: item.name,
+            }));
+          });
+          return [...accountActions, ...removeActions, addAction, ...updateActions];
+        })
+      )
+    ))
   ));
 
   saveState$ = createEffect(() => this.actions$.pipe(

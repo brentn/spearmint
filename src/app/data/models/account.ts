@@ -11,9 +11,10 @@ export class Account {
   currency: CurrencyType;
   accessToken: string;
   itemId: string;
+  cursor: string | undefined;
   lastUpdated: Date;
 
-  constructor(incoming: Account) {
+  constructor(incoming: any) {
     this.id = incoming.id;
     this.institution = incoming.institution;
     this.name = incoming.name;
@@ -23,21 +24,9 @@ export class Account {
     this.currency = incoming.currency;
     this.accessToken = incoming.accessToken;
     this.itemId = incoming.itemId;
+    this.cursor = incoming.cursor;
     this.lastUpdated = incoming.lastUpdated;
   }
 
 }
 
-// export type AccountDTO = {
-//   "account_id": string,
-//   "balances": {
-//     "available": number,
-//     "current": number,
-//     "limit": null,
-//     "iso_currency_code": CurrencyType,
-//   },
-//   "name": string,
-//   "official_name": string,
-//   "subtype": string,
-//   "type": AccountType,
-// }

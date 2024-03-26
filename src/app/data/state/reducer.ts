@@ -1,7 +1,7 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { addAccount, addTransactions, endLoad, loggedIn, reset, restoreState, setLinkToken, startLoad, updateAccount, updateConfiguration, updateTransaction } from "./actions";
+import { addAccount, addTransactions, endLoad, loggedIn, removeTransaction, reset, restoreState, setLinkToken, startLoad, updateAccount, updateConfiguration, updateTransaction } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 import { DEFAULT_CATEGORIES } from "../types/category.type";
 import { Transaction } from "../models/transaction";
@@ -44,7 +44,11 @@ const reducer = createReducer(initialState,
       ...transaction,
       ...action.payload
     } as Transaction) : transaction)
-  }))
+  })),
+  on(removeTransaction, (state, action) => ({
+    ...state,
+    transactions: state.transactions.filter(transaction => transaction.id !== action.payload)
+  })),
 );
 
 export function mainReducer(state: MainState | undefined, action: Action) {

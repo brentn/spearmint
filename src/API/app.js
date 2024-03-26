@@ -101,6 +101,19 @@ app.post('/balances', async (req, res) => {
   }
 });
 
+app.post('/transactions', async (req, res) => {
+  try {
+    const request = { access_token: req.body?.access_token };
+    const response = await plaidClient.transactionsSync(request);
+    return res.status(200).json({
+      transactions: response.data
+    })
+  } catch (error) {
+    console.error('Error getting transations:', error);
+    res.status(500).json({ message: 'Failed to get transactions' });
+  }
+})
+
 app.listen(process.env.PORT || 4000, () => {
   console.log('Server running on port', process.env.PORT || 4000);
 });
