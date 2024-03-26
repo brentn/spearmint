@@ -42,7 +42,7 @@ const configuration = new Configuration({
     },
   },
 });
-const plaid = new PlaidApi(configuration);
+const plaidClient = new PlaidApi(configuration);
 
 app.get('/status', async (req, res) => {
   res.status(200).json({ message: 'Server is running' });
@@ -75,7 +75,7 @@ app.post('/accessToken', async (req, res) => {
   try {
     const public_token = req.body?.public_token;
     console.log('Public Token:', public_token)
-    const response = await plaid.itemPublicTokenExchange({ public_token });
+    const response = await plaidClient.itemPublicTokenExchange({ public_token });
     console.log('Access Token:', response.data.access_token, 'Item ID:', response.data.item_id)
     return res.status(200).json({
       access_token: response.data.access_token,
