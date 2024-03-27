@@ -1,30 +1,35 @@
-const GOOGLE_CLIENT_ID = '316624811771-jugmh69v4b636shvv1c9gtj6glr5i9e7.apps.googleusercontent.com';
-const PLAID_CLIENT_ID = '65e630db59195c001ba33978';
-
 const express = require('express');
 const bodyParser = require('body-parser');
-const axios = require('axios');
 const cors = require('cors');
 const { OAuth2Client } = require('google-auth-library');
 const { Configuration, PlaidApi, Products, PlaidEnvironments } = require('plaid');
+import { NextFunction, Request, Response } from "express";
+require('dotenv').config();
 
-if (!process.env.PlaidSecret) {
-  throw new Error('Missing PlaidSecret')
+if (!process.env.PLAID_SECRET) {
+  throw new Error('Missing Environment Variables')
 }
 
-var userId = null;
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const plaidEnvironment = process.env.PLAID_ENVIRONMENT;
+const plaidClientId = process.env.PLAID_CLIENT_ID;
+const plaidSecret = process.env.PLAID_SECRET;
+
+
+
+var userId: string | null = null;
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(async (req, res, next) => {
+app.use(async (req: Request, res: Response, next: NextFunction) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     const token = req.headers.authorization.split('Bearer ')[1];
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken: token,
-        audience: GOOGLE_CLIENT_ID,
+        audience: googleClientId,
       });
       const payload = ticket.getPayload();
       userId = payload['sub'];
@@ -37,21 +42,21 @@ app.use(async (req, res, next) => {
 
 const googleClient = new OAuth2Client();
 const configuration = new Configuration({
-  basePath: PlaidEnvironments[(process.env.PlaidEnvironment || 'sandbox')],
+  basePath: PlaidEnvironments[(plaidEnvironment || 'sandbox')],
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PlaidSecret,
+      'PLAID-CLIENT-ID': plaidClientId,
+      'PLAID-SECRET': plaidSecret,
     },
   },
 });
 const plaidClient = new PlaidApi(configuration);
 
-app.get('/status', async (req, res) => {
+app.get('/status', async (req: Request, res: Response) => {
   res.status(200).json({ message: 'Server is running' });
 })
 
-app.post('/linkToken', async (req, res) => {
+app.post('/linkToken', async (req: Request, res: Response) => {
   try {
     const response = await plaidClient.linkTokenCreate({
       user: {
@@ -73,7 +78,7 @@ app.post('/linkToken', async (req, res) => {
   }
 });
 
-app.post('/accessToken', async (req, res) => {
+app.post('/accessToken', async (req: Request, res: Response) => {
   try {
     const public_token = req.body?.public_token;
     const response = await plaidClient.itemPublicTokenExchange({ public_token });
@@ -88,7 +93,7 @@ app.post('/accessToken', async (req, res) => {
   }
 });
 
-app.post('/balances', async (req, res) => {
+app.post('/balances', async (req: Request, res: Response) => {
   try {
     const request = { access_token: req.body?.access_token };
     const response = await plaidClient.accountsBalanceGet(request);
@@ -101,7 +106,7 @@ app.post('/balances', async (req, res) => {
   }
 });
 
-app.post('/transactions', async (req, res) => {
+app.post('/transactions', async (req: Request, res: Response) => {
   try {
     const request = { access_token: req.body?.access_token };
     const response = await plaidClient.transactionsSync(request);
