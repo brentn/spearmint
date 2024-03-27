@@ -40,7 +40,7 @@ export class MainEffects {
     switchMap(([_, state]) => concat(
       of(startLoad('refresh')),
       ...state.accounts
-        .filter(account => ((Date.now() - account.lastUpdated.getTime()) > (MIN_REFRESH_FREQUENCY * 60 * 1000)))
+        .filter(account => ((Date.now() - (account.lastUpdated?.getTime() ?? 0)) > (MIN_REFRESH_FREQUENCY * 60 * 1000)))
         .filter(account => !!account.accessToken)
         .map(account => ({ accessToken: account.accessToken!, cursor: account.cursor }))
         .reduce((acc: { accessToken: string, cursor: string | undefined }[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])

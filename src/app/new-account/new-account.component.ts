@@ -66,7 +66,7 @@ export class NewAccountComponent {
             currency: 'CAD',
             accessToken: data.accessToken,
             itemId: data.itemId,
-            lastUpdated: new Date()
+            lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth(), -1),
           })))
         });
         this.store.dispatch(refreshAccounts())

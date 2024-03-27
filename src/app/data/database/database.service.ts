@@ -4,8 +4,8 @@ import { Observable, map, tap } from 'rxjs';
 import { BalanceDTO } from '../types/balanceDTO';
 import { TransactionsDTO } from '../types/transactionsDTO';
 
-const API = 'https://spearmint-imnj.onrender.com';
-// const API = 'http://localhost:4000';
+// const API = 'https://spearmint-imnj.onrender.com';
+const API = 'http://localhost:4000';
 
 @Injectable({
   providedIn: 'root'
