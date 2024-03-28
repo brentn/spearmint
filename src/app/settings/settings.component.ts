@@ -20,9 +20,6 @@ export class SettingsComponent {
   subscriptions: Subscription[] = [];
 
   form = new FormGroup({
-    clientId: new FormControl<string>('', { updateOn: 'blur' }),
-    secret: new FormControl<string>('', { updateOn: 'blur' }),
-    linkToken: new FormControl<string>('', { updateOn: 'blur' }),
     showGraph: new FormControl<boolean>(true, { updateOn: 'blur' }),
   });
 
@@ -32,17 +29,11 @@ export class SettingsComponent {
     this.subscriptions = [
       this.store.select(configuration).subscribe(config => {
         this.form.patchValue({
-          linkToken: config.plaid.linkToken,
           showGraph: config.showGraph
         }, { emitEvent: false })
       }),
       this.form.valueChanges.subscribe(value => {
         this.store.dispatch(updateConfiguration({
-          plaid: {
-            clientId: value.clientId || '',
-            secret: value.secret || '',
-            linkToken: value.linkToken || ''
-          },
           showGraph: !!value.showGraph
         }))
       })

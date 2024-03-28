@@ -59,7 +59,11 @@ export class MainEffects {
           const result: Account[] = [];
           dto.forEach(item => {
             const account = accounts.find(a => a.id === item.account_id);
-            if (account) result.push(new Account({ ...account, balance: item.balances.current }));
+            if (account) result.push(new Account({
+              ...account,
+              balance: item.balances.current,
+              lastUpdated: new Date()
+            }));
           });
           return result;
         }),
@@ -76,7 +80,11 @@ export class MainEffects {
       of(startLoad('getTransactions')),
       this.db.transactions$(action.payload).pipe(
         switchMap(response => {
-          const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({ ...account, cursor: response.next_cursor })));
+          const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
+            ...account,
+            cursor: response.next_cursor,
+            lastUpdated: new Date()
+          })));
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
           const addAction = addTransactions(response.added.map(item => new Transaction({
             id: item.transaction_id,
