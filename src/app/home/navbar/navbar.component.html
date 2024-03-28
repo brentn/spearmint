@@ -3,11 +3,11 @@
     <div></div>
     <div class="d-flex">
       <div class="nav-link me-4" role="button" title="settings" [routerLink]="['settings']">
-        <fa-icon [icon]="settingsIcon"></fa-icon>
+        <fa-icon [icon]="settingsIcon" size="2x"></fa-icon>
       </div>
       <div class="nav-item dropdown me-3" role="button" (click)="showDropdown=!showDropdown">
         <div class="nav-link">
-          <fa-icon [icon]="addIcon"></fa-icon>
+          <fa-icon [icon]="addIcon" size="2x"></fa-icon>
         </div>
         <div class="dropdown-menu dropdown-menu-end" [class.show]="showDropdown">
           <span class="dropdown-item" [routerLink]="['accounts/new']">Add Account</span>
