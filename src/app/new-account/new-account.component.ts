@@ -26,6 +26,7 @@ export class NewAccountComponent {
 
   linkToken$ = this.store.select(linkToken).pipe(
     filter(token => token !== undefined),
+    take(1),
     map(token => {
       this.plaidLinkService.createPlaid({
         token: token,
@@ -37,7 +38,7 @@ export class NewAccountComponent {
         handler.open();
       });
     })
-  );
+  ).subscribe();
 
   constructor(private router: Router, private store: Store<AppState>, private plaidLinkService: NgxPlaidLinkService, private db: DatabaseService) { }
 
