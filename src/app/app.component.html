@@ -1,5 +1,9 @@
 <div class="background bg-secondary"></div>
 
+<div class="refresh text-center" [class.show]="isRefreshing$|async">
+  <img src="assets/loading.gif" width="48px">
+</div>
+
 <div *ngIf="(user$|async)">
   <router-outlet></router-outlet>
 </div>

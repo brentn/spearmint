@@ -17,6 +17,7 @@ export class AccountTypeComponent {
 
   constructor(private store: Store<MainState>) { }
 
+  get displayName(): string | undefined { return this.accountType?.replace('depository', 'bank'); }
   get totalBalance(): number { return this.accounts.reduce((acc, account) => acc + account.balance, 0); }
 
   onToggle(): void { this.isCollapsed = !this.isCollapsed; }

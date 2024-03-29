@@ -21,11 +21,17 @@ export const initialState: MainState = {
 const reducer = createReducer(initialState,
   on(loggedIn, (state, action) => ({ ...state, user: action.payload })),
   on(reset, (state) => ({ ...state, accounts: [], transactions: [] })),
-  on(restoreState, (state, action) => ({ ...action.payload.main, linkToken: undefined, user: state.user, })),
   on(updateConfiguration, (state, action) => ({ ...state, configuration: action.payload })),
   on(startLoad, (state, action) => ({ ...state, loading: [...state.loading, action.payload] })),
   on(endLoad, (state, action) => ({ ...state, loading: state.loading.filter((_, i) => i !== state.loading.indexOf(action.payload)) })),
   on(setLinkToken, (state, action) => ({ ...state, linkToken: action.payload })),
+  on(restoreState, (state, action) => ({
+    ...action.payload.main,
+    accounts: action.payload.main.accounts.map(account => new Account(account)),
+    linkToken: undefined,
+    user: state.user,
+    loading: []
+  })),
   on(addAccount, (state, action) => ({
     ...state,
     accounts: [...state.accounts, action.payload]

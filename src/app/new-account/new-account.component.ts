@@ -54,6 +54,7 @@ export class NewAccountComponent {
   }
 
   onPlaidSuccess(publicToken: string, metadata: PlaidSuccessMetadata): void {
+    console.debug('METADATA:', metadata);
     this.db.exchangePublicToken$(publicToken).pipe(
       tap((data: { accessToken: string, itemId: string }) => {
         metadata.accounts.forEach(account => {

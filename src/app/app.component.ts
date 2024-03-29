@@ -3,7 +3,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { filter, take, tap } from 'rxjs';
 import { initialize, loggedIn, saveState } from './data/state/actions';
-import { accounts, user } from './data/state/selectors';
+import { accounts, isRefreshing, user } from './data/state/selectors';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
 
 export const ENVIRONMENT = 'sandbox';
@@ -15,12 +15,14 @@ export const ENVIRONMENT = 'sandbox';
 })
 export class AppComponent {
   user$ = this.store.select(user);
+  isRefreshing$ = this.store.select(isRefreshing);
 
   constructor(private store: Store<AppState>, private authService: SocialAuthService, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.store.dispatch(initialize());
     this.authService.authState.pipe(
+      filter(user => !!user),
       tap(user => this.store.dispatch(loggedIn(user))),
     ).subscribe();
     this.refreshAfterStateRestored();

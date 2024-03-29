@@ -1,6 +1,6 @@
 <div class="group bg-light rounded p-3">
   <div class="d-flex justify-content-between larger" role="button" (click)="onToggle()">
-    <div class="text-primary">{{accountType|titlecase}}</div>
+    <div class="text-primary">{{displayName|titlecase}}</div>
     <div>{{totalBalance|currency}}</div>
   </div>
   <div *ngFor="let account of accounts" class="item" [class.hidden]="isCollapsed">

@@ -1,5 +1,9 @@
-* Mobile only
-* Save in Google Drive?
+Customize account name in settings
+hide hidden accounts
+hide switches don't work
+no transactions downloading?
+transactions back button
+
 * Biometrics
 * Budgets
 

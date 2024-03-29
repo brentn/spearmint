@@ -6,3 +6,16 @@
   right: 0;
   z-index: -1;
 }
+
+.refresh {
+  position: fixed;
+  top: -5em;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  transition: top 1s;
+}
+
+.refresh.show {
+  top: 3em;
+}

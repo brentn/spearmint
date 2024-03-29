@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
 import { addTransactions, endLoad, getAccountBalances, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, removeTransaction, restoreState, saveState, setLinkToken, startLoad, stateRestored, updateAccount, updateTransaction } from "./actions";
-import { concat, concatMap, filter, finalize, from, map, of, switchMap, take, tap, withLatestFrom } from "rxjs";
+import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { LocalStorageService } from "../database/local-storage.service";
@@ -53,7 +53,7 @@ export class MainEffects {
     ofType(getAccountBalances),
     withLatestFrom(this.store.select(accounts)),
     switchMap(([action, accounts]) => concat(
-      of(startLoad('getBalances')),
+      of(startLoad('refreshBalances')),
       this.db.accountBalances$(action.payload).pipe(
         map(dto => {
           const result: Account[] = [];
@@ -68,7 +68,7 @@ export class MainEffects {
           return result;
         }),
         switchMap(accounts => accounts.map(account => updateAccount(account))),
-        finalize(() => { this.store.dispatch(endLoad('getBalances')) })
+        finalize(() => { this.store.dispatch(endLoad('refreshBalances')) })
       )
     ))
   ));
@@ -77,7 +77,7 @@ export class MainEffects {
     ofType(getLatestTransactions),
     withLatestFrom(this.store.select(accounts), this.store.select(transactions)),
     switchMap(([action, accounts, transactions]) => concat(
-      of(startLoad('getTransactions')),
+      of(startLoad('refreshTransactions')),
       this.db.transactions$(action.payload).pipe(
         switchMap(response => {
           const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
@@ -109,7 +109,12 @@ export class MainEffects {
             }));
           });
           return [...accountActions, ...removeActions, addAction, ...updateActions];
-        })
+        }),
+        finalize(() => { this.store.dispatch(endLoad('refreshTransactions')) }),
+        catchError(() => concat(accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
+          ...account,
+          failure: true
+        })))))
       )
     ))
   ));
@@ -117,12 +122,16 @@ export class MainEffects {
   saveState$ = createEffect(() => this.actions$.pipe(
     ofType(saveState),
     withLatestFrom(this.store),
-    tap(([_, state]) => this.persistence.saveState(state))
+    tap(([_, state]) => {
+      this.store.dispatch(startLoad('savingState'));
+      this.persistence.saveState(state);
+      this.store.dispatch(endLoad('savingState'));
+    })
   ), { dispatch: false });
 
   loadState$ = createEffect(() => this.actions$.pipe(
     ofType(loggedIn),
-    filter(user => !!user),
+    filter(action => !!action.payload),
     switchMap(() => of(
       restoreState(this.persistence.restoreState()),
       stateRestored()
