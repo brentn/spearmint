@@ -1,8 +1,7 @@
-Customize account name in settings
-hide hidden accounts
-hide switches don't work
 no transactions downloading?
 transactions back button
+show transactions for visible accounts only
+RxDb IndexedDB instead of LocalStorage
 
 * Biometrics
 * Budgets

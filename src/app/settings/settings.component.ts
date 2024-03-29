@@ -2,13 +2,11 @@ import { Component } from '@angular/core';
 import { FormArray, FormControl, FormGroup } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { PlaidOnSuccessArgs } from 'ngx-plaid-link';
 import { AppState } from '../app.module';
 import { Subscription } from 'rxjs';
-import { configuration } from '../data/state/selectors';
+import { accounts, configuration } from '../data/state/selectors';
 import { reset, updateAccount, updateConfiguration } from '../data/state/actions';
 import { Router } from '@angular/router';
-import { ENVIRONMENT } from '../app.component';
 import { Account } from '../data/models/account';
 
 @Component({
@@ -23,23 +21,17 @@ export class SettingsComponent {
 
   form = new FormGroup({
     showGraph: new FormControl<boolean>(true, { updateOn: 'blur' }),
-    accountVisibility: new FormArray([]),
+    accountRows: new FormArray([]),
   });
 
   constructor(private store: Store<AppState>, private router: Router) { }
 
   ngOnInit(): void {
+    const groupSubscriptions: Subscription[] = [];
     this.subscriptions = [
-      this.store.select(store => store.main).subscribe(store => {
-        this.accounts = store.accounts;
-        this.accountVisibility.clear();
-        store.accounts.forEach(account => {
-          this.accountVisibility.push(new FormGroup({
-            visible: new FormControl<boolean>(!account.active)
-          }))
-        })
+      this.store.select(configuration).subscribe(config => {
         this.form.patchValue({
-          showGraph: store.configuration.showGraph
+          showGraph: config.showGraph
         }, { emitEvent: false })
       }),
       this.form.get('showGraph')!.valueChanges.subscribe(value => {
@@ -47,24 +39,35 @@ export class SettingsComponent {
           showGraph: !!value
         }))
       }),
-      this.form.get('accountVisibility')!.valueChanges.subscribe(values => {
-        this.accounts.forEach((account, index) => {
-          if (account.active !== values[index]) {
+      this.store.select(accounts).subscribe(accounts => {
+        this.accounts = accounts;
+        this.accountRows.clear();
+        accounts.forEach(account => {
+          const formGroup = (new FormGroup({
+            accountId: new FormControl<string>(account.id),
+            customName: new FormControl<string>(account.displayName, { updateOn: 'blur' }),
+            visible: new FormControl<boolean>(account.active)
+          }));
+          groupSubscriptions.push(formGroup.valueChanges.subscribe(value => {
+            const account = accounts.find(a => a.id === value.accountId);
             this.store.dispatch(updateAccount(new Account({
               ...account,
-              active: !values[index]
+              displayName: value.customName,
+              active: value.visible
             })));
-          }
+          }))
+          this.accountRows.push(formGroup);
         })
       }),
-    ]
+    ];
+    this.subscriptions = this.subscriptions.concat(groupSubscriptions)
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.forEach(subscription => subscription.unsubscribe())
+    this.subscriptions.forEach(subscription => subscription.unsubscribe());
   }
 
-  get accountVisibility(): FormArray { return this.form.get('accountVisibility') as FormArray; }
+  get accountRows(): FormArray { return this.form.get('accountRows') as FormArray; }
 
   onResetAllData(): void {
     if (confirm('Are you sure you want to DELETE all account and transaction data?')) {

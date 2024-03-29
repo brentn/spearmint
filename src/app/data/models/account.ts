@@ -20,7 +20,7 @@ export class Account {
     this.id = incoming.id;
     this.institution = incoming.institution;
     this.name = incoming.name;
-    this.displayName = incoming.customName || incoming.name;
+    this.displayName = incoming.displayName || incoming.name;
     this.type = incoming.type;
     this.active = incoming.active;
     this.balance = incoming.balance;

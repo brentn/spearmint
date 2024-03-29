@@ -62,13 +62,18 @@ export class MainEffects {
             if (account) result.push(new Account({
               ...account,
               balance: item.balances.current,
-              lastUpdated: new Date()
+              lastUpdated: new Date(),
+              failure: undefined
             }));
           });
           return result;
         }),
         switchMap(accounts => accounts.map(account => updateAccount(account))),
-        finalize(() => { this.store.dispatch(endLoad('refreshBalances')) })
+        finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),
+        catchError(() => concat(accounts.filter(a => a.accessToken === action.payload).map(account => updateAccount(new Account({
+          ...account,
+          failure: true
+        })))))
       )
     ))
   ));

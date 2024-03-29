@@ -1,4 +1,4 @@
 # Spearmint
-ng deploy --base-href=/spearmint/
-Deploy: 
+Deploy: ng deploy --base-href=/spearmint/
+
 

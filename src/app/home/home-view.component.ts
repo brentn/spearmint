@@ -27,6 +27,7 @@ export class HomeViewComponent {
     }
   }
 
+  get visibleAccounts(): Account[] { return this.accounts?.filter(a => a.active) || []; }
   get recentTransactions(): Transaction[] { return (this.transactions ?? []).slice(0, 5); }
   get uncategorizedTransactions(): Transaction[] | undefined {
     const transactions = this.transactions?.filter(a => a.categoryId === undefined).slice(0, 5);
@@ -34,7 +35,7 @@ export class HomeViewComponent {
     else return undefined;
   }
 
-  accountsOfType(accountType: AccountType): Account[] { return (this.accounts || [])?.filter(a => a.type === accountType); }
+  accountsOfType(accountType: AccountType): Account[] { return this.visibleAccounts.filter(a => a.type === accountType); }
 
 }
 
