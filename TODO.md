@@ -1,6 +1,4 @@
 no transactions downloading?
-transactions back button
-show transactions for visible accounts only
 RxDb IndexedDB instead of LocalStorage
 
 * Biometrics

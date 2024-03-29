@@ -18,16 +18,16 @@ export class HomeViewComponent {
   @Input() categories: Category[] | null = null;
   @Input() budgets: Budget[] | null = null;
 
-  accountTypes: AccountType[] = [];
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['accounts']) {
-      this.accountTypes = (this.accounts?.reduce((acc: AccountType[], account) => acc.includes(account.type) ? acc : acc.concat(account.type), []) ?? [])
-        .sort((a, b) => a.localeCompare(b));
-    }
   }
 
   get visibleAccounts(): Account[] { return this.accounts?.filter(a => a.active) || []; }
+  get accountTypes(): AccountType[] {
+    return (this.visibleAccounts ?? [])
+      .reduce((acc: AccountType[], account) => acc.includes(account.type) ? acc : [...acc, account.type], [])
+      .sort((a, b) => a.localeCompare(b));
+  }
   get recentTransactions(): Transaction[] { return (this.transactions ?? []).slice(0, 5); }
   get uncategorizedTransactions(): Transaction[] | undefined {
     const transactions = this.transactions?.filter(a => a.categoryId === undefined).slice(0, 5);

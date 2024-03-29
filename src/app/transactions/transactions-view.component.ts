@@ -2,6 +2,7 @@ import { Component, Input, SimpleChanges } from '@angular/core';
 import { Category } from '../data/types/category.type';
 import { Account } from '../data/models/account';
 import { Transaction } from '../data/models/transaction';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
   selector: 'transactions-view',
@@ -13,6 +14,7 @@ export class TransactionsViewComponent {
   @Input() categories!: Category[];
   @Input() accounts!: Account[];
   uncategorizedTransactions: Transaction[] = [];
+  backIcon = faArrowLeft;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['transactions']) {
