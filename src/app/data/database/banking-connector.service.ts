@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { BalanceDTO } from '../types/balanceDTO';
 import { TransactionsDTO } from '../types/transactionsDTO';
 
@@ -38,13 +38,25 @@ export class BankingConnectorService {
 
   accountBalances$(accessToken: string): Observable<BalanceDTO[]> {
     return this.http.post(`${API}/balances`, { access_token: accessToken }, this.headers).pipe(
-      map((dto: any) => dto.accounts)
+      map((dto: any) => dto.accounts),
+      catchError((error: HttpErrorResponse) => {
+        switch (error.error.error_code) {
+          case 401: console.log('401'); break;
+        }
+        return of();
+      })
     )
   }
 
   transactions$(params: { accessToken: string, cursor: string | undefined }): Observable<TransactionsDTO> {
     return this.http.post(`${API}/transactions`, { access_token: params.accessToken, cursor: params.cursor }, this.headers).pipe(
-      map((dto: any) => dto.transactions)
+      map((dto: any) => dto.transactions),
+      catchError((error: HttpErrorResponse) => {
+        switch (error.error.error_code) {
+          case 401: console.log('401'); break;
+        }
+        return of();
+      })
     )
   }
 

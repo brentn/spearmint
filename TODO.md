@@ -1,4 +1,3 @@
-refresh accounts disabled
 
 no transactions downloading?
 RxDb IndexedDB instead of LocalStorage

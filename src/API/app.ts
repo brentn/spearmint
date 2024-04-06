@@ -100,9 +100,12 @@ app.post('/balances', async (req: Request, res: Response) => {
     return res.status(200).json({
       accounts: response.data.accounts
     });
-  } catch (error) {
-    console.error('Error getting account balances:', error);
-    res.status(500).json({ message: 'Failed to get account balances' });
+  } catch (error: any) {
+    console.error('Error getting account balances:', error.data);
+    switch (error.data.error_code) {
+      case 'ITEM_LOGIN_REQUIRED': res.status(401).json({ message: 'Item login required' }); break;
+      default: res.status(500).json({ message: 'Failed to get account balances' });
+    }
   }
 });
 
@@ -113,9 +116,13 @@ app.post('/transactions', async (req: Request, res: Response) => {
     return res.status(200).json({
       transactions: response.data
     })
-  } catch (error) {
-    console.error('Error getting transations:', error);
-    res.status(500).json({ message: 'Failed to get transactions' });
+  } catch (error: any) {
+    console.error('Error getting transations:', error.data);
+    switch (error.data.error_code) {
+      case 'PRODUCT_NOT_READY': res.status(202).json({ message: 'Product not ready' }); break;
+      case 'ITEM_LOGIN_REQUIRED': res.status(401).json({ message: 'Item login required' }); break;
+      default: res.status(500).json({ message: 'Failed to get transactions' });
+    }
   }
 })
 
