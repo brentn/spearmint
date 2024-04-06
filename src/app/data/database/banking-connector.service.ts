@@ -40,7 +40,7 @@ export class BankingConnectorService {
     return this.http.post(`${API}/balances`, { access_token: accessToken }, this.headers).pipe(
       map((dto: any) => dto.accounts),
       catchError((error: HttpErrorResponse) => {
-        switch (error.error.error_code) {
+        switch (error.status) {
           case 401: console.log('401'); break;
         }
         return of();
@@ -52,7 +52,7 @@ export class BankingConnectorService {
     return this.http.post(`${API}/transactions`, { access_token: params.accessToken, cursor: params.cursor }, this.headers).pipe(
       map((dto: any) => dto.transactions),
       catchError((error: HttpErrorResponse) => {
-        switch (error.error.error_code) {
+        switch (error.status) {
           case 401: console.log('401'); break;
         }
         return of();
