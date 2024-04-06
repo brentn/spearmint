@@ -1,3 +1,7 @@
+store dates as numbers
+refresh accounts disabled
+page doesnt refresh when adding / deleting accounts
+
 no transactions downloading?
 RxDb IndexedDB instead of LocalStorage
 

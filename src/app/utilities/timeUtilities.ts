@@ -1,5 +1,5 @@
 export class Time {
-  static Ago(pastDate: Date | undefined): string {
+  static Ago(pastDate: number | Date | undefined): string {
     if (!pastDate) return '';
     if (!(pastDate instanceof Date)) pastDate = new Date(pastDate);
     const now = new Date();

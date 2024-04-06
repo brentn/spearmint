@@ -2,7 +2,7 @@ import { ConfidenceLevel } from "../types/confidenceLevel.type";
 
 export class Transaction {
   id: string;
-  date: Date;
+  date: number;
   accountId: string;
   merchant: string;
   name: string;
@@ -16,7 +16,7 @@ export class Transaction {
     if (!incoming.date) throw new Error('Transaction must have a date');
     if (!incoming.accountId) throw new Error('Transaction must have an accountId');
     this.id = incoming.id;
-    this.date = incoming.date instanceof Date ? incoming.date : new Date(incoming.date);
+    this.date = new Date(incoming.date).getTime();
     this.accountId = incoming.accountId;
     this.merchant = incoming.merchant ?? '';
     this.name = incoming.name ?? '';

@@ -1,13 +1,12 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
-import { NgxPlaidLinkService, PlaidEventMetadata, PlaidLinkHandler, PlaidOnEventArgs, PlaidOnSuccessArgs, PlaidSuccessMetadata } from 'ngx-plaid-link';
+import { NgxPlaidLinkService, PlaidEventMetadata, PlaidLinkHandler, PlaidSuccessMetadata } from 'ngx-plaid-link';
 import { addAccount, getLinkToken, refreshAccounts } from '../data/state/actions';
 import { Account } from '../data/models/account';
 import { AccountType } from '../data/types/accountType';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Router } from '@angular/router';
-import { ENVIRONMENT } from '../app.component';
 import { linkToken } from '../data/state/selectors';
 import { filter, map, take, tap } from 'rxjs';
 import { DatabaseService } from '../data/database/database.service';
@@ -22,7 +21,6 @@ export class NewAccountComponent {
 
   @ViewChild('plaid') plaid: ElementRef | undefined;
   backIcon = faArrowLeft;
-  environment = ENVIRONMENT;
 
   linkToken$ = this.store.select(linkToken).pipe(
     filter(token => token !== undefined),

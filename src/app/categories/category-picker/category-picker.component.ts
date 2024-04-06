@@ -1,10 +1,8 @@
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
-import { Store } from '@ngrx/store';
-import { Observable, Subject, Subscription, map } from 'rxjs';
-import { AppState } from 'src/app/app.module';
-import { categories } from 'src/app/data/state/selectors';
+import { Observable, Subscription, map } from 'rxjs';
+import { DBStateService } from 'src/app/data/state/dbState.service';
 import { Category } from 'src/app/data/types/category.type';
 
 @Component({
@@ -29,13 +27,11 @@ export class CategoryPickerComponent {
     search: new FormControl(''),
   });
 
-  categories$ = this.store.select(categories);
-
-  constructor(private store: Store<AppState>) { };
+  constructor(private dbState: DBStateService) { };
 
   ngOnInit(): void {
     this.subscriptions = [
-      this.store.select(categories).pipe(
+      this.dbState.categories$.pipe(
         map(categories => {
           this.sortedCategories = [...categories].sort((a, b) => a.id.localeCompare(b.id));
           this.filterCategories();

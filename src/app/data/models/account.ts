@@ -14,7 +14,7 @@ export class Account {
   itemId: string;
   cursor: string | undefined;
   failure?: boolean;
-  lastUpdated: Date;
+  lastUpdated: number;
 
   constructor(incoming: any) {
     this.id = incoming.id;
@@ -29,7 +29,7 @@ export class Account {
     this.itemId = incoming.itemId;
     this.cursor = incoming.cursor;
     this.failure = incoming.failure;
-    this.lastUpdated = incoming.lastUpdated instanceof Date ? incoming.lastUpdated : new Date(incoming.lastUpdated);
+    this.lastUpdated = new Date(incoming.lastUpdated).getTime();
   }
 
 }

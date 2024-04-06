@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { map, of } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { AppState } from '../app.module';
-import { configuration, budgets, accounts, categories, transactions } from '../data/state/selectors';
+import { configuration } from '../data/state/selectors';
+import { DBStateService } from '../data/state/dbState.service';
 
 @Component({
   template: `
@@ -17,16 +18,15 @@ import { configuration, budgets, accounts, categories, transactions } from '../d
 })
 export class HomeComponent {
   configuration$ = this.store.select(configuration);
-  budgets$ = this.store.select(budgets);
-  accounts$ = this.store.select(accounts);
-  categories$ = this.store.select(categories);
-  transactions$ = this.store.select(transactions).pipe(
+  budgets$ = this.dbState.budgets$;
+  categories$ = this.dbState.categories$;
+  accounts$ = this.dbState.accounts$
+  transactions$ = this.dbState.transactions$.pipe(
     map(a => [...a].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())),
   );
 
-  constructor(private store: Store<AppState>) { }
+  constructor(private store: Store<AppState>, private dbState: DBStateService) { }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void { }
 
 }

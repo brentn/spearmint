@@ -4,10 +4,11 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { Subscription } from 'rxjs';
-import { accounts, configuration } from '../data/state/selectors';
+import { configuration } from '../data/state/selectors';
 import { reset, updateAccount, updateConfiguration } from '../data/state/actions';
 import { Router } from '@angular/router';
 import { Account } from '../data/models/account';
+import { DBStateService } from '../data/state/dbState.service';
 
 @Component({
   selector: 'app-settings',
@@ -24,7 +25,7 @@ export class SettingsComponent {
     accountRows: new FormArray([]),
   });
 
-  constructor(private store: Store<AppState>, private router: Router) { }
+  constructor(private store: Store<AppState>, private router: Router, private dbState: DBStateService) { }
 
   ngOnInit(): void {
     const groupSubscriptions: Subscription[] = [];
@@ -39,7 +40,7 @@ export class SettingsComponent {
           showGraph: !!value
         }))
       }),
-      this.store.select(accounts).subscribe(accounts => {
+      this.dbState.accounts$.subscribe(accounts => {
         this.accounts = accounts;
         this.accountRows.clear();
         accounts.forEach(account => {

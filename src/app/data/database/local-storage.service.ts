@@ -1,17 +1,16 @@
 import { Injectable } from '@angular/core';
-import { IPersistence } from './iPersistence.ingerface';
 import { AppState } from 'src/app/app.module';
 import { initialState as mainState } from '../state/reducer';
 import { Store } from '@ngrx/store';
 import { user } from '../state/selectors';
-import { Observable, filter, map, take, tap } from 'rxjs';
+import { filter, take, tap } from 'rxjs';
 
 const KEY = 'SpearmintData';
 
 @Injectable({
   providedIn: 'root'
 })
-export class LocalStorageService implements IPersistence {
+export class LocalStorageService {
   userId: string | undefined
 
   constructor(private store: Store<AppState>) {

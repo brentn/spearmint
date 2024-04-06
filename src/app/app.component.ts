@@ -1,12 +1,13 @@
-import { ChangeDetectorRef, Component, HostListener } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { filter, take, tap } from 'rxjs';
 import { initialize, loggedIn, saveState } from './data/state/actions';
-import { accounts, isRefreshing, user } from './data/state/selectors';
+import { isRefreshing, user } from './data/state/selectors';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
+import { DBStateService } from './data/state/dbState.service';
 
-export const ENVIRONMENT = 'sandbox';
+import 'zone.js/plugins/zone-patch-rxjs'; // This is required for Angular to work with RxJS
 
 @Component({
   selector: 'app-root',
@@ -17,7 +18,8 @@ export class AppComponent {
   user$ = this.store.select(user);
   isRefreshing$ = this.store.select(isRefreshing);
 
-  constructor(private store: Store<AppState>, private authService: SocialAuthService, private cd: ChangeDetectorRef) { }
+
+  constructor(private store: Store<AppState>, private authService: SocialAuthService, private dbState: DBStateService) { }
 
   ngOnInit(): void {
     this.store.dispatch(initialize());
@@ -25,23 +27,15 @@ export class AppComponent {
       filter(user => !!user),
       tap(user => this.store.dispatch(loggedIn(user))),
     ).subscribe();
-    this.refreshAfterStateRestored();
   }
 
   @HostListener('window:beforeunload')
   saveState(): void {
     this.store.select(state => state).pipe(
       take(1),
-      filter(state => state.main.accounts.length > 0),
+      filter(state => !!state.main.user),
       tap(() => this.store.dispatch(saveState()))
     ).subscribe()
   }
 
-  private refreshAfterStateRestored(): void {
-    this.store.select(accounts).pipe(
-      take(1),
-      tap(() => this.cd.detectChanges()),
-    ).subscribe();
-
-  }
 }
