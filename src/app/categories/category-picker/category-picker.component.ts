@@ -2,7 +2,7 @@ import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@
 import { FormControl, FormGroup } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Observable, Subscription, map } from 'rxjs';
-import { DBStateService } from 'src/app/data/state/dbState.service';
+import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Category } from 'src/app/data/types/category.type';
 
 @Component({

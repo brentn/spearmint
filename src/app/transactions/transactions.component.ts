@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { DBStateService } from '../data/state/dbState.service';
+import { DBStateService } from '../data/database/dbState.service';
 
 
 

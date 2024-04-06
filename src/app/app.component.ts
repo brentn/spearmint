@@ -5,7 +5,7 @@ import { filter, take, tap } from 'rxjs';
 import { initialize, loggedIn, saveState } from './data/state/actions';
 import { isRefreshing, user } from './data/state/selectors';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
-import { DBStateService } from './data/state/dbState.service';
+import { DBStateService } from './data/database/dbState.service';
 
 import 'zone.js/plugins/zone-patch-rxjs'; // This is required for Angular to work with RxJS
 

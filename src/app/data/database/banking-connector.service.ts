@@ -10,7 +10,7 @@ const API = 'https://spearmint-imnj.onrender.com';
 @Injectable({
   providedIn: 'root'
 })
-export class DatabaseService {
+export class BankingConnectorService {
   headers = { headers: new HttpHeaders().set('Content-Type', 'application/json') };
 
 

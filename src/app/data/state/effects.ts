@@ -1,13 +1,14 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction } from "./actions";
-import { concat, filter, map, of, switchMap, tap, withLatestFrom } from "rxjs";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved } from "./actions";
+import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { LocalStorageService } from "../database/local-storage.service";
-import { DatabaseService } from "../database/database.service";
+import { BankingConnectorService } from "../database/banking-connector.service";
 import { Account } from "../models/account";
-import { DBStateService } from "./dbState.service";
+import { DBStateService } from "../database/dbState.service";
+import { Transaction } from "../models/transaction";
 
 const MIN_REFRESH_FREQUENCY = 120; //minutes
 
@@ -17,19 +18,19 @@ export class MainEffects {
   constructor(
     private actions$: Actions,
     private store: Store<AppState>,
-    private db: DatabaseService,
+    private bank: BankingConnectorService,
     private dbState: DBStateService,
     private persistence: LocalStorageService
   ) { }
 
   spinUpServer$ = createEffect(() => this.actions$.pipe(
     ofType(initialize),
-    tap(() => this.db.spinUpServer$().subscribe())
+    tap(() => this.bank.spinUpServer$().subscribe())
   ), { dispatch: false });
 
   getLinkToken$ = createEffect(() => this.actions$.pipe(
     ofType(getLinkToken),
-    switchMap(() => this.db.getLinkToken$().pipe(
+    switchMap(() => this.bank.getLinkToken$().pipe(
       map(linkToken => setLinkToken(linkToken))
     ))
   ));
@@ -58,11 +59,11 @@ export class MainEffects {
     map(transaction => transactionUpdated(transaction))
   ));
 
-  // removeTransaction$ = createEffect(() => this.actions$.pipe(
-  //   ofType(removeTransaction),
-  //   switchMap(action => this.dbState.Transactions.delete$(action.payload)),
-  //   map(transaction => transactionRemoved(transaction))
-  // ));
+  removeTransaction$ = createEffect(() => this.actions$.pipe(
+    ofType(removeTransaction),
+    switchMap(action => this.dbState.Transactions.delete$(action.payload)),
+    map(transaction => transactionRemoved(transaction))
+  ));
 
   reset$ = createEffect(() => this.actions$.pipe(
     ofType(reset),
@@ -85,80 +86,80 @@ export class MainEffects {
     ))
   ));
 
-  // getAccountBalances$ = createEffect(() => this.actions$.pipe(
-  //   ofType(getAccountBalances),
-  //   withLatestFrom(this.store.select(accounts)),
-  //   switchMap(([action, accounts]) => concat(
-  //     of(startLoad('refreshBalances')),
-  //     this.db.accountBalances$(action.payload).pipe(
-  //       map(dto => {
-  //         const result: Account[] = [];
-  //         dto.forEach(item => {
-  //           const account = accounts.find(a => a.id === item.account_id);
-  //           if (account) result.push(new Account({
-  //             ...account,
-  //             balance: item.balances.current,
-  //             lastUpdated: new Date().getTime(),
-  //             failure: undefined
-  //           }));
-  //         });
-  //         return result;
-  //       }),
-  //       switchMap(accounts => accounts.map(account => updateAccount(account))),
-  //       finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),
-  //       catchError(() => concat(accounts.filter(a => a.accessToken === action.payload).map(account => updateAccount(new Account({
-  //         ...account,
-  //         failure: true
-  //       })))))
-  //     )
-  //   ))
-  // ));
+  getAccountBalances$ = createEffect(() => this.actions$.pipe(
+    ofType(getAccountBalances),
+    withLatestFrom(this.dbState.accounts$),
+    switchMap(([action, accounts]) => concat(
+      of(startLoad('refreshBalances')),
+      this.bank.accountBalances$(action.payload).pipe(
+        map(balances => {
+          const result: Account[] = [];
+          balances.forEach(balance => {
+            const account = accounts.find(a => a.id === balance.account_id);
+            if (account) result.push(new Account({
+              ...account,
+              balance: balance.balances.current,
+              lastUpdated: new Date().getTime(),
+              failure: undefined
+            }));
+          });
+          return result;
+        }),
+        switchMap(accounts => accounts.map(account => updateAccount(account))),
+        finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),
+        catchError(() => concat(accounts.filter(a => a.accessToken === action.payload).map(account => updateAccount(new Account({
+          ...account,
+          failure: true
+        })))))
+      )
+    ))
+  ));
 
-  // getLatestTransactions$ = createEffect(() => this.actions$.pipe(
-  //   ofType(getLatestTransactions),
-  //   withLatestFrom(this.store.select(accounts), this.store.select(transactions)),
-  //   switchMap(([action, accounts, transactions]) => concat(
-  //     of(startLoad('refreshTransactions')),
-  //     this.db.transactions$(action.payload).pipe(
-  //       switchMap(response => {
-  //         const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
-  //           ...account,
-  //           cursor: response.next_cursor,
-  //           lastUpdated: new Date()
-  //         })));
-  //         const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
-  //         const addAction = addTransactions(response.added.map(item => new Transaction({
-  //           id: item.transaction_id,
-  //           date: new Date(item.date).getTime(),
-  //           accountId: item.account_id,
-  //           amount: item.amount,
-  //           categoryId: item.personal_finance_category.detailed,
-  //           merchant: item.merchant_name,
-  //           name: item.name,
-  //         })));
-  //         const updateActions = response.modified.map(item => {
-  //           const existing = transactions.find(t => t.id === item.transaction_id);
-  //           return updateTransaction(new Transaction({
-  //             ...existing,
-  //             id: item.transaction_id,
-  //             date: new Date(item.date),
-  //             accountId: item.account_id,
-  //             amount: item.amount,
-  //             categoryId: item.personal_finance_category.detailed,
-  //             merchant: item.merchant_name,
-  //             name: item.name,
-  //           }));
-  //         });
-  //         return [...accountActions, ...removeActions, addAction, ...updateActions];
-  //       }),
-  //       finalize(() => { this.store.dispatch(endLoad('refreshTransactions')) }),
-  //       catchError(() => concat(accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
-  //         ...account,
-  //         failure: true
-  //       })))))
-  //     )
-  //   ))
-  // ));
+  getLatestTransactions$ = createEffect(() => this.actions$.pipe(
+    ofType(getLatestTransactions),
+    withLatestFrom(this.dbState.accounts$, this.dbState.transactions$),
+    switchMap(([action, accounts, transactions]) => concat(
+      of(startLoad('refreshTransactions')),
+      this.bank.transactions$(action.payload).pipe(
+        switchMap(response => {
+          const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
+            ...account,
+            cursor: response.next_cursor,
+            lastUpdated: new Date()
+          })));
+          const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
+          const addAction = addTransactions(response.added.map(item => new Transaction({
+            id: item.transaction_id,
+            date: new Date(item.date).getTime(),
+            accountId: item.account_id,
+            amount: item.amount,
+            categoryId: item.personal_finance_category.detailed,
+            merchant: item.merchant_name,
+            name: item.name,
+          })));
+          const updateActions = response.modified.map(item => {
+            const existing = transactions.find(t => t.id === item.transaction_id);
+            return updateTransaction(new Transaction({
+              ...existing,
+              id: item.transaction_id,
+              date: new Date(item.date),
+              accountId: item.account_id,
+              amount: item.amount,
+              categoryId: item.personal_finance_category.detailed,
+              merchant: item.merchant_name,
+              name: item.name,
+            }));
+          });
+          return [...accountActions, ...removeActions, addAction, ...updateActions];
+        }),
+        finalize(() => { this.store.dispatch(endLoad('refreshTransactions')) }),
+        catchError(() => concat(accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
+          ...account,
+          failure: true
+        })))))
+      )
+    ))
+  ));
 
   saveState$ = createEffect(() => this.actions$.pipe(
     ofType(saveState),
@@ -180,7 +181,5 @@ export class MainEffects {
   ));
 
 }
-function getAccountBalances(accessToken: string): any {
-  throw new Error("Function not implemented.");
-}
+
 

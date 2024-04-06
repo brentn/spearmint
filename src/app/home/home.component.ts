@@ -3,7 +3,7 @@ import { Store } from '@ngrx/store';
 import { map, tap } from 'rxjs';
 import { AppState } from '../app.module';
 import { configuration } from '../data/state/selectors';
-import { DBStateService } from '../data/state/dbState.service';
+import { DBStateService } from '../data/database/dbState.service';
 
 @Component({
   template: `

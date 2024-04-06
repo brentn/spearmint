@@ -32,10 +32,10 @@ import { CategoryItemComponent } from './categories/category-picker/item/categor
 import { MainState } from './data/state';
 import { mainReducer } from './data/state/reducer';
 import { MainEffects } from './data/state/effects';
-import { DatabaseService } from './data/database/database.service';
+import { BankingConnectorService } from './data/database/banking-connector.service';
 import { SnakecasePipe } from './utilities/snakecase.pipe';
 import { TokenInterceptorService } from './auth/interceptor/token-interceptor.service';
-import { DBStateService } from './data/state/dbState.service';
+import { DBStateService } from './data/database/dbState.service';
 
 export type AppState = {
   main: MainState
@@ -103,7 +103,7 @@ export type AppState = {
       useClass: TokenInterceptorService,
       multi: true
     },
-    DatabaseService,
+    BankingConnectorService,
     DBStateService,
   ],
   bootstrap: [AppComponent]

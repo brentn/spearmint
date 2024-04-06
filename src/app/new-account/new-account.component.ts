@@ -9,7 +9,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Router } from '@angular/router';
 import { linkToken } from '../data/state/selectors';
 import { filter, map, take, tap } from 'rxjs';
-import { DatabaseService } from '../data/database/database.service';
+import { BankingConnectorService } from '../data/database/banking-connector.service';
 
 @Component({
   selector: 'app-new-account',
@@ -38,7 +38,7 @@ export class NewAccountComponent {
     })
   ).subscribe();
 
-  constructor(private router: Router, private store: Store<AppState>, private plaidLinkService: NgxPlaidLinkService, private db: DatabaseService) { }
+  constructor(private router: Router, private store: Store<AppState>, private plaidLinkService: NgxPlaidLinkService, private bank: BankingConnectorService) { }
 
   ngOnInit(): void {
     this.store.dispatch(getLinkToken());
@@ -53,7 +53,7 @@ export class NewAccountComponent {
 
   onPlaidSuccess(publicToken: string, metadata: PlaidSuccessMetadata): void {
     console.debug('METADATA:', metadata);
-    this.db.exchangePublicToken$(publicToken).pipe(
+    this.bank.exchangePublicToken$(publicToken).pipe(
       tap((data: { accessToken: string, itemId: string }) => {
         metadata.accounts.forEach(account => {
           this.store.dispatch(addAccount(new Account({

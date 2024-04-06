@@ -3,7 +3,7 @@ import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode'
 import { RxDBStatePlugin } from 'rxdb/plugins/state';
 import { Injectable, isDevMode } from '@angular/core';
-import { BehaviorSubject, Observable, Subject, concatMap, filter, from, map, switchMap, take, tap } from 'rxjs';
+import { BehaviorSubject, Observable, filter, from, map, switchMap } from 'rxjs';
 import { Category, DEFAULT_CATEGORIES } from '../types/category.type';
 import { Budget } from '../types/budget.type';
 import { Account } from '../models/account';
@@ -20,22 +20,21 @@ export class DBStateService {
   private store: any;
 
   constructor() {
-    from(createRxDatabase({ name: 'spearmint', storage: getRxStorageDexie() })).pipe(
-      take(1),
-      switchMap(db => from(db.addState().then(store => {
+    createRxDatabase({ name: 'spearmint', storage: getRxStorageDexie() }).then(db => {
+      db.addState().then(store => {
         store.set('categories', (categories: Category[]) => categories || DEFAULT_CATEGORIES);
         store.set('budgets', (budgets: Budget[]) => budgets || []);
         store.set('accounts', (accounts: Account[]) => accounts || []);
         store.set('transactions', (transactions: Transaction[]) => transactions || []);
         this.store = store;
         this._ready$.next(true);
-      }))),
-    ).subscribe();
+      })
+    });
   }
-
 
   //Selectors
   get storeReady$(): Observable<boolean> { return this._ready$.pipe(filter(ready => ready)); }
+
   categories$: Observable<Category[]> = this._ready$.pipe(
     filter(ready => ready),
     switchMap(() => this.store.get$('categories') as Observable<Category[]>)
@@ -96,6 +95,14 @@ export class DBStateService {
         filter(ready => ready),
         switchMap(() => from(this.store.set('transactions', (transactions: Transaction[]) => transactions.map(t => t.id === transaction.id ? transaction : t))).pipe(
           map(() => transaction)
+        )),
+      );
+    },
+    delete$: (transactionId: string): Observable<string> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('transactions', (transactions: Transaction[]) => transactions.filter(t => t.id !== transactionId))).pipe(
+          map(() => transactionId)
         )),
       );
     },

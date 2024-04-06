@@ -8,7 +8,7 @@ import { configuration } from '../data/state/selectors';
 import { reset, updateAccount, updateConfiguration } from '../data/state/actions';
 import { Router } from '@angular/router';
 import { Account } from '../data/models/account';
-import { DBStateService } from '../data/state/dbState.service';
+import { DBStateService } from '../data/database/dbState.service';
 
 @Component({
   selector: 'app-settings',
