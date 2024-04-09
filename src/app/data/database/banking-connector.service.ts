@@ -28,6 +28,12 @@ export class BankingConnectorService {
     )
   }
 
+  updateLinkToken$(accessToken: string): Observable<string> {
+    return this.http.put(`${API}/linkToken`, { accessToken }, this.headers).pipe(
+      map((response: any) => response.link_token)
+    )
+  }
+
   exchangePublicToken$(publicToken: string): Observable<{ accessToken: string, itemId: string }> {
     return this.http.post(`${API}/accessToken`, {
       public_token: publicToken,
@@ -39,12 +45,6 @@ export class BankingConnectorService {
   accountBalances$(accessToken: string): Observable<BalanceDTO[]> {
     return this.http.post(`${API}/balances`, { access_token: accessToken }, this.headers).pipe(
       map((dto: any) => dto.accounts),
-      catchError((error: HttpErrorResponse) => {
-        switch (error.status) {
-          case 401: console.log('401'); break;
-        }
-        return of();
-      })
     )
   }
 

@@ -15,7 +15,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { HomeViewComponent } from './home/home-view.component';
 import { AccountComponent } from './home/account/account.component';
 import { AccountTypeComponent } from './home/account-type/account-type.component';
-import { NewAccountComponent } from './new-account/new-account.component';
+import { NewAccountComponent } from './home/account/new-account/new-account.component';
 import { SettingsComponent } from './settings/settings.component';
 import { NavbarComponent } from './home/navbar/navbar.component';
 import { TransactionsComponent } from './transactions/transactions.component';
@@ -36,6 +36,7 @@ import { BankingConnectorService } from './data/database/banking-connector.servi
 import { SnakecasePipe } from './utilities/snakecase.pipe';
 import { TokenInterceptorService } from './auth/interceptor/token-interceptor.service';
 import { DBStateService } from './data/database/dbState.service';
+import { UpdateAccountComponent } from './home/account/update-account/update-account.component';
 
 export type AppState = {
   main: MainState
@@ -63,6 +64,7 @@ export type AppState = {
     CategoryPickerComponent,
     CategoryItemComponent,
     SnakecasePipe,
+    UpdateAccountComponent,
   ],
   imports: [
     BrowserModule,

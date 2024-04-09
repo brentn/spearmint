@@ -16,6 +16,7 @@ export const restoreState = createAction('[Main] Restore state', (payload: AppSt
 export const stateRestored = createAction('[Main] State restored');
 
 export const getLinkToken = createAction('[Plaid] Get link token');
+export const getUpdateLinkToken = createAction('[Plaid] Get update link token', (payload: string) => ({ payload }));
 export const setLinkToken = createAction('[Plaid] - Set link token', (payload: string) => ({ payload }));
 
 export const updateConfiguration = createAction('[Configuration] Update configuration', (payload: Configuration) => ({ payload }));

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved } from "./actions";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, getUpdateLinkToken } from "./actions";
 import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
@@ -9,6 +9,7 @@ import { BankingConnectorService } from "../database/banking-connector.service";
 import { Account } from "../models/account";
 import { DBStateService } from "../database/dbState.service";
 import { Transaction } from "../models/transaction";
+import { Router } from "@angular/router";
 
 const MIN_REFRESH_FREQUENCY = 120; //minutes
 
@@ -21,6 +22,7 @@ export class MainEffects {
     private bank: BankingConnectorService,
     private dbState: DBStateService,
     private persistence: LocalStorageService
+    , private router: Router
   ) { }
 
   spinUpServer$ = createEffect(() => this.actions$.pipe(
@@ -30,7 +32,14 @@ export class MainEffects {
 
   getLinkToken$ = createEffect(() => this.actions$.pipe(
     ofType(getLinkToken),
-    switchMap(() => this.bank.getLinkToken$().pipe(
+    switchMap(action => this.bank.getLinkToken$().pipe(
+      map(linkToken => setLinkToken(linkToken))
+    ))
+  ));
+
+  getUpdateLinkToken$ = createEffect(() => this.actions$.pipe(
+    ofType(getUpdateLinkToken),
+    switchMap(action => this.bank.updateLinkToken$(action.payload).pipe(
       map(linkToken => setLinkToken(linkToken))
     ))
   ));
@@ -104,6 +113,12 @@ export class MainEffects {
             }));
           });
           return result;
+        }),
+        catchError(err => {
+          switch (err.status) {
+            case 401: this.router.navigate(['/accounts/update'], { queryParams: { accessToken: action.payload } });
+          }
+          return of([]);
         }),
         switchMap(accounts => accounts.map(account => updateAccount(account))),
         finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),

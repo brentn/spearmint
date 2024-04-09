@@ -1,15 +1,15 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { AppState } from '../app.module';
+import { AppState } from '../../../app.module';
 import { NgxPlaidLinkService, PlaidEventMetadata, PlaidLinkHandler, PlaidSuccessMetadata } from 'ngx-plaid-link';
-import { addAccount, getLinkToken, refreshAccounts } from '../data/state/actions';
-import { Account } from '../data/models/account';
-import { AccountType } from '../data/types/accountType';
+import { addAccount, getLinkToken, refreshAccounts } from '../../../data/state/actions';
+import { Account } from '../../../data/models/account';
+import { AccountType } from '../../../data/types/accountType';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Router } from '@angular/router';
-import { linkToken } from '../data/state/selectors';
+import { linkToken } from '../../../data/state/selectors';
 import { filter, map, take, tap } from 'rxjs';
-import { BankingConnectorService } from '../data/database/banking-connector.service';
+import { BankingConnectorService } from '../../../data/database/banking-connector.service';
 
 @Component({
   selector: 'app-new-account',

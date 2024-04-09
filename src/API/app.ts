@@ -69,14 +69,32 @@ app.post('/linkToken', async (req: Request, res: Response) => {
       },
       country_codes: ['CA'],
       language: 'en',
+      access_token: req.body?.accessToken
     });
-    console.log('Link Token:', response.data.link_token)
     res.status(200).json({ link_token: response.data.link_token });
-  } catch (error) {
-    console.error('Error getting link token:', error);
+  } catch (error: any) {
+    console.error('Error getting link token:', error.response.data);
     res.status(500).json({ message: 'Failed to get link token' });
   }
 });
+
+app.put('/linkToken', async (req: Request, res: Response) => {
+  try {
+    const response = await plaidClient.linkTokenCreate({
+      user: {
+        client_user_id: userId,
+      },
+      client_name: 'Spearmint',
+      country_codes: ['CA'],
+      language: 'en',
+      access_token: req.body?.accessToken
+    });
+    res.status(200).json({ link_token: response.data.link_token })
+  } catch (error: any) {
+    console.error('Error getting update link token', error.response.data);
+    res.status(500).json({ message: 'Failed to get update link token' });
+  }
+})
 
 app.post('/accessToken', async (req: Request, res: Response) => {
   try {
@@ -101,8 +119,8 @@ app.post('/balances', async (req: Request, res: Response) => {
       accounts: response.data.accounts
     });
   } catch (error: any) {
-    console.error('Error getting account balances:', error.code, error.message);
-    switch (error.code) {
+    console.error('Error getting account balances:', error.code, error.response.data);
+    switch (error.response.data.error_code) {
       case 'ITEM_LOGIN_REQUIRED': res.status(401).json({ message: 'Item login required' }); break;
       default: res.status(500).json({ message: 'Failed to get account balances' });
     }
@@ -117,8 +135,8 @@ app.post('/transactions', async (req: Request, res: Response) => {
       transactions: response.data
     })
   } catch (error: any) {
-    console.error('Error getting transactions:', error.code, error.message);
-    switch (error.code) {
+    console.error('Error getting transactions:', error.code);
+    switch (error.response.data.error_code) {
       case 'ITEM_LOGIN_REQUIRED': res.status(401).json({ message: 'Item login required' }); break;
       default: res.status(500).json({ message: 'Failed to get transactions' });
     }
