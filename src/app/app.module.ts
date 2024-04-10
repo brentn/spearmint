@@ -36,7 +36,6 @@ import { BankingConnectorService } from './data/database/banking-connector.servi
 import { SnakecasePipe } from './utilities/snakecase.pipe';
 import { TokenInterceptorService } from './auth/interceptor/token-interceptor.service';
 import { DBStateService } from './data/database/dbState.service';
-import { UpdateAccountComponent } from './home/account/update-account/update-account.component';
 
 export type AppState = {
   main: MainState
@@ -64,7 +63,6 @@ export type AppState = {
     CategoryPickerComponent,
     CategoryItemComponent,
     SnakecasePipe,
-    UpdateAccountComponent,
   ],
   imports: [
     BrowserModule,

@@ -5,7 +5,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { Subscription } from 'rxjs';
 import { configuration } from '../data/state/selectors';
-import { reset, updateAccount, updateConfiguration } from '../data/state/actions';
+import { refreshAccountsImmediately, reset, updateAccount, updateConfiguration } from '../data/state/actions';
 import { Router } from '@angular/router';
 import { Account } from '../data/models/account';
 import { DBStateService } from '../data/database/dbState.service';
@@ -69,6 +69,10 @@ export class SettingsComponent {
   }
 
   get accountRows(): FormArray { return this.form.get('accountRows') as FormArray; }
+
+  onRefreshAccounts(): void {
+    this.store.dispatch(refreshAccountsImmediately());
+  }
 
   onResetAllData(): void {
     if (confirm('Are you sure you want to DELETE all account and transaction data?')) {

@@ -1,4 +1,4 @@
-import { createAction } from "@ngrx/store";
+import { Action, createAction } from "@ngrx/store";
 import { SocialUser } from "@abacritt/angularx-social-login";
 import { AppState } from "src/app/app.module";
 import { Account } from "../models/account";
@@ -16,11 +16,12 @@ export const restoreState = createAction('[Main] Restore state', (payload: AppSt
 export const stateRestored = createAction('[Main] State restored');
 
 export const getLinkToken = createAction('[Plaid] Get link token');
-export const getUpdateLinkToken = createAction('[Plaid] Get update link token', (payload: string) => ({ payload }));
+export const updateLinkToken = createAction('[Plaid] Update link token', (payload: { accessToken: string, action: Action }) => ({ payload }));
 export const setLinkToken = createAction('[Plaid] - Set link token', (payload: string) => ({ payload }));
 
 export const updateConfiguration = createAction('[Configuration] Update configuration', (payload: Configuration) => ({ payload }));
 export const refreshAccounts = createAction('[Account] Refresh accounts');
+export const refreshAccountsImmediately = createAction('[Account] Refresh accounts immediately');
 export const addAccount = createAction('[Account] Add account', (payload: Account) => ({ payload }));
 export const accountAdded = createAction('[Account] Account added', (payload: Account) => ({ payload }));
 export const updateAccount = createAction('[Account] Update account', (payload: Account) => ({ payload }));

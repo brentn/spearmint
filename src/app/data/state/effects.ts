@@ -1,8 +1,8 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, getUpdateLinkToken } from "./actions";
-import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
-import { Store } from "@ngrx/store";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately } from "./actions";
+import { catchError, concat, filter, finalize, iif, map, of, switchMap, tap, withLatestFrom } from "rxjs";
+import { Action, Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { LocalStorageService } from "../database/local-storage.service";
 import { BankingConnectorService } from "../database/banking-connector.service";
@@ -10,6 +10,7 @@ import { Account } from "../models/account";
 import { DBStateService } from "../database/dbState.service";
 import { Transaction } from "../models/transaction";
 import { Router } from "@angular/router";
+import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
 
 const MIN_REFRESH_FREQUENCY = 120; //minutes
 
@@ -21,8 +22,9 @@ export class MainEffects {
     private store: Store<AppState>,
     private bank: BankingConnectorService,
     private dbState: DBStateService,
-    private persistence: LocalStorageService
-    , private router: Router
+    private persistence: LocalStorageService,
+    private plaidLinkService: NgxPlaidLinkService,
+    private router: Router
   ) { }
 
   spinUpServer$ = createEffect(() => this.actions$.pipe(
@@ -37,12 +39,19 @@ export class MainEffects {
     ))
   ));
 
-  getUpdateLinkToken$ = createEffect(() => this.actions$.pipe(
-    ofType(getUpdateLinkToken),
-    switchMap(action => this.bank.updateLinkToken$(action.payload).pipe(
-      map(linkToken => setLinkToken(linkToken))
-    ))
-  ));
+  updateLinkToken$ = createEffect(() => this.actions$.pipe(
+    ofType(updateLinkToken),
+    switchMap(action => this.bank.updateLinkToken$(action.payload.accessToken).pipe(
+      map(token => {
+        this.plaidLinkService.createPlaid({
+          token: token,
+          onSuccess: (publicToken: string, metadata: PlaidSuccessMetadata) => { this.store.dispatch(action.payload.action) },
+        }).then((handler: any) => {
+          // this.plaidLinkHandler = handler;
+          handler.open();
+        });
+      })))
+  ), { dispatch: false });
 
   addAccount$ = createEffect(() => this.actions$.pipe(
     ofType(addAccount),
@@ -95,37 +104,45 @@ export class MainEffects {
     ))
   ));
 
+  refreshAccountsNow$ = createEffect(() => this.actions$.pipe(
+    ofType(refreshAccountsImmediately),
+    switchMap(() => this.dbState.storeReady$),
+    withLatestFrom(this.dbState.accounts$),
+    switchMap(([_, accounts]) => concat(
+      of(startLoad('refresh')),
+      ...accounts
+        .filter(account => !!account.accessToken)
+        .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
+        .map(account => [getAccountBalances(account.accessToken), getLatestTransactions(account)]),
+      of(endLoad('refresh'))
+    ))
+  ));
+
   getAccountBalances$ = createEffect(() => this.actions$.pipe(
     ofType(getAccountBalances),
     withLatestFrom(this.dbState.accounts$),
     switchMap(([action, accounts]) => concat(
       of(startLoad('refreshBalances')),
       this.bank.accountBalances$(action.payload).pipe(
-        map(balances => {
-          const result: Account[] = [];
-          balances.forEach(balance => {
+        switchMap(balances =>
+          balances.map(balance => {
             const account = accounts.find(a => a.id === balance.account_id);
-            if (account) result.push(new Account({
+            return account ? updateAccount({
               ...account,
               balance: balance.balances.current,
               lastUpdated: new Date().getTime(),
               failure: undefined
-            }));
-          });
-          return result;
-        }),
-        catchError(err => {
-          switch (err.status) {
-            case 401: this.router.navigate(['/accounts/update'], { queryParams: { accessToken: action.payload } });
-          }
-          return of([]);
-        }),
-        switchMap(accounts => accounts.map(account => updateAccount(account))),
+            }) : null;
+          }).filter(a => !!a) as Action[]
+        ),
         finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),
-        catchError(() => concat(accounts.filter(a => a.accessToken === action.payload).map(account => updateAccount(new Account({
-          ...account,
-          failure: true
-        })))))
+        catchError(err => {
+          accounts.filter(a => a.accessToken === action.payload).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
+          switch (err.status) {
+            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload, action: getAccountBalances(action.payload) }));
+          }
+          return of();
+        }),
       )
     ))
   ));
@@ -168,10 +185,13 @@ export class MainEffects {
           return [...accountActions, ...removeActions, addAction, ...updateActions];
         }),
         finalize(() => { this.store.dispatch(endLoad('refreshTransactions')) }),
-        catchError(() => concat(accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => updateAccount(new Account({
-          ...account,
-          failure: true
-        })))))
+        catchError(err => {
+          accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
+          switch (err.status) {
+            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload.accessToken, action: getLatestTransactions(action.payload) }));
+          }
+          return of();
+        }),
       )
     ))
   ));
