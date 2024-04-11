@@ -1,7 +1,7 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { endLoad, loggedIn, reset, restoreState, setLinkToken, startLoad, updateConfiguration } from "./actions";
+import { endLoad, loggedIn, selectAccount, setLinkToken, startLoad, updateConfiguration } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 
 export const initialState: MainState = {
@@ -9,6 +9,7 @@ export const initialState: MainState = {
   linkToken: undefined,
   configuration: DEFAULT_CONFIGURATION,
   loading: [],
+  selectedAccount: undefined
 }
 
 const reducer = createReducer(initialState,
@@ -17,12 +18,7 @@ const reducer = createReducer(initialState,
   on(startLoad, (state, action) => ({ ...state, loading: [...state.loading, action.payload] })),
   on(endLoad, (state, action) => ({ ...state, loading: state.loading.filter((_, i) => i !== state.loading.indexOf(action.payload)) })),
   on(setLinkToken, (state, action) => ({ ...state, linkToken: action.payload })),
-  on(restoreState, (state, action) => ({
-    ...action.payload.main,
-    linkToken: undefined,
-    user: state.user,
-    loading: []
-  })),
+  on(selectAccount, (state, action) => ({ ...state, selectedAccount: action.payload })),
 );
 
 export function mainReducer(state: MainState | undefined, action: Action) {

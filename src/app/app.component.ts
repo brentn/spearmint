@@ -2,7 +2,7 @@ import { Component, HostListener } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { filter, take, tap } from 'rxjs';
-import { initialize, loggedIn, saveState } from './data/state/actions';
+import { initialize, loggedIn } from './data/state/actions';
 import { isRefreshing, user } from './data/state/selectors';
 import { SocialAuthService } from '@abacritt/angularx-social-login';
 import { DBStateService } from './data/database/dbState.service';
@@ -19,7 +19,7 @@ export class AppComponent {
   isRefreshing$ = this.store.select(isRefreshing);
 
 
-  constructor(private store: Store<AppState>, private authService: SocialAuthService, private dbState: DBStateService) { }
+  constructor(private store: Store<AppState>, private authService: SocialAuthService) { }
 
   ngOnInit(): void {
     this.store.dispatch(initialize());
@@ -27,15 +27,6 @@ export class AppComponent {
       filter(user => !!user),
       tap(user => this.store.dispatch(loggedIn(user))),
     ).subscribe();
-  }
-
-  @HostListener('window:beforeunload')
-  saveState(): void {
-    this.store.select(state => state).pipe(
-      take(1),
-      filter(state => !!state.main.user),
-      tap(() => this.store.dispatch(saveState()))
-    ).subscribe()
   }
 
 }

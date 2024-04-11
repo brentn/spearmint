@@ -1,4 +1,4 @@
-<div *ngIf="account" class="account bg-light rounded" role="button">
+<div *ngIf="account" class="account bg-light rounded" role="button" (click)="onSelectAccount()">
   <div class="d-flex justify-content-between">
     <div class="d-flex" style="min-width:0">
       <account-icon [type]="account.type"></account-icon>

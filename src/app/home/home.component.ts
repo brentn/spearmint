@@ -4,6 +4,7 @@ import { map, tap } from 'rxjs';
 import { AppState } from '../app.module';
 import { configuration } from '../data/state/selectors';
 import { DBStateService } from '../data/database/dbState.service';
+import { selectAccount } from '../data/state/actions';
 
 @Component({
   template: `
@@ -27,6 +28,8 @@ export class HomeComponent {
 
   constructor(private store: Store<AppState>, private dbState: DBStateService) { }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+    this.store.dispatch(selectAccount(undefined));
+  }
 
 }

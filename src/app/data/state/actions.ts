@@ -11,15 +11,13 @@ export const endLoad = createAction('[Main] End loading', (payload: string) => (
 export const loggedIn = createAction('[Main] Logged in', (payload: SocialUser) => ({ payload }));
 
 export const reset = createAction('[Main] Reset');
-export const saveState = createAction('[Main] Save state');
-export const restoreState = createAction('[Main] Restore state', (payload: AppState) => ({ payload }));
-export const stateRestored = createAction('[Main] State restored');
 
 export const getLinkToken = createAction('[Plaid] Get link token');
 export const updateLinkToken = createAction('[Plaid] Update link token', (payload: { accessToken: string, action: Action }) => ({ payload }));
 export const setLinkToken = createAction('[Plaid] - Set link token', (payload: string) => ({ payload }));
 
 export const updateConfiguration = createAction('[Configuration] Update configuration', (payload: Configuration) => ({ payload }));
+export const selectAccount = createAction('[Account] Select account', (payload: Account | undefined) => ({ payload }));
 export const refreshAccounts = createAction('[Account] Refresh accounts');
 export const refreshAccountsImmediately = createAction('[Account] Refresh accounts immediately');
 export const addAccount = createAction('[Account] Add account', (payload: Account) => ({ payload }));

@@ -1,8 +1,7 @@
-
+- Transactions page needs to be much quicker to load
 - Transactions should show account
 - Transactions category should not wrap
 - Transactions title should be at top of screen
-- Need transactions screen for each account
 
 * Biometrics
 * Budgets

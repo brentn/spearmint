@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, restoreState, saveState, setLinkToken, startLoad, stateRestored, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately } from "./actions";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately } from "./actions";
 import { catchError, concat, filter, finalize, iif, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Action, Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
@@ -194,25 +194,6 @@ export class MainEffects {
         }),
       )
     ))
-  ));
-
-  saveState$ = createEffect(() => this.actions$.pipe(
-    ofType(saveState),
-    withLatestFrom(this.store),
-    tap(([_, state]) => {
-      this.store.dispatch(startLoad('savingState'));
-      this.persistence.saveState(state);
-      this.store.dispatch(endLoad('savingState'));
-    })
-  ), { dispatch: false });
-
-  loadState$ = createEffect(() => this.actions$.pipe(
-    ofType(loggedIn),
-    filter(action => !!action.payload),
-    switchMap(() => of(
-      restoreState(this.persistence.restoreState()),
-      stateRestored()
-    )),
   ));
 
 }
