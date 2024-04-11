@@ -1,6 +1,12 @@
 <div class="background bg-secondary"></div>
-<div class="mt-2 larger text-light"><span role="button" class="p-3"><fa-icon [icon]="backIcon"
-      [routerLink]="['']"></fa-icon></span>
+<div class="d-flex justify-content-between align-items-center">
+  <div class="mt-2 larger text-light"><span role="button" class="p-3"><fa-icon [icon]="backIcon"
+        [routerLink]="['']"></fa-icon></span>
+  </div>
+  <div class="larger text-center text-light text-nowrap">
+    {{selectedAccount?.displayName|slice:0:15}} Transactions
+  </div>
+  <div class="p-3 larger">&nbsp;</div>
 </div>
 
 <div *ngIf="uncategorizedTransactions?.length" class="uncategorized bg-light m-3 rounded">
@@ -10,7 +16,8 @@
     </div>
   </div>
   <div *cdkVirtualFor="let transaction of uncategorizedTransactions; let i = index" class="m-3">
-    <transaction [transaction]="transaction" [categories]="categories"></transaction>
+    <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
+      [selectedAccount]="selectedAccount"></transaction>
   </div>
 </div>
 
@@ -22,7 +29,8 @@
   </div>
   <cdk-virtual-scroll-viewport [itemSize]="48">
     <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3">
-      <transaction [transaction]="transaction" [categories]="categories"></transaction>
+      <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
+        [selectedAccount]="selectedAccount"></transaction>
     </div>
   </cdk-virtual-scroll-viewport>
 </div>

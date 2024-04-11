@@ -3,8 +3,11 @@
     <div class="d-flex">
       <category-icon [categoryId]="category?.group"></category-icon>
       <div class="d-flex flex-column">
-        <div class="small">{{transaction.merchant||transaction.name}}</div>
-        <div class="small text-muted fst-italic">
+        <div class="small text-nowrap">
+          <span *ngIf="!selectedAccount" class="fw-bold me-2">{{accountName|slice:0:15}}:</span>
+          {{transaction.merchant||transaction.name}}
+        </div>
+        <div class="small text-muted fst-italic text-nowrap">
           {{(transaction.categoryId||"Uncategorized")|snakecase:'undo'|titlecase}}
         </div>
       </div>

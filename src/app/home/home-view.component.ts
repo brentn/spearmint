@@ -18,7 +18,6 @@ export class HomeViewComponent {
   @Input() categories: Category[] | null = null;
   @Input() budgets: Budget[] | null = null;
 
-
   ngOnChanges(changes: SimpleChanges): void {
   }
 

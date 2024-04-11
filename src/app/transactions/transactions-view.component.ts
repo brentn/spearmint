@@ -13,6 +13,7 @@ export class TransactionsViewComponent {
   @Input() transactions!: Transaction[];
   @Input() categories!: Category[];
   @Input() accounts!: Account[];
+  @Input() selectedAccount: Account | undefined;
   uncategorizedTransactions: Transaction[] = [];
   backIcon = faArrowLeft;
 
