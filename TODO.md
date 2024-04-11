@@ -1,6 +1,8 @@
 
-no transactions downloading?
-RxDb IndexedDB instead of LocalStorage
+- Transactions should show account
+- Transactions category should not wrap
+- Transactions title should be at top of screen
+- Need transactions screen for each account
 
 * Biometrics
 * Budgets
