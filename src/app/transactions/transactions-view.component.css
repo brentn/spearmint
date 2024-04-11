@@ -6,3 +6,7 @@
   right: 0;
   z-index: -1;
 }
+
+cdk-virtual-scroll-viewport {
+  height: calc(100vh - 9em);
+}

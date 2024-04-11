@@ -9,7 +9,7 @@
       Uncategorized transactions
     </div>
   </div>
-  <div *ngFor="let transaction of uncategorizedTransactions" class="m-3">
+  <div *cdkVirtualFor="let transaction of uncategorizedTransactions; let i = index" class="m-3">
     <transaction [transaction]="transaction" [categories]="categories"></transaction>
   </div>
 </div>
@@ -20,7 +20,9 @@
       Transactions
     </div>
   </div>
-  <div *ngFor="let transaction of transactions" class="m-3">
-    <transaction [transaction]="transaction" [categories]="categories"></transaction>
-  </div>
+  <cdk-virtual-scroll-viewport [itemSize]="48">
+    <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3">
+      <transaction [transaction]="transaction" [categories]="categories"></transaction>
+    </div>
+  </cdk-virtual-scroll-viewport>
 </div>

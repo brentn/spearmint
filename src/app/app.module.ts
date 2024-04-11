@@ -36,6 +36,7 @@ import { BankingConnectorService } from './data/database/banking-connector.servi
 import { SnakecasePipe } from './utilities/snakecase.pipe';
 import { TokenInterceptorService } from './auth/interceptor/token-interceptor.service';
 import { DBStateService } from './data/database/dbState.service';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 
 export type AppState = {
   main: MainState
@@ -70,6 +71,7 @@ export type AppState = {
     HttpClientModule,
     ReactiveFormsModule,
     FontAwesomeModule,
+    ScrollingModule,
     SocialLoginModule,
     GoogleSigninButtonModule,
     NgxPlaidLinkModule,
