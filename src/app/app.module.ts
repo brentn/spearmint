@@ -1,7 +1,6 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { ReactiveFormsModule } from '@angular/forms';
-import { SocialLoginModule, SocialAuthServiceConfig, GoogleLoginProvider, GoogleSigninButtonModule } from "@abacritt/angularx-social-login";
 
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -72,8 +71,6 @@ export type AppState = {
     ReactiveFormsModule,
     FontAwesomeModule,
     ScrollingModule,
-    SocialLoginModule,
-    GoogleSigninButtonModule,
     NgxPlaidLinkModule,
     StoreModule.forRoot({ main: mainReducer }),
     EffectsModule.forRoot([MainEffects]),
@@ -83,23 +80,6 @@ export type AppState = {
     }),
   ],
   providers: [
-    {
-      provide: 'SocialAuthServiceConfig',
-      useValue: {
-        autoLogin: true,
-        providers: [
-          {
-            id: GoogleLoginProvider.PROVIDER_ID,
-            provider: new GoogleLoginProvider('316624811771-jugmh69v4b636shvv1c9gtj6glr5i9e7.apps.googleusercontent.com', {
-              scopes: 'openid profile',
-            }),
-          },
-        ],
-        onError: (err: any) => {
-          console.error(err);
-        },
-      } as SocialAuthServiceConfig,
-    },
     {
       provide: HTTP_INTERCEPTORS,
       useClass: TokenInterceptorService,

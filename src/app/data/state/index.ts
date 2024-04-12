@@ -4,7 +4,7 @@ import { Account } from "../models/account";
 
 
 export interface MainState {
-  user: SocialUser | undefined;
+  user: { idToken: string } | undefined;
   linkToken: string | undefined;
   configuration: Configuration;
   loading: string[];

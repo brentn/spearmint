@@ -28,6 +28,7 @@
     "@ngrx/entity": "^16.3.0",
     "@ngrx/store": "^16.3.0",
     "@ngrx/store-devtools": "^16.3.0",
+    "@passwordless-id/connect": "^1.2.1",
     "bootstrap": "^5.3.3",
     "ngx-plaid-link": "^14.0.0",
     "rxdb": "^15.16.0",

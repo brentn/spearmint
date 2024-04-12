@@ -1,15 +1,13 @@
 import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, loggedIn, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately } from "./actions";
-import { catchError, concat, filter, finalize, iif, map, of, switchMap, tap, withLatestFrom } from "rxjs";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately } from "./actions";
+import { catchError, concat, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Action, Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
-import { LocalStorageService } from "../database/local-storage.service";
 import { BankingConnectorService } from "../database/banking-connector.service";
 import { Account } from "../models/account";
 import { DBStateService } from "../database/dbState.service";
 import { Transaction } from "../models/transaction";
-import { Router } from "@angular/router";
 import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
 
 const MIN_REFRESH_FREQUENCY = 120; //minutes
@@ -22,9 +20,7 @@ export class MainEffects {
     private store: Store<AppState>,
     private bank: BankingConnectorService,
     private dbState: DBStateService,
-    private persistence: LocalStorageService,
     private plaidLinkService: NgxPlaidLinkService,
-    private router: Router
   ) { }
 
   spinUpServer$ = createEffect(() => this.actions$.pipe(

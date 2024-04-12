@@ -1,7 +1,7 @@
 const express = require('express');
+const axios = require('axios');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const { OAuth2Client } = require('google-auth-library');
 const { Configuration, PlaidApi, Products, PlaidEnvironments } = require('plaid');
 import { NextFunction, Request, Response } from "express";
 require('dotenv').config();
@@ -10,11 +10,9 @@ if (!process.env.PLAID_SECRET) {
   throw new Error('Missing Environment Variables')
 }
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const plaidEnvironment = process.env.PLAID_ENVIRONMENT;
 const plaidClientId = process.env.PLAID_CLIENT_ID;
 const plaidSecret = process.env.PLAID_SECRET;
-
 
 
 var userId: string | null = null;
@@ -27,20 +25,16 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
     const token = req.headers.authorization.split('Bearer ')[1];
     try {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: token,
-        audience: googleClientId,
-      });
-      const payload = ticket.getPayload();
-      userId = payload['sub'];
+      const response = await axios.get(`https://api.passwordless.id/openapi/validate?token=${token}`);
+      console.log('HERE', Object.keys(response));
+      userId = response.payload['sub'];
       next();
-    } catch (error) {
-      console.error('Error verifying token:', error);
+    } catch (error: any) {
+      console.error('Error verifying token:', error.message, error.config);
     }
   }
 });
 
-const googleClient = new OAuth2Client();
 const configuration = new Configuration({
   basePath: PlaidEnvironments[(plaidEnvironment || 'sandbox')],
   baseOptions: {

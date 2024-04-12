@@ -8,7 +8,7 @@ import { Configuration } from "../types/configuration.type";
 export const initialize = createAction('[Main] Initialize');
 export const startLoad = createAction('[Main] Start loading...', (payload: string) => ({ payload }));
 export const endLoad = createAction('[Main] End loading', (payload: string) => ({ payload }));
-export const loggedIn = createAction('[Main] Logged in', (payload: SocialUser) => ({ payload }));
+export const loggedIn = createAction('[Main] Logged in', (payload: { idToken: string }) => ({ payload }));
 
 export const reset = createAction('[Main] Reset');
 

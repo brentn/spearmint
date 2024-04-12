@@ -1,8 +1,7 @@
-import { GoogleLoginProvider, SocialAuthService } from '@abacritt/angularx-social-login';
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable, filter, from, map, switchMap, take, tap } from 'rxjs';
+import { Observable, filter, switchMap, take, tap } from 'rxjs';
 import { AppState } from 'src/app/app.module';
 import { user } from 'src/app/data/state/selectors';
 
@@ -12,7 +11,7 @@ import { user } from 'src/app/data/state/selectors';
 export class TokenInterceptorService implements HttpInterceptor {
   idToken: string | undefined;
 
-  constructor(private store: Store<AppState>, private authService: SocialAuthService) { }
+  constructor(private store: Store<AppState>) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.idToken) {
