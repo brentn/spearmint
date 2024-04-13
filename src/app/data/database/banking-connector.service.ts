@@ -5,8 +5,8 @@ import { BalanceDTO } from '../types/balanceDTO';
 import { TransactionsDTO } from '../types/transactionsDTO';
 import { NgxPlaidLinkService } from 'ngx-plaid-link';
 
-const API = 'https://spearmint-imnj.onrender.com';
-// const API = 'http://localhost:4000';
+// const API = 'https://spearmint-imnj.onrender.com';
+const API = 'http://localhost:4000';
 
 @Injectable({
   providedIn: 'root'
@@ -21,6 +21,24 @@ export class BankingConnectorService {
     return this.http.get(`${API}/status`).pipe(
       map(() => void (0))
     );
+  }
+
+  getChallenge$(): Observable<string> {
+    return this.http.get(`${API}/challenge`).pipe(
+      map((response: any) => response.challenge)
+    )
+  }
+
+  registerUser$(registration: { username: string, credential: { id: string, publicKey: string, algorithm: string } }): Observable<object> {
+    return this.http.post(`${API}/register`, registration, this.headers).pipe(
+      map(obj => obj)
+    )
+  }
+
+  authenticateUser$(authentication: { credentialId: string, authenticatorData: string, clientData: string, signature: string }): Observable<void> {
+    return this.http.post(`${API}/authenticate`, authentication, this.headers).pipe(
+      map(() => void (0))
+    )
   }
 
   getLinkToken$(): Observable<string> {
