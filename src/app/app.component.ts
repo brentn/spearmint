@@ -27,26 +27,26 @@ export class AppComponent {
           timeout: 60000,
           debug: false
         })).pipe(
-          map(authentication => this.bank.authenticateUser$(authentication).pipe(
+          switchMap(authentication => this.bank.authenticateUser$(authentication).pipe(
             map(() => {
-              console.log('User Authenticated', user);
+              console.log('User Authenticated');
               return user;
             })
           ))
         );
       } else {
         console.log('Registering user...');
-        return from(client.register("spearmint", challenge, {
+        return from(client.register("Spearmint User", challenge, {
           authenticatorType: "auto",
           userVerification: "required",
           timeout: 60000,
           attestation: false,
           debug: false
         })).pipe(
-          map(registration => this.bank.registerUser$(registration).pipe(
+          switchMap(registration => this.bank.registerUser$(registration).pipe(
             map(user => {
               localStorage.setItem('user', JSON.stringify(user));
-              console.log('User Registered', user);
+              console.log('User Registered');
               return user;
             }),
           ))

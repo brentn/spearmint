@@ -6,7 +6,8 @@ const LocalStorage = require('node-localstorage').LocalStorage,
   localStorage = new LocalStorage('./scratch');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 import { NextFunction, Request, Response } from "express";
-const server = require("fix-esm").require("@passwordless-id/webauthn/dist/esm/server");
+// const server = require("fix-esm").require("@passwordless-id/webauthn/dist/esm/server");
+const server = require("fix-esm").require("@passwordless-id/webauthn").server;
 require('dotenv').config();
 
 if (!process.env.PLAID_SECRET) {
@@ -61,32 +62,20 @@ app.get('/status', async (req: Request, res: Response) => {
 });
 
 app.get('/challenge', async (req: Request, res: Response) => {
-  const challenges: string[] = JSON.parse(localStorage.getItem('challenges') || '[]');
   const challenge = crypto.randomBytes(20).toString('hex');
-  localStorage.setItem('challenges', JSON.stringify([...challenges, challenge]));
+  localStorage.setItem('challenge', challenge);
   res.status(200).json({ challenge });
 });
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
-    console.log('registering user...')
-    const challenges: string[] = JSON.parse(localStorage.getItem('challenges') || '[]');
+    const challenge: string = localStorage.getItem('challenge');
     const credentials: object[] = JSON.parse(localStorage.getItem('credentials') || '[]');
     const origin = (origin: string) => allowedOrigins?.includes(origin);
-    let verifiedRegistration;
-    challenges.forEach(async challenge => {
-      try {
-        verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
-        localStorage.setItem('challenges', JSON.stringify(challenges.filter(a => a !== challenge)));
-        localStorage.setItem('credentials', JSON.stringify([...credentials, verifiedRegistration]));
-      }
-      catch (err) { }
-    });
-    if (!verifiedRegistration) {
-      throw new Error('Unable to verify user registration');
-    }
+    const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
+    localStorage.setItem('challenge', '');
+    localStorage.setItem('credentials', JSON.stringify([...credentials, verifiedRegistration]));
     res.status(200).json(verifiedRegistration);
-    console.log('user registered')
   } catch (error) {
     console.error('Error registering new user:', error);
     res.status(500).json({ message: 'Failed to register new user' });
@@ -95,24 +84,17 @@ app.post('/register', async (req: Request, res: Response) => {
 
 app.post('/authenticate', async (req: Request, res: Response) => {
   try {
-    console.log('authenticating user...')
     const credentialId = req.body.credentialId;
-    const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
-    const challenges: string[] = JSON.parse(localStorage.getItem('challenges') || '[]');
+    const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { credential: { id: string } }) => a.credential.id === credentialId).credential;
+    const challenge: string = localStorage.getItem('challenge');
     await server.verifyAuthentication(req.body, credentialKey, {
-      challenge: (challenge: string) => {
-        if (challenges.includes(challenge)) {
-          LocalStorage.setItem('challenges', JSON.stringify(challenges.filter(a => a !== challenge)));
-          return true;
-        }
-        return false;
-      },
+      challenge,
       origin: (origin: string) => allowedOrigins?.includes(origin),
       userVerified: true,
       verbose: false
     });
-    res.status(200);
-    console.log('user authenticated');
+    localStorage.setItem('challenge', '');
+    res.status(200).json('');
   } catch (error) {
     console.error('Error authenticating user:', error);
     res.status(500).json({ message: 'Failed to authenticate user' });
