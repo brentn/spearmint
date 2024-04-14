@@ -69,6 +69,7 @@ app.get('/challenge', async (req: Request, res: Response) => {
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
+    console.log('registering user...')
     const challenges: string[] = JSON.parse(localStorage.getItem('challenges') || '[]');
     const credentials: object[] = JSON.parse(localStorage.getItem('credentials') || '[]');
     const origin = (origin: string) => allowedOrigins?.includes(origin);
@@ -85,6 +86,7 @@ app.post('/register', async (req: Request, res: Response) => {
       throw new Error('Unable to verify user registration');
     }
     res.status(200).json(verifiedRegistration);
+    console.log('user registered')
   } catch (error) {
     console.error('Error registering new user:', error);
     res.status(500).json({ message: 'Failed to register new user' });
@@ -93,6 +95,7 @@ app.post('/register', async (req: Request, res: Response) => {
 
 app.post('/authenticate', async (req: Request, res: Response) => {
   try {
+    console.log('authenticating user...')
     const credentialId = req.body.credentialId;
     const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
     const challenges: string[] = JSON.parse(localStorage.getItem('challenges') || '[]');
@@ -109,6 +112,7 @@ app.post('/authenticate', async (req: Request, res: Response) => {
       verbose: false
     });
     res.status(200);
+    console.log('user authenticated');
   } catch (error) {
     console.error('Error authenticating user:', error);
     res.status(500).json({ message: 'Failed to authenticate user' });
