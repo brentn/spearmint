@@ -8,7 +8,7 @@
   <div *ngIf="(authenticated$|async)">
     <router-outlet></router-outlet>
   </div>
-
+  <button class="btn btn-danger" (click)="onReset()">Reset</button>
 </div>
 
 <div *ngIf="!supportsWebauthn" class="text-center">
