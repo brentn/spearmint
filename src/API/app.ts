@@ -27,7 +27,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-  console.log('Request:', req.url);
+  console.log('Request:', req.method, req.url);
   if (anonymousEndpoints.includes(req.url)) {
     next();
   } else {
