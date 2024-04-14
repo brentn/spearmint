@@ -1,4 +1,4 @@
--  passwordless.id
+- if authenticated, add userId to required request headers
 - move authentication stuff from bank.service to auth.service
 - Transactions page needs to be much quicker to load
 - Transactions category should not wrap

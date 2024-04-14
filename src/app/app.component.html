@@ -1,9 +1,15 @@
 <div class="background bg-secondary"></div>
 
-<div class="refresh text-center" [class.show]="isRefreshing$|async">
-  <img src="assets/loading.gif" width="48px">
+<div *ngIf="supportsWebauthn">
+  <div class="refresh text-center" [class.show]="isRefreshing$|async">
+    <img src="assets/loading.gif" width="48px">
+  </div>
+
+  <div *ngIf="(authenticated$|async)">
+    <router-outlet></router-outlet>
+  </div>
 </div>
 
-<div *ngIf="(authenticated$|async)">
-  <router-outlet></router-outlet>
+<div *ngIf="!supportsWebauthn" class="text-center">
+  Browser does not support WebAuthn
 </div>

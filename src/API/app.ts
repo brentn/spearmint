@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const LocalStorage = require('node-localstorage').LocalStorage,
   localStorage = new LocalStorage('./scratch');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 const server = require("fix-esm").require("@passwordless-id/webauthn/dist/esm/server");
 require('dotenv').config();
 
@@ -19,25 +19,25 @@ const plaidSecret = process.env.PLAID_SECRET;
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
 
 
-var userId: string | null = null;
+const anonymousEndpoints = ['/status', '/challenge', '/register', '/authenticate'];
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(async (req: Request, res: Response, next: NextFunction) => {
-//   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-//     const token = req.headers.authorization.split('Bearer ')[1];
-//     try {
-//       const response = await axios.get(`https://api.passwordless.id/openapi/validate?token=${token}`);
-//       console.log('HERE', Object.keys(response));
-//       userId = response.payload['sub'];
-//       next();
-//     } catch (error: any) {
-//       console.error('Error verifying token:', error.message, error.config);
-//     }
-//   }
-// });
+app.use(async (req: Request, res: Response, next: NextFunction) => {
+  console.log('Request:', req.url);
+  if (anonymousEndpoints.includes(req.url)) {
+    next();
+  } else {
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      req.headers['userId'] = req.headers.authorization;
+      next();
+    } else {
+      res.status(401).json({ message: 'Unauthorized' });
+    }
+  }
+});
 
 const configuration = new Configuration({
   basePath: PlaidEnvironments[(plaidEnvironment || 'sandbox')],
@@ -113,7 +113,7 @@ app.post('/linkToken', async (req: Request, res: Response) => {
   try {
     const response = await plaidClient.linkTokenCreate({
       user: {
-        client_user_id: userId,
+        client_user_id: req.headers['userId'],
       },
       client_name: 'Spearmint',
       products: ['transactions'],
@@ -135,7 +135,7 @@ app.put('/linkToken', async (req: Request, res: Response) => {
   try {
     const response = await plaidClient.linkTokenCreate({
       user: {
-        client_user_id: userId,
+        client_user_id: req.headers['userId'],
       },
       client_name: 'Spearmint',
       country_codes: ['CA'],
