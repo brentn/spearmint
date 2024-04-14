@@ -46,7 +46,7 @@ export class AppComponent {
           map(registration => this.bank.registerUser$(registration).pipe(
             map(user => {
               localStorage.setItem('user', JSON.stringify(user));
-              console.log('User', user);
+              console.log('User Registered', user);
               return user;
             }),
           ))

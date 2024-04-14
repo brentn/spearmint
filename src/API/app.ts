@@ -31,8 +31,14 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     next();
   } else {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      req.headers['userId'] = req.headers.authorization;
-      next();
+      const credentialId = req.headers.authorization.split(' ')[1];
+      const isRegisteredUser = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
+      if (isRegisteredUser) {
+        req.headers['userId'] = credentialId;
+        next();
+      } else {
+        res.status(401).json({ message: 'Invlaid User' })
+      }
     } else {
       res.status(401).json({ message: 'Unauthorized' });
     }
