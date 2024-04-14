@@ -83,6 +83,7 @@ export class MainEffects {
     ofType(reset),
     switchMap(() => this.dbState.Transactions.reset$()),
     switchMap(() => this.dbState.Accounts.reset$()),
+    tap(() => localStorage.clear())
   ), { dispatch: false });
 
   refreshAccounts$ = createEffect(() => this.actions$.pipe(

@@ -70,7 +70,8 @@ app.get('/challenge', async (req: Request, res: Response) => {
 app.post('/register', async (req: Request, res: Response) => {
   try {
     const challenge: string = localStorage.getItem('challenge');
-    const credentials: object[] = JSON.parse(localStorage.getItem('credentials') || '[]');
+    // const credentials: object[] =JSON.parse(localStorage.getItem('credentials') || '[]');
+    const credentials: object[] = [];
     const origin = (origin: string) => allowedOrigins?.includes(origin);
     const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
     localStorage.setItem('challenge', '');
