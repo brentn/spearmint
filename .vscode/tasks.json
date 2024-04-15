@@ -22,7 +22,9 @@
             "regexp": "bundle generation complete"
           }
         }
-      }
+      },
+      "label": "npm: start",
+      "detail": "ng serve --ssl"
     },
     {
       "type": "npm",

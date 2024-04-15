@@ -29,7 +29,6 @@ export class AppComponent {
         })).pipe(
           switchMap(authentication => this.bank.authenticateUser$(authentication).pipe(
             map(() => {
-              console.log('User Authenticated');
               return user;
             })
           ))
@@ -46,7 +45,6 @@ export class AppComponent {
           switchMap(registration => this.bank.registerUser$(registration).pipe(
             map(user => {
               localStorage.setItem('user', JSON.stringify(user));
-              console.log('User Registered');
               return user;
             }),
           ))
