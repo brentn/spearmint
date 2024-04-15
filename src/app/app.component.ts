@@ -59,9 +59,4 @@ export class AppComponent {
     this.store.dispatch(initialize());
   }
 
-  onReset(): void {
-    if (confirm('this will reset EVERYTHING')) {
-      this.store.dispatch(reset());
-    }
-  }
 }
