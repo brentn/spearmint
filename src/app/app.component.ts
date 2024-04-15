@@ -62,6 +62,8 @@ export class AppComponent {
   }
 
   onReset(): void {
-    this.store.dispatch(reset());
+    if (confirm('this will reset EVERYTHING')) {
+      this.store.dispatch(reset());
+    }
   }
 }

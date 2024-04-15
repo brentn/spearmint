@@ -5,8 +5,8 @@ import { BalanceDTO } from '../types/balanceDTO';
 import { TransactionsDTO } from '../types/transactionsDTO';
 import { NgxPlaidLinkService } from 'ngx-plaid-link';
 
-const API = 'https://spearmint-imnj.onrender.com';
-// const API = 'http://localhost:4000';
+// const API = 'https://spearmint-imnj.onrender.com';
+const API = 'http://localhost:4000';
 
 @Injectable({
   providedIn: 'root'

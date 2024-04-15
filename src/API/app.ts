@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const crypto = require('crypto');
+const generator = require('crypto');
 const LocalStorage = require('node-localstorage').LocalStorage,
   localStorage = new LocalStorage('./scratch');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
@@ -33,7 +33,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
   } else {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       const credentialId = req.headers.authorization.split(' ')[1];
-      const isRegisteredUser = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
+      const isRegisteredUser = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { credential: { id: string } }) => a.credential.id === credentialId);
       if (isRegisteredUser) {
         req.headers['userId'] = credentialId;
         next();
@@ -62,7 +62,7 @@ app.get('/status', async (req: Request, res: Response) => {
 });
 
 app.get('/challenge', async (req: Request, res: Response) => {
-  const challenge = crypto.randomBytes(20).toString('hex');
+  const challenge = generator.randomBytes(20).toString('hex');
   localStorage.setItem('challenge', challenge);
   res.status(200).json({ challenge });
 });
