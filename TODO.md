@@ -1,4 +1,4 @@
-- make localhost ssl: https://stackoverflow.com/questions/39210467/get-angular-cli-to-ng-serve-over-https
+- refresh new accounts immediately after adding
 - move authentication stuff from bank.service to auth.service
 - Transactions page needs to be much quicker to load
 - Transactions category should not wrap
