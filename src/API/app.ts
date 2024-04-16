@@ -20,7 +20,7 @@ const plaidSecret = process.env.PLAID_SECRET;
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
 
 
-const anonymousEndpoints = ['/status', '/challenge', '/register', '/authenticate'];
+const anonymousEndpoints = ['/status', '/challenge', '/register', '/authenticate', '/resetCredentials'];
 
 const app = express();
 app.use(cors());
@@ -102,6 +102,11 @@ app.post('/authenticate', async (req: Request, res: Response) => {
     console.error('Error authenticating user:', error);
     res.status(500).json({ message: 'Failed to authenticate user' });
   }
+});
+
+app.get('/resetCredentials', async (req: Request, res: Response) => {
+  localStorage.setItem('credentials', '[]');
+  res.status(204);
 });
 
 app.post('/linkToken', async (req: Request, res: Response) => {
