@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
-import { from, map, switchMap } from 'rxjs';
+import { catchError, from, map, of, switchMap } from 'rxjs';
 import { initialize, reset } from './data/state/actions';
 import { isRefreshing } from './data/state/selectors';
 import 'zone.js/plugins/zone-patch-rxjs'; // This is required for Angular to work with RxJS
@@ -30,7 +30,9 @@ export class AppComponent {
           switchMap(authentication => this.bank.authenticateUser$(authentication).pipe(
             map(() => {
               return user;
-            })
+            }),
+            //TODO: TEMPORARY FIX
+            catchError(() => { localStorage.setItem('user', ''); return of() })
           ))
         );
       } else {
