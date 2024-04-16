@@ -75,7 +75,7 @@ app.post('/register', async (req: Request, res: Response) => {
     const origin = (origin: string) => allowedOrigins?.includes(origin);
     const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
     localStorage.setItem('challenge', '');
-    localStorage.setItem('credentials', JSON.stringify([...credentials, verifiedRegistration]));
+    localStorage.setItem('credentials', JSON.stringify([...credentials, verifiedRegistration.credential]));
     res.status(200).json(verifiedRegistration);
   } catch (error) {
     console.error('Error registering new user:', error);
@@ -86,9 +86,13 @@ app.post('/register', async (req: Request, res: Response) => {
 app.post('/authenticate', async (req: Request, res: Response) => {
   try {
     const credentialId = req.body.credentialId;
-    console.log('CREDENTIAL', req.body, JSON.parse(localStorage.getItem('credentials') || '[]').map((a: any) => a.credential.id));
-    const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { credential: { id: string } }) => a.credential.id === credentialId)?.credential;
-    if (!credentialKey) { throw new Error('Credential not found'); }
+    console.log('CREDENTIAL', req.body, JSON.parse(localStorage.getItem('credentials') || '[]').map((a: any) => a.id));
+    const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
+    if (!credentialKey) {
+
+      localStorage.setItem('credentials', '[]');
+      throw new Error('Credential not found');
+    }
     const challenge: string = localStorage.getItem('challenge');
     await server.verifyAuthentication(req.body, credentialKey, {
       challenge,
