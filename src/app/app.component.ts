@@ -31,6 +31,7 @@ export class AppComponent {
             map(() => {
               return user;
             }),
+            catchError(() => { this.authError = true; return of(); })
           ))
         );
       } else {
@@ -52,11 +53,20 @@ export class AppComponent {
       }
     }),
   );
+  authError = false;
 
   constructor(private store: Store<AppState>, private bank: BankingConnectorService) { }
 
   ngOnInit(): void {
     this.store.dispatch(initialize());
+  }
+
+  onResetAuth(): void {
+    if (confirm('Reset your user and all data?')) {
+      localStorage.setItem('user', '');
+      this.store.dispatch(reset());
+      this.bank.resetCredentials$().subscribe();
+    }
   }
 
 }

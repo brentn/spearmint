@@ -41,6 +41,12 @@ export class BankingConnectorService {
     )
   }
 
+  resetCredentials$(): Observable<void> {
+    return this.http.post(`${API}/resetCredentials`, null, this.headers).pipe(
+      map(() => void (0))
+    )
+  };
+
   getLinkToken$(): Observable<string> {
     return this.http.post(`${API}/linkToken`, null, this.headers).pipe(
       map((response: any) => response.link_token)

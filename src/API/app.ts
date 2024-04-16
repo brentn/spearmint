@@ -104,7 +104,7 @@ app.post('/authenticate', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/resetCredentials', async (req: Request, res: Response) => {
+app.post('/resetCredentials', async (req: Request, res: Response) => {
   localStorage.setItem('credentials', '[]');
   res.status(204);
 });
