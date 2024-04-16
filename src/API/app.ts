@@ -33,7 +33,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
   } else {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       const credentialId = req.headers.authorization.split(' ')[1];
-      const isRegisteredUser = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { credential: { id: string } }) => a.credential.id === credentialId);
+      const isRegisteredUser = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
       if (isRegisteredUser) {
         req.headers['userId'] = credentialId;
         next();

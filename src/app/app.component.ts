@@ -31,8 +31,6 @@ export class AppComponent {
             map(() => {
               return user;
             }),
-            //TODO: TEMPORARY FIX
-            catchError(() => { localStorage.setItem('user', ''); return of() })
           ))
         );
       } else {
