@@ -86,7 +86,7 @@ app.post('/register', async (req: Request, res: Response) => {
 app.post('/authenticate', async (req: Request, res: Response) => {
   try {
     const credentialId = req.body.credentialId;
-    console.log('CREDENTIAL', req.body, JSON.parse(localStorage.getItem('credentials') || '[]').map((a: any) => a.id));
+    console.log('CREDENTIAL', req.body, JSON.parse(localStorage.getItem('credentials') || '[]').map((a: any) => a));
     const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
     if (!credentialKey) { throw new Error('Credential not found'); }
     const challenge: string = localStorage.getItem('challenge');
