@@ -2,8 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const generator = require('crypto');
-const LocalStorage = require('node-localstorage').LocalStorage,
-  localStorage = new LocalStorage('./scratch');
+const LocalStorage = require('node-localstorage').LocalStorage
+const localStorage = new LocalStorage('./scratch');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 import { NextFunction, Request, Response } from "express";
 // const server = require("fix-esm").require("@passwordless-id/webauthn/dist/esm/server");
@@ -69,7 +69,7 @@ app.get('/challenge', async (req: Request, res: Response) => {
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
-    const challenge: string = localStorage.getItem('challenge');
+    const challenge: string = localStorage.getItem('challenge') || '';
     const credentials: object[] = JSON.parse(localStorage.getItem('credentials') || '[]');
     // const credentials: object[] = []; // use to reset credentials on server
     const origin = (origin: string) => allowedOrigins?.includes(origin);
@@ -89,7 +89,7 @@ app.post('/authenticate', async (req: Request, res: Response) => {
     console.log('CREDENTIAL', req.body, JSON.parse(localStorage.getItem('credentials') || '[]').map((a: any) => a));
     const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
     if (!credentialKey) { throw new Error('Credential not found'); }
-    const challenge: string = localStorage.getItem('challenge');
+    const challenge: string = localStorage.getItem('challenge') || '';
     await server.verifyAuthentication(req.body, credentialKey, {
       challenge,
       origin: (origin: string) => allowedOrigins?.includes(origin),
@@ -105,7 +105,7 @@ app.post('/authenticate', async (req: Request, res: Response) => {
 });
 
 app.post('/resetCredentials', async (req: Request, res: Response) => {
-  localStorage.setItem('credentials', '[]');
+  localStorage.clear();
   res.status(204);
 });
 

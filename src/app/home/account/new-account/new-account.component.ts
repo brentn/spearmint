@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { linkToken } from '../../../data/state/selectors';
 import { filter, map, take, tap } from 'rxjs';
 import { BankingConnectorService } from '../../../data/database/banking-connector.service';
+import { DBStateService } from 'src/app/data/database/dbState.service';
 
 @Component({
   selector: 'app-new-account',
@@ -38,7 +39,13 @@ export class NewAccountComponent {
     })
   ).subscribe();
 
-  constructor(private router: Router, private store: Store<AppState>, private plaidLinkService: NgxPlaidLinkService, private bank: BankingConnectorService) { }
+  constructor(
+    private router: Router,
+    private store: Store<AppState>,
+    private db: DBStateService,
+    private plaidLinkService: NgxPlaidLinkService,
+    private bank: BankingConnectorService
+  ) { }
 
   ngOnInit(): void {
     this.store.dispatch(getLinkToken());
@@ -69,7 +76,11 @@ export class NewAccountComponent {
             lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth(), -1),
           })))
         });
-        this.store.dispatch(refreshAccounts())
+        this.db.accounts$.pipe(
+          filter(accounts => accounts.some(account => account?.balance === 0)),
+          take(1),
+          tap(() => this.store.dispatch(refreshAccounts()))
+        )
       })
     ).subscribe();
     this.onClose();

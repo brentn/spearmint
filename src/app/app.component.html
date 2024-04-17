@@ -9,7 +9,7 @@
     <router-outlet></router-outlet>
   </div>
 
-  <div *ngIf="authError">
+  <div *ngIf="authError" class="text-center mt-2">
     <button class="btn btn-danger" (click)="onResetAuth()">Reset User</button>
   </div>
 </div>
