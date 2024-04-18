@@ -14,50 +14,31 @@ pool.query('CREATE TABLE IF NOT EXISTS credentials (id VARCHAR(64) PRIMARY KEY, 
 
 type AuthCredential = { id: string, publicKey: string, algorithm: string };
 
-const setChallenge = (challenge: string) => {
-  pool.query('DELETE FROM challenges', (error: Error, results: string) => {
-    if (error) { throw error; }
-    pool.query('INSERT INTO challenges (challenge) VALUES ($1)', [challenge], (error: Error, results: string) => {
-      if (error) { throw error; }
-      return results;
-    });
-  });
+const setChallenge = async (challenge: string): Promise<void> => {
+  await pool.query('DELETE FROM challenges');
+  await pool.query('INSERT INTO challenges (challenge) VALUES ($1)', [challenge]);
+  return void (0);
 }
 
 const getChallenge = async (): Promise<string> => {
-  return pool.query('SELECT challenge FROM challenges', (error: Error, results: any) => {
-    if (error) {
-      throw error;
-    }
-    console.log('getChallenge', results.rows[0])
-    return results.rows.length ? results.rows[0] : null;
-  });
+  const result = await pool.query('SELECT challenge FROM challenges');
+  console.log('getChallenge', result.rows[0].challenge)
+  return result.rows.length ? result.rows[0].challenge : null;
 }
 
-const clearChallenge = (challenge: string) => {
-  pool.query('DELETE FROM challenges WHERE challenge = $1', [challenge], (error: Error) => {
-    if (error) {
-      throw error;
-    }
-  });
+const clearChallenge = async (challenge: string): Promise<void> => {
+  await pool.query('DELETE FROM challenges WHERE challenge = $1', [challenge]);
+  return void (0);
 }
 
-const addCredential = (credential: AuthCredential) => {
-  pool.query('INSERT INTO credentials (id, publicKey, algorithm) VALUES ($1, $2, $3)', [credential.id, credential.publicKey, credential.algorithm], (error: Error, results: AuthCredential) => {
-    if (error) {
-      throw error;
-    }
-    return results;
-  });
+const addCredential = async (credential: AuthCredential): Promise<void> => {
+  await pool.query('INSERT INTO credentials (id, publicKey, algorithm) VALUES ($1, $2, $3)', [credential.id, credential.publicKey, credential.algorithm]);
+  return void (0);
 }
 
-const getCredential = (id: string) => {
-  pool.query('SELECT * FROM credentials WHERE id = $1', [id], (error: Error, results: AuthCredential[]) => {
-    if (error) {
-      throw error;
-    }
-    return results?.length ? [0] : null;
-  });
+const getCredential = async (id: string): Promise<AuthCredential> => {
+  const result = await pool.query('SELECT * FROM credentials WHERE id = $1', [id]);
+  return result.rows.length ? result.rows[0] : null;
 }
 
 module.exports = {
