@@ -22,7 +22,6 @@ const setChallenge = async (challenge: string): Promise<void> => {
 
 const getChallenge = async (): Promise<string> => {
   const result = await pool.query('SELECT challenge FROM challenges');
-  console.log('getChallenge', result.rows[0].challenge)
   return result.rows.length ? result.rows[0].challenge : null;
 }
 
