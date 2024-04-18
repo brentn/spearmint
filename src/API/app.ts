@@ -86,7 +86,7 @@ app.post('/authenticate', async (req: Request, res: Response) => {
       challenge,
       origin: (origin: string) => allowedOrigins?.includes(origin),
       userVerified: true,
-      verbose: true
+      verbose: false
     });
     await db.clearChallenge(challenge);
     res.status(200).json('');
