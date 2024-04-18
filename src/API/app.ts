@@ -65,14 +65,16 @@ app.get('/challenge', async (req: Request, res: Response) => {
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
-    const challenge: string = await db.getChallenge();
-    console.log('Challenge:', challenge);
-    console.log('Req Body:', req.body);
-    const origin = (origin: string) => allowedOrigins?.includes(origin);
-    const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
-    db.addCredential(verifiedRegistration.credential);
-    db.clearChallenge(challenge);
-    res.status(200).json(verifiedRegistration);
+    db.getChallenge().then((challenge: string) => {
+      console.log('Challenge:', challenge);
+      console.log('Req Body:', req.body);
+      const origin = (origin: string) => allowedOrigins?.includes(origin);
+      server.verifyRegistration(req.body, { challenge, origin }).then((verifiedRegistration: any) => {
+        db.addCredential(verifiedRegistration.credential);
+        db.clearChallenge(challenge);
+        res.status(200).json(verifiedRegistration);
+      });
+    })
   } catch (error) {
     console.error('Error registering new user:', error);
     res.status(500).json({ message: 'Failed to register new user' });
