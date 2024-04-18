@@ -24,13 +24,13 @@ const setChallenge = (challenge: string) => {
   });
 }
 
-const getChallenge = () => {
-  pool.query('SELECT challenge FROM challenges', (error: Error, results: string[]) => {
+const getChallenge = async (): Promise<string> => {
+  return pool.query('SELECT challenge FROM challenges', (error: Error, results: any) => {
     if (error) {
       throw error;
     }
-    console.log('getChallenge', results)
-    return results?.length ? results[0] : null;
+    console.log('getChallenge', results.rows[0])
+    return results.rows.length ? results.rows[0] : null;
   });
 }
 

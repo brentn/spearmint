@@ -67,7 +67,6 @@ app.post('/register', async (req: Request, res: Response) => {
   try {
     const challenge: string = await db.getChallenge();
     console.log('Challenge:', challenge);
-    console.log('Req Body:', req.body);
     const origin = (origin: string) => allowedOrigins?.includes(origin);
     const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
     await db.addCredential(verifiedRegistration.credential);
