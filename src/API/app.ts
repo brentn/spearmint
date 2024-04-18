@@ -65,7 +65,7 @@ app.get('/challenge', async (req: Request, res: Response) => {
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
-    const challenge: string = await db.getChallenge();
+    const challenge: string = db.getChallenge();
     console.log('Challenge:', challenge);
     console.log('Req Body:', req.body);
     const origin = (origin: string) => allowedOrigins?.includes(origin);
