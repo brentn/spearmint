@@ -82,6 +82,7 @@ app.post('/authenticate', async (req: Request, res: Response) => {
     const credential = await db.getCredential(credentialId);
     if (!credential) { throw new Error('Credential not found'); }
     const challenge: string = await db.getChallenge();
+    console.log('credential', credential);
     console.log('request body', req.body);
     await server.verifyAuthentication(req.body, credential, {
       challenge,
