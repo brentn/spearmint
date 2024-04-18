@@ -58,7 +58,6 @@ app.get('/status', async (req: Request, res: Response) => {
 
 app.get('/challenge', async (req: Request, res: Response) => {
   const challenge = generator.randomBytes(20).toString('hex');
-  console.log('Challenge:', challenge);
   await db.setChallenge(challenge);
   res.status(200).json({ challenge });
 });
@@ -66,9 +65,9 @@ app.get('/challenge', async (req: Request, res: Response) => {
 app.post('/register', async (req: Request, res: Response) => {
   try {
     const challenge: string = await db.getChallenge();
-    console.log('Challenge:', challenge);
     const origin = (origin: string) => allowedOrigins?.includes(origin);
     const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
+    console.log('Verified Registration:', verifiedRegistration)
     await db.addCredential(verifiedRegistration.credential);
     await db.clearChallenge(challenge);
     res.status(200).json(verifiedRegistration);
