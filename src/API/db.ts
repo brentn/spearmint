@@ -10,7 +10,7 @@ const pool = new Pool({
 });
 
 pool.query('CREATE TABLE IF NOT EXISTS challenges (challenge VARCHAR(64) UNIQUE NOT NULL);');
-pool.query('CREATE TABLE IF NOT EXISTS credentials (id VARCHAR(64) PRIMARY KEY, publicKey VARCHAR(64) NOT NULL, algorithm VARCHAR(20) NOT NULL);')
+pool.query('CREATE TABLE IF NOT EXISTS credentials (id VARCHAR(64) PRIMARY KEY, publicKey VARCHAR(256) NOT NULL, algorithm VARCHAR(20) NOT NULL);')
 
 type AuthCredential = { id: string, publicKey: string, algorithm: string };
 
