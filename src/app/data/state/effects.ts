@@ -136,7 +136,7 @@ export class MainEffects {
         catchError(err => {
           accounts.filter(a => a.accessToken === action.payload).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
           switch (err.status) {
-            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload, action: getAccountBalances(action.payload) }));
+            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload, action: refreshAccounts() }));
           }
           return of();
         }),
@@ -185,7 +185,7 @@ export class MainEffects {
         catchError(err => {
           accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
           switch (err.status) {
-            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload.accessToken, action: getLatestTransactions(action.payload) }));
+            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload.accessToken, action: refreshAccounts() }));
           }
           return of();
         }),
