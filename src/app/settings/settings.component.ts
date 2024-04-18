@@ -9,6 +9,7 @@ import { refreshAccountsImmediately, reset, updateAccount, updateConfiguration }
 import { Router } from '@angular/router';
 import { Account } from '../data/models/account';
 import { DBStateService } from '../data/database/dbState.service';
+import { BankingConnectorService } from '../data/database/banking-connector.service';
 
 @Component({
   selector: 'app-settings',
@@ -25,7 +26,12 @@ export class SettingsComponent {
     accountRows: new FormArray([]),
   });
 
-  constructor(private store: Store<AppState>, private router: Router, private dbState: DBStateService) { }
+  constructor(
+    private store: Store<AppState>,
+    private bank: BankingConnectorService,
+    private router: Router,
+    private dbState: DBStateService
+  ) { }
 
   ngOnInit(): void {
     const groupSubscriptions: Subscription[] = [];
@@ -77,6 +83,8 @@ export class SettingsComponent {
   onResetAllData(): void {
     if (confirm('Are you sure you want to DELETE all account and transaction data?')) {
       this.store.dispatch(reset());
+      localStorage.setItem('user', '');
+      this.bank.resetCredentials$().subscribe();
       this.router.navigate(['/']);
     }
   }

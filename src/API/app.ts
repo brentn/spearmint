@@ -2,8 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const generator = require('crypto');
-const LocalStorage = require('node-localstorage').LocalStorage
-const localStorage = new LocalStorage('./scratch');
+const db = require('./db');
 const { Configuration, PlaidApi, PlaidEnvironments } = require('plaid');
 import { NextFunction, Request, Response } from "express";
 // const server = require("fix-esm").require("@passwordless-id/webauthn/dist/esm/server");
@@ -14,11 +13,7 @@ if (!process.env.PLAID_SECRET) {
   throw new Error('Missing Environment Variables')
 }
 
-const plaidEnvironment = process.env.PLAID_ENVIRONMENT;
-const plaidClientId = process.env.PLAID_CLIENT_ID;
-const plaidSecret = process.env.PLAID_SECRET;
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',');
-
 
 const anonymousEndpoints = ['/status', '/challenge', '/register', '/authenticate', '/resetCredentials'];
 
@@ -33,7 +28,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
   } else {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       const credentialId = req.headers.authorization.split(' ')[1];
-      const isRegisteredUser = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
+      const isRegisteredUser = await db.getCredential(credentialId);
       if (isRegisteredUser) {
         req.headers['userId'] = credentialId;
         next();
@@ -47,11 +42,11 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 });
 
 const configuration = new Configuration({
-  basePath: PlaidEnvironments[(plaidEnvironment || 'sandbox')],
+  basePath: PlaidEnvironments[(process.env.PLAID_ENVIRONMENT || 'sandbox')],
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': plaidClientId,
-      'PLAID-SECRET': plaidSecret,
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
     },
   },
 });
@@ -63,19 +58,17 @@ app.get('/status', async (req: Request, res: Response) => {
 
 app.get('/challenge', async (req: Request, res: Response) => {
   const challenge = generator.randomBytes(20).toString('hex');
-  localStorage.setItem('challenge', challenge);
+  db.setChallenge(challenge);
   res.status(200).json({ challenge });
 });
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
-    const challenge: string = localStorage.getItem('challenge') || '';
-    const credentials: object[] = JSON.parse(localStorage.getItem('credentials') || '[]');
-    // const credentials: object[] = []; // use to reset credentials on server
+    const challenge: string = await db.getChallenge();
     const origin = (origin: string) => allowedOrigins?.includes(origin);
     const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
-    localStorage.setItem('challenge', '');
-    localStorage.setItem('credentials', JSON.stringify([...credentials, verifiedRegistration.credential]));
+    db.addCredential(verifiedRegistration.credential);
+    db.clearChallenge(challenge);
     res.status(200).json(verifiedRegistration);
   } catch (error) {
     console.error('Error registering new user:', error);
@@ -86,17 +79,16 @@ app.post('/register', async (req: Request, res: Response) => {
 app.post('/authenticate', async (req: Request, res: Response) => {
   try {
     const credentialId = req.body.credentialId;
-    console.log('CREDENTIAL', req.body, JSON.parse(localStorage.getItem('credentials') || '[]').map((a: any) => a));
-    const credentialKey = JSON.parse(localStorage.getItem('credentials') || '[]').find((a: { id: string }) => a.id === credentialId);
-    if (!credentialKey) { throw new Error('Credential not found'); }
-    const challenge: string = localStorage.getItem('challenge') || '';
-    await server.verifyAuthentication(req.body, credentialKey, {
+    const credential = db.getCredential(credentialId);
+    if (!credential) { throw new Error('Credential not found'); }
+    const challenge: string = db.getChallenge();
+    await server.verifyAuthentication(req.body, credential, {
       challenge,
       origin: (origin: string) => allowedOrigins?.includes(origin),
       userVerified: true,
       verbose: false
     });
-    localStorage.setItem('challenge', '');
+    db.clearChallenge(challenge);
     res.status(200).json('');
   } catch (error) {
     console.error('Error authenticating user:', error);
@@ -105,7 +97,6 @@ app.post('/authenticate', async (req: Request, res: Response) => {
 });
 
 app.post('/resetCredentials', async (req: Request, res: Response) => {
-  localStorage.clear();
   res.status(204);
 });
 
