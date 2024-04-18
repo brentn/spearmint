@@ -14,7 +14,7 @@ pool.query('CREATE TABLE IF NOT EXISTS credentials (id VARCHAR(64) PRIMARY KEY, 
 
 type AuthCredential = { id: string, publicKey: string, algorithm: string };
 
-const setChallenge = (challenge: string) => {
+const setChallenge = async (challenge: string) => {
   pool.query('DELETE FROM challenges', (error: Error, results: string) => {
     if (error) { throw error; }
     pool.query('INSERT INTO challenges (challenge) VALUES ($1)', [challenge], (error: Error, results: string) => {
@@ -24,7 +24,7 @@ const setChallenge = (challenge: string) => {
   });
 }
 
-const getChallenge = () => {
+const getChallenge = async () => {
   pool.query('SELECT challenge FROM challenges', (error: Error, results: string[]) => {
     if (error) {
       throw error;
@@ -34,7 +34,7 @@ const getChallenge = () => {
   });
 }
 
-const clearChallenge = (challenge: string) => {
+const clearChallenge = async (challenge: string) => {
   pool.query('DELETE FROM challenges WHERE challenge = $1', [challenge], (error: Error) => {
     if (error) {
       throw error;
@@ -42,7 +42,7 @@ const clearChallenge = (challenge: string) => {
   });
 }
 
-const addCredential = (credential: AuthCredential) => {
+const addCredential = async (credential: AuthCredential) => {
   pool.query('INSERT INTO credentials (id, publicKey, algorithm) VALUES ($1, $2, $3)', [credential.id, credential.publicKey, credential.algorithm], (error: Error, results: AuthCredential) => {
     if (error) {
       throw error;
@@ -51,7 +51,7 @@ const addCredential = (credential: AuthCredential) => {
   });
 }
 
-const getCredential = (id: string) => {
+const getCredential = async (id: string) => {
   pool.query('SELECT * FROM credentials WHERE id = $1', [id], (error: Error, results: AuthCredential[]) => {
     if (error) {
       throw error;
