@@ -10,7 +10,7 @@ import { DBStateService } from "../database/dbState.service";
 import { Transaction } from "../models/transaction";
 import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
 
-const MIN_REFRESH_FREQUENCY = 120; //minutes
+const MIN_REFRESH_FREQUENCY = 10; //minutes
 
 @Injectable()
 export class MainEffects {
