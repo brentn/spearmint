@@ -35,9 +35,9 @@ const addCredential = async (credential: AuthCredential): Promise<void> => {
   return void (0);
 }
 
-const getCredential = async (id: string): Promise<AuthCredential> => {
+const getCredential = async (id: string): Promise<AuthCredential | null> => {
   const result = await pool.query('SELECT * FROM credentials WHERE id = $1', [id]);
-  return result.rows.length ? result.rows[0] : null;
+  return result.rows.length ? { id: result.rows[0].id, publicKey: result.rows[0].publickey, algorithm: result.rows[0].algorithm } : null;
 }
 
 module.exports = {
