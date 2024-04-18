@@ -25,10 +25,11 @@ const setChallenge = (challenge: string) => {
 }
 
 const getChallenge = () => {
-  pool.query('SELECT * FROM challenges', (error: Error, results: string[]) => {
+  pool.query('SELECT challenge FROM challenges', (error: Error, results: string[]) => {
     if (error) {
       throw error;
     }
+    console.log('getChallenge', results)
     return results?.length ? results[0] : null;
   });
 }

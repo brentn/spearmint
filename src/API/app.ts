@@ -58,6 +58,7 @@ app.get('/status', async (req: Request, res: Response) => {
 
 app.get('/challenge', async (req: Request, res: Response) => {
   const challenge = generator.randomBytes(20).toString('hex');
+  console.log('Challenge:', challenge);
   db.setChallenge(challenge);
   res.status(200).json({ challenge });
 });
