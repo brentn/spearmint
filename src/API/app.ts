@@ -80,13 +80,14 @@ app.post('/authenticate', async (req: Request, res: Response) => {
   try {
     const credentialId = req.body.credentialId;
     const credential = await db.getCredential(credentialId);
+    console.log('Credential:', credentialId, credential.id)
     if (!credential) { throw new Error('Credential not found'); }
     const challenge: string = await db.getChallenge();
     await server.verifyAuthentication(req.body, credential, {
       challenge,
       origin: (origin: string) => allowedOrigins?.includes(origin),
       userVerified: true,
-      verbose: false
+      verbose: true
     });
     await db.clearChallenge(challenge);
     res.status(200).json('');
