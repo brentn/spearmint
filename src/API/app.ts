@@ -59,19 +59,19 @@ app.get('/status', async (req: Request, res: Response) => {
 app.get('/challenge', async (req: Request, res: Response) => {
   const challenge = generator.randomBytes(20).toString('hex');
   console.log('Challenge:', challenge);
-  db.setChallenge(challenge);
+  await db.setChallenge(challenge);
   res.status(200).json({ challenge });
 });
 
 app.post('/register', async (req: Request, res: Response) => {
   try {
-    const challenge: string = db.getChallenge();
+    const challenge: string = await db.getChallenge();
     console.log('Challenge:', challenge);
     console.log('Req Body:', req.body);
     const origin = (origin: string) => allowedOrigins?.includes(origin);
     const verifiedRegistration = await server.verifyRegistration(req.body, { challenge, origin });
-    db.addCredential(verifiedRegistration.credential);
-    db.clearChallenge(challenge);
+    await db.addCredential(verifiedRegistration.credential);
+    await db.clearChallenge(challenge);
     res.status(200).json(verifiedRegistration);
   } catch (error) {
     console.error('Error registering new user:', error);
@@ -82,16 +82,16 @@ app.post('/register', async (req: Request, res: Response) => {
 app.post('/authenticate', async (req: Request, res: Response) => {
   try {
     const credentialId = req.body.credentialId;
-    const credential = db.getCredential(credentialId);
+    const credential = await db.getCredential(credentialId);
     if (!credential) { throw new Error('Credential not found'); }
-    const challenge: string = db.getChallenge();
+    const challenge: string = await db.getChallenge();
     await server.verifyAuthentication(req.body, credential, {
       challenge,
       origin: (origin: string) => allowedOrigins?.includes(origin),
       userVerified: true,
       verbose: false
     });
-    db.clearChallenge(challenge);
+    await db.clearChallenge(challenge);
     res.status(200).json('');
   } catch (error) {
     console.error('Error authenticating user:', error);
