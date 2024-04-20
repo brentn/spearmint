@@ -1,6 +1,6 @@
-import { Injectable } from "@angular/core";
+import { ApplicationRef, Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately } from "./actions";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately, selectBudget } from "./actions";
 import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Action, Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
@@ -10,7 +10,7 @@ import { DBStateService } from "../database/dbState.service";
 import { Transaction } from "../models/transaction";
 import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
 
-const MIN_REFRESH_FREQUENCY = 10; //minutes
+const MIN_REFRESH_FREQUENCY = 30; //minutes
 
 @Injectable()
 export class MainEffects {

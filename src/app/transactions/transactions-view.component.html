@@ -1,10 +1,11 @@
 <div class="background bg-secondary"></div>
 <div class="d-flex justify-content-between align-items-center">
   <div class="mt-2 larger text-light"><span role="button" class="p-3"><fa-icon [icon]="backIcon"
-        [routerLink]="['']"></fa-icon></span>
+        (click)="onBack()"></fa-icon></span>
   </div>
   <div class="larger text-center text-light text-nowrap">
-    {{selectedAccount?.displayName|slice:0:15}} Transactions
+    {{title|snakecase:'undo'|titlecase}} Transactions
+    <span *ngIf="transactions?.length">({{transactions?.length}})</span>
   </div>
   <div class="p-3 larger">&nbsp;</div>
 </div>
@@ -16,8 +17,7 @@
     </div>
   </div>
   <div *cdkVirtualFor="let transaction of uncategorizedTransactions; let i = index" class="m-3">
-    <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
-      [selectedAccount]="selectedAccount"></transaction>
+    <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"></transaction>
   </div>
 </div>
 
@@ -28,9 +28,9 @@
     </div>
   </div>
   <cdk-virtual-scroll-viewport [itemSize]="48">
-    <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3">
-      <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
-        [selectedAccount]="selectedAccount"></transaction>
+    <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3 fullwidth">
+      <transaction [transaction]=" transaction" [categories]="categories" [accounts]="accounts">
+      </transaction>
     </div>
   </cdk-virtual-scroll-viewport>
 </div>

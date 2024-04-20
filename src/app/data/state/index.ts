@@ -9,4 +9,5 @@ export interface MainState {
   configuration: Configuration;
   loading: string[];
   selectedAccount: Account | undefined;
+  selectedBudget: string | 'other' | undefined;
 }

@@ -4,6 +4,7 @@ import { AppState } from "src/app/app.module";
 import { Account } from "../models/account";
 import { Transaction } from "../models/transaction";
 import { Configuration } from "../types/configuration.type";
+import { Budget } from "../types/budget.type";
 
 export const initialize = createAction('[Main] Initialize');
 export const startLoad = createAction('[Main] Start loading...', (payload: string) => ({ payload }));
@@ -33,3 +34,6 @@ export const updateTransaction = createAction('[Transaction] Update transaction'
 export const transactionUpdated = createAction('[Transaction] Transaction updated', (payload: Transaction) => ({ payload }));
 export const removeTransaction = createAction('[Transaction] Remove transaction', (payload: string) => ({ payload }));
 export const transactionRemoved = createAction('[Transaction] Transaction removed', (payload: string) => ({ payload }));
+
+export const addBudget = createAction('[Budget] Add budget', (payload: Budget) => ({ payload }));
+export const selectBudget = createAction('[Budget] Select budget', (payload: string | 'other' | undefined) => ({ payload }));

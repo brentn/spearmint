@@ -11,3 +11,7 @@
 .form.editing {
   left: 0;
 }
+
+.d-flex.narrow {
+  min-width: 0;
+}

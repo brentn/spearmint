@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { Store } from '@ngrx/store';
 import { AppState } from 'src/app/app.module';
 import { Account } from 'src/app/data/models/account';
@@ -12,16 +13,20 @@ import { Category } from 'src/app/data/types/category.type';
   styleUrls: ['./transaction.component.css']
 })
 export class TransactionComponent {
-  @Input() transaction!: Transaction | null;
-  @Input() categories!: Category[] | null;
-  @Input() accounts!: Account[] | null;
-  @Input() selectedAccount: Account | undefined;
+  @Input() transaction: Transaction | undefined;
+  @Input() categories: Category[] | undefined;
+  @Input() accounts: Account[] | undefined;
   editing = false;
 
   constructor(private store: Store<AppState>) { }
 
   get category(): Category | undefined {
     return this.categories?.find(a => a.id === this.transaction?.categoryId)
+  }
+
+  get categoryName(): string {
+    if (!this.category) { return '[UNKNOWN]' }
+    return this.category.id.substring(this.category.group.length + 1);
   }
 
   get accountName(): string {

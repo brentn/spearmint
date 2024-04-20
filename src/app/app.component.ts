@@ -29,6 +29,7 @@ export class AppComponent {
         })).pipe(
           switchMap(authentication => this.bank.authenticateUser$(authentication).pipe(
             map(() => {
+              console.log('authenticated.');
               return user;
             }),
             catchError(() => { this.authError = true; return of(); })
@@ -63,9 +64,7 @@ export class AppComponent {
 
   onResetAuth(): void {
     if (confirm('Reset your user and all data?')) {
-      localStorage.setItem('user', '');
       this.store.dispatch(reset());
-      this.bank.resetCredentials$().subscribe();
     }
   }
 

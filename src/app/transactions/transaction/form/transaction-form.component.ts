@@ -15,9 +15,9 @@ import { Category } from 'src/app/data/types/category.type';
   styleUrls: ['./transaction-form.component.css']
 })
 export class TransactionFormComponent {
-  @Input() transaction: Transaction | null = null;
-  @Input() accounts: Account[] | null = null;
-  @Input() categories: Category[] | null = null;
+  @Input() transaction: Transaction | undefined;
+  @Input() accounts: Account[] | undefined;
+  @Input() categories: Category[] | undefined;
   @Output() close = new EventEmitter();
   focus = new Subject();
   subscriptions: Subscription[] = [];

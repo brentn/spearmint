@@ -175,6 +175,7 @@ app.post('/transactions', async (req: Request, res: Response) => {
   try {
     const request = { access_token: req.body?.access_token };
     const response = await plaidClient.transactionsSync(request);
+    console.log('Transactions:', response.data)
     return res.status(200).json({
       transactions: response.data
     })

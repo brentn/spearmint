@@ -1,4 +1,4 @@
-<div *ngIf="budgets?.length" class="m-3" role="button" [routerLink]="['budgets']">
+<div class="m-3" role="button" [routerLink]="['budgets']">
   <div class="bg-light p-3 rounded">
     <div class="d-flex justify-content-between align-items-center">
       <span class="d-flex align-items-center">
@@ -6,12 +6,10 @@
         <span class="d-none d-md-inline small text-muted fst-italic ms-3">as of {{today|date:'MMM d'}}</span>
       </span>
       <span class="d-flex align-items-center">
-        <span class="larger">{{expenseBudget-totalExpenses|currency}}</span>
-        <span *ngIf="expenseBudget>=totalExpenses" class="border border-secondary rounded px-2 ms-3">left</span>
-        <span *ngIf="expenseBudget < totalExpenses" class="border border-danger rounded px-2 ms-3">over</span>
+        <span class="">{{net|currency}}</span>
       </span>
     </div>
-    <div *ngIf="incomeBudget" class="mb-2">
+    <div class="mb-2">
       Income
       <div class="position-relative">
         <div class="progress">
@@ -20,9 +18,10 @@
         <div class="today position-absolute text-dark fst-bold" [class.initialized]="initialized"
           [style]="'top:-.29em; left: '+monthProgress+'%'">|</div>
       </div>
-      <div class="text-muted ms-3">{{totalIncome|currency}} of {{incomeBudget|currency}}</div>
+      <div class="text-muted ms-3">{{-totalIncome|currency}} of {{incomeBudget|currency}}</div>
     </div>
-    <div *ngIf="expenseBudget" class="mb-3">
+
+    <div class="mb-3">
       Expenses
       <div class="position-relative">
         <div class="progress">

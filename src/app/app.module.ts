@@ -36,6 +36,8 @@ import { SnakecasePipe } from './utilities/snakecase.pipe';
 import { TokenInterceptorService } from './auth/interceptor/token-interceptor.service';
 import { DBStateService } from './data/database/dbState.service';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { BudgetsViewComponent } from './budgets/view/budgets-view.component';
+import { BudgetComponent } from './budgets/view/budget/budget.component';
 
 export type AppState = {
   main: MainState
@@ -63,6 +65,8 @@ export type AppState = {
     CategoryPickerComponent,
     CategoryItemComponent,
     SnakecasePipe,
+    BudgetsViewComponent,
+    BudgetComponent,
   ],
   imports: [
     BrowserModule,

@@ -1,0 +1,17 @@
+<div *ngIf="budget" class="my-3 p-2 bg-light rounded" (click)="onViewTransactions()">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <span>{{budget.categoryId??'Other'|snakecase:'undo'|titlecase}}</span>
+      <span *ngIf="transactions?.length" class="ms-2">({{transactions?.length}})</span>
+    </div>
+    <span class="badge badge-primary" (click)="$event.stopPropagation(); onEdit()">edit</span>
+  </div>
+  <div class="position-relative">
+    <div class="progress">
+      <div class="progress-bar bg-primary" role="progressbar" [style]="'width: '+progress+'%'"></div>
+    </div>
+    <!-- <div class="today position-absolute text-dark fst-bold" [class.initialized]="initialized"
+      [style]="'top:-.29em; left: '+monthProgress+'%'">|</div> -->
+  </div>
+  <div class="text-muted ms-3">{{total|currency}} of {{budget.amount|currency}}</div>
+</div>

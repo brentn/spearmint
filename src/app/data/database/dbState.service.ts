@@ -118,5 +118,32 @@ export class DBStateService {
     }
   }
 
+  Budgets = {
+    add$: (budget: Budget): Observable<Budget> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('budget', (budgets: Budget[]) => [...budgets, budget])).pipe(
+          map(() => budget)
+        )),
+      );
+    },
+    update$: (budget: Budget): Observable<Budget> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('budget', (budgets: Budget[]) => budgets.map(a => a.categoryId === budget.categoryId ? budget : a))).pipe(
+          map(() => budget)
+        )),
+      );
+    },
+    delete$: (categoryId: string): Observable<string> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('budget', (budgets: Budget[]) => budgets.filter(a => a.categoryId !== categoryId))).pipe(
+          map(() => categoryId)
+        )),
+      );
+    }
+  }
+
 }
 

@@ -20,8 +20,8 @@
       all</div>
   </div>
   <div *ngFor="let transaction of (uncategorizedTransactions||recentTransactions)" class="m-3">
-    <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
-      [selectedAccount]="undefined"></transaction>
+    <transaction [transaction]="transaction" [categories]="categories||undefined" [accounts]="accounts||undefined">
+    </transaction>
   </div>
 </div>
 
