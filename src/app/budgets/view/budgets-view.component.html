@@ -8,23 +8,24 @@
       <span class="px-2 larger text-nowrap">{{month|date:'MMMM'}} Budgets</span>
     </div>
 
-    <div class="m-3 py-3">
-      <span class="p-2 larger text-nowrap">Income:</span>
-      <app-budget *ngFor="let budget of incomeBudgets" [budget]="budget"
-        [transactions]="transactionsForCategory(budget.categoryId!)" [isIncome]="true"></app-budget>
-    </div>
+    <div class="scroll">
+      <div class="m-3 py-3">
+        <span class="p-2 larger text-nowrap">Income:</span>
+        <app-budget *ngFor="let budget of incomeBudgets" [budget]="budget"
+          [transactions]="transactionsForCategory(budget.categoryId!)" [isIncome]="true"></app-budget>
+      </div>
 
-    <div class="m-3 pb-3">
-      <span class="p-2 larger text-nowrap">Expenses:</span>
-      <app-budget *ngFor="let budget of expenseBudgets" [budget]="budget"
-        [transactions]="transactionsForCategory(budget.categoryId!)"></app-budget>
-      <app-budget [budget]="otherBudget" [transactions]="otherBudgetTransactions"></app-budget>
+      <div class="m-3 pb-3">
+        <span class="p-2 larger text-nowrap">Expenses:</span>
+        <app-budget *ngFor="let budget of expenseBudgets" [budget]="budget"
+          [transactions]="transactionsForCategory(budget.categoryId!)"></app-budget>
+        <app-budget [budget]="otherBudget" [transactions]="otherBudgetTransactions"></app-budget>
+      </div>
     </div>
   </div>
 </div>
 
 <div *ngIf="selectedBudget">
-
   <ng-container *ngIf="selectedBudget!=='other'">
     <transactions-view *ngIf="transactionsForCategory(selectedBudget) as categoryTransactions"
       [transactions]="categoryTransactions" [categories]="categories" [accounts]="accounts"

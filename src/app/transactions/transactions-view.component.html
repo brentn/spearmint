@@ -17,7 +17,8 @@
     </div>
   </div>
   <div *cdkVirtualFor="let transaction of uncategorizedTransactions; let i = index" class="m-3">
-    <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"></transaction>
+    <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
+      (select)="onSelect($event)"></transaction>
   </div>
 </div>
 
@@ -29,8 +30,14 @@
   </div>
   <cdk-virtual-scroll-viewport [itemSize]="48">
     <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3 fullwidth">
-      <transaction [transaction]=" transaction" [categories]="categories" [accounts]="accounts">
+      <transaction [transaction]=" transaction" [categories]="categories" [accounts]="accounts"
+        (select)="onSelect($event)">
       </transaction>
     </div>
   </cdk-virtual-scroll-viewport>
+</div>
+
+<div class="form bg-primary" [class.editing]="selectedTransaction">
+  <transaction-form [transaction]="selectedTransaction" [accounts]="accounts" [categories]="categories"
+    (close)="onSelect(undefined)"></transaction-form>
 </div>

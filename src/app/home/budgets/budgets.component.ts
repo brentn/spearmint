@@ -11,10 +11,10 @@ import { Currency } from 'src/app/utilities/currencyUtils';
   styleUrls: ['./budgets.component.css']
 })
 export class HomeBudgetsComponent {
-  @Input() budgets: Budget[] | null = null;
-  @Input() categories: Category[] | null = null;
-  @Input() transactions: Transaction[] | null = null;
-  incomeCategories: (string | undefined)[] | null = null;
+  @Input() budgets: Budget[] | undefined;
+  @Input() categories: Category[] | undefined;
+  @Input() transactions: Transaction[] | undefined;
+  incomeCategories: (string | undefined)[] | undefined;
   transactionsForMonth: Transaction[] = [];
   todayIcon = faCaretUp;
   initialized = false;

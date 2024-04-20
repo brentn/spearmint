@@ -8,7 +8,7 @@ import { Account } from 'src/app/data/models/account';
   styleUrls: ['./navbar.component.css']
 })
 export class NavbarComponent {
-  @Input() accounts: Account[] | null = null;;
+  @Input() accounts: Account[] | undefined;
 
   showDropdown = false;
   settingsIcon = faCog;

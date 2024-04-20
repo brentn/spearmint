@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Store } from '@ngrx/store';
 import { AppState } from 'src/app/app.module';
@@ -16,6 +16,7 @@ export class TransactionComponent {
   @Input() transaction: Transaction | undefined;
   @Input() categories: Category[] | undefined;
   @Input() accounts: Account[] | undefined;
+  @Output() select = new EventEmitter<Transaction | undefined>();
   editing = false;
 
   constructor(private store: Store<AppState>) { }
@@ -34,11 +35,7 @@ export class TransactionComponent {
   }
 
   onEdit(): void {
-    this.editing = true;
-  }
-
-  onEndEdit(): void {
-    this.editing = false;
+    this.select.emit(this.transaction);
   }
 
 }

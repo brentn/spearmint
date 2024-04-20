@@ -19,8 +19,16 @@ const reducer = createReducer(initialState,
   on(startLoad, (state, action) => ({ ...state, loading: [...state.loading, action.payload] })),
   on(endLoad, (state, action) => ({ ...state, loading: state.loading.filter((_, i) => i !== state.loading.indexOf(action.payload)) })),
   on(setLinkToken, (state, action) => ({ ...state, linkToken: action.payload })),
-  on(selectAccount, (state, action) => ({ ...state, selectedAccount: action.payload, selectedBudget: undefined })),
-  on(selectBudget, (state, action) => ({ ...state, selectedBudget: action.payload, selectedAccount: undefined })),
+  on(selectAccount, (state, action) => ({
+    ...state,
+    selectedAccount: action.payload,
+    selectedBudget: undefined
+  })),
+  on(selectBudget, (state, action) => ({
+    ...state,
+    selectedAccount: undefined,
+    selectedBudget: action.payload
+  })),
 );
 
 export function mainReducer(state: MainState | undefined, action: Action) {

@@ -6,3 +6,18 @@
   right: 0;
   z-index: -1;
 }
+
+.form {
+  position: fixed;
+  top: 0;
+  left: 100vw;
+  width: 100vw;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 1;
+  transition: left .3s;
+}
+
+.form.editing {
+  left: 0;
+}

@@ -8,9 +8,23 @@
 }
 
 cdk-virtual-scroll-viewport {
-  height: calc(100vh - 9em);
+  height: calc(100vh - 11em);
 }
 
 .fullwidth {
   width: calc(100vw - 4em);
+}
+
+.form {
+  position: fixed;
+  top: 0;
+  left: 100vw;
+  width: 100vw;
+  bottom: 0;
+  overflow: hidden;
+  transition: left .3s;
+}
+
+.form.editing {
+  left: 0;
 }

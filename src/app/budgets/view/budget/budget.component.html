@@ -1,5 +1,5 @@
 <div *ngIf="budget" class="my-3 p-2 bg-light rounded" (click)="onViewTransactions()">
-  <div class="d-flex justify-content-between align-items-center">
+  <div class="d-flex justify-content-between align-items-center my-2">
     <div>
       <span>{{budget.categoryId??'Other'|snakecase:'undo'|titlecase}}</span>
       <span *ngIf="transactions?.length" class="ms-2">({{transactions?.length}})</span>

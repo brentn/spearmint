@@ -13,10 +13,11 @@ import { Transaction } from '../data/models/transaction';
 })
 export class HomeViewComponent {
   @Input() configuration: Configuration | null = DEFAULT_CONFIGURATION;
-  @Input() accounts: Account[] | null = null;
-  @Input() transactions: Transaction[] | null = null;
-  @Input() categories: Category[] | null = null;
-  @Input() budgets: Budget[] | null = null;
+  @Input() accounts: Account[] | undefined;
+  @Input() transactions: Transaction[] | undefined;
+  @Input() categories: Category[] | undefined;
+  @Input() budgets: Budget[] | undefined;
+  selectedTransaction: Transaction | undefined;
 
   ngOnChanges(changes: SimpleChanges): void {
   }
@@ -35,6 +36,10 @@ export class HomeViewComponent {
   }
 
   accountsOfType(accountType: AccountType): Account[] { return this.visibleAccounts.filter(a => a.type === accountType); }
+
+  onSelect(item: Transaction | undefined): void {
+    this.selectedTransaction = item;
+  }
 
 }
 

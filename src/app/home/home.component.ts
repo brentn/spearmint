@@ -10,10 +10,10 @@ import { selectAccount } from '../data/state/actions';
   template: `
   <app-home
     [configuration]="(configuration$|async)"
-    [accounts]="(accounts$|async)"
-    [transactions]="(transactions$|async)"
-    [categories]="(categories$|async)"
-    [budgets]="(budgets$|async)"
+    [accounts]="(accounts$|async)||undefined"
+    [transactions]="(transactions$|async)||undefined"
+    [categories]="(categories$|async)||undefined"
+    [budgets]="(budgets$|async)||undefined"
   ></app-home>
   `
 })

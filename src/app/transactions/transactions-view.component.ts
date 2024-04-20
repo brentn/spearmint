@@ -20,6 +20,7 @@ export class TransactionsViewComponent {
   @Input() title: string = '';
 
   uncategorizedTransactions: Transaction[] = [];
+  selectedTransaction: Transaction | undefined;
   backIcon = faArrowLeft;
 
   constructor(private store: Store<AppState>, private router: Router) { }
@@ -28,6 +29,10 @@ export class TransactionsViewComponent {
     if (changes['transactions']) {
       this.uncategorizedTransactions = (this.transactions || []).filter(transaction => transaction.categoryId === undefined);
     }
+  }
+
+  onSelect(item: Transaction | undefined): void {
+    this.selectedTransaction = item;
   }
 
   onBack(): void {
