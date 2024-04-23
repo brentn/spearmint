@@ -85,7 +85,7 @@ export class SettingsComponent {
   }
 
   onResetAllData(): void {
-    if (confirm('Are you sure you want to DELETE all account and transaction data?')) {
+    if (confirm('Are you sure you want to DELETE all fingerprint, account and transaction data?')) {
       this.store.dispatch(reset());
       localStorage.setItem('user', '');
       this.bank.resetCredentials$().subscribe();

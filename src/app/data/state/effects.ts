@@ -1,6 +1,6 @@
 import { ApplicationRef, Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
-import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately, selectBudget } from "./actions";
+import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately, selectBudget, updateConfiguration } from "./actions";
 import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Action, Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
@@ -27,7 +27,11 @@ export class MainEffects {
 
   spinUpServer$ = createEffect(() => this.actions$.pipe(
     ofType(initialize),
-    tap(() => this.bank.spinUpServer$().subscribe())
+    tap(() => this.bank.spinUpServer$().subscribe()),
+    tap(() => localStorage.getItem('configuration')
+      ? this.store.dispatch(updateConfiguration(JSON.parse(localStorage.getItem('configuration')!)))
+      : null
+    )
   ), { dispatch: false });
 
   getLinkToken$ = createEffect(() => this.actions$.pipe(
@@ -49,6 +53,11 @@ export class MainEffects {
           handler.open();
         });
       })))
+  ), { dispatch: false });
+
+  updateConfiguration$ = createEffect(() => this.actions$.pipe(
+    ofType(updateConfiguration),
+    tap(action => localStorage.setItem('configuration', JSON.stringify(action.payload)))
   ), { dispatch: false });
 
   addAccount$ = createEffect(() => this.actions$.pipe(

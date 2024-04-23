@@ -35,4 +35,5 @@
 </div>
 
 <!-- budgets -->
-<home-budgets [budgets]="budgets" [categories]="categories" [transactions]="transactions"></home-budgets>
+<home-budgets *ngIf="transactions?.length" [budgets]="budgets" [categories]="categories"
+  [transactions]="transactions"></home-budgets>

@@ -18,43 +18,32 @@
     <div *ngIf="account" class="small text-muted">{{account.institution}}: {{account.name}}</div>
   </div>
   <div>
-    <label>
-      Name:
-      <input type="text" formControlName="name" class="form-control larger">
-    </label>
+    <label for="name"> Name:</label>
+    <input id="name" type="text" formControlName="name" class="form-control larger">
   </div>
   <div>
-    <label>
-      Merchant:
-      <input type="text" formControlName="merchant" class="form-control larger">
-    </label>
+    <label for="merchant"> Merchant:</label>
+    <input id="merchant" type="text" formControlName="merchant" class="form-control larger">
   </div>
   <div>
-    <label>
-      Transaction Date:
-      <input type="date" formControlName="dateString" class="form-control larger" required>
-    </label>
+    <label for="date"> Transaction Date: </label>
+    <input id="date" type="date" formControlName="dateString" class="form-control larger" required>
   </div>
   <div>
-    <label>
-      Category:
-      <div class="d-flex align-items-center bg-light text-dark rounded p-1 cursor-pointer" (click)="onPickCategory()">
-        <category-item [category]="category"></category-item>
-      </div>
-    </label>
+    <label for="category"> Category: </label>
+    <div id="category" class="d-flex align-items-center bg-light text-dark rounded p-1 cursor-pointer"
+      (click)="onPickCategory()">
+      <category-item [category]="category"></category-item>
+    </div>
   </div>
   <div>
-    <label>
-      Notes:
-      <textarea formControlName="notes" class="form-control" rows="3"></textarea>
-    </label>
+    <label for="notes"> Notes: </label>
+    <textarea id="notes" formControlName="notes" class="form-control" rows="3"></textarea>
   </div>
   <div>
     <div class="form-check">
-      <label class="form-check-label">
-        Hide from budget?
-        <input class="form-check-input" type="checkbox" formControlName="hideFromBudget">
-      </label>
+      <label class="form-check-label" for="hideFromBudget"> Hide from budget? </label>
+      <input id="hideFromBudget" class="form-check-input" type="checkbox" formControlName="hideFromBudget">
     </div>
   </div>
 </form>
