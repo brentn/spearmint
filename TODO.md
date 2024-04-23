@@ -1,5 +1,5 @@
-- search transactions
 - Edit budget not working
+- search transactions
 - clear category when done
 - Button to add budget (subcategory?)
 - hide budgets with no amount and no transactions
