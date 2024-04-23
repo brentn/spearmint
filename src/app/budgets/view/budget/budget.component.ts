@@ -1,7 +1,10 @@
-import { ApplicationRef, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
-import { Router } from '@angular/router';
+import { ApplicationRef, ChangeDetectorRef, Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { faEdit } from '@fortawesome/free-regular-svg-icons';
 import { Store } from '@ngrx/store';
+import { Subscription } from 'rxjs';
 import { AppState } from 'src/app/app.module';
+import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Transaction } from 'src/app/data/models/transaction';
 import { selectBudget } from 'src/app/data/state/actions';
 import { Budget } from 'src/app/data/types/budget.type';
@@ -16,8 +19,11 @@ export class BudgetComponent {
   @Input() budget: Budget | undefined;
   @Input() transactions: Transaction[] | undefined;
   @Input() isIncome: boolean = false;
+  @Output() edit = new EventEmitter();
 
-  constructor(private store: Store<AppState>) { }
+  editIcon = faEdit;
+
+  constructor(private store: Store<AppState>, private db: DBStateService, private app: ApplicationRef) { }
 
   get total(): number {
     const total = Currency.round((this.transactions || []).reduce((total, item) => total + item.amount, 0));
@@ -30,12 +36,16 @@ export class BudgetComponent {
     return Math.round((this.total / this.budget.amount) * 100);
   }
 
+  get isOverBudget(): boolean {
+    return !this.isIncome && this.total > ((this.budget?.amount || 0) * 1.05);
+  }
+
   onViewTransactions(): void {
     this.store.dispatch(selectBudget(this.budget?.categoryId));
   }
 
   onEdit(): void {
-
+    this.edit.emit();
   }
 
 }

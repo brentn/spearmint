@@ -100,6 +100,14 @@ export class DBStateService {
         )),
       );
     },
+    deduplicate$: (): Observable<void> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('transactions', (existing: Transaction[]) => existing.reduce((acc: Transaction[], item) => acc.find(t => t.id === item.id) ? acc : [...acc, item], []))).pipe(
+          map(() => void (0))
+        )),
+      );
+    },
     delete$: (transactionId: string): Observable<string> => {
       return this._ready$.pipe(
         filter(ready => ready),
@@ -119,18 +127,10 @@ export class DBStateService {
   }
 
   Budgets = {
-    add$: (budget: Budget): Observable<Budget> => {
+    upsert$: (budget: Budget): Observable<Budget> => {
       return this._ready$.pipe(
         filter(ready => ready),
-        switchMap(() => from(this.store.set('budget', (budgets: Budget[]) => [...budgets, budget])).pipe(
-          map(() => budget)
-        )),
-      );
-    },
-    update$: (budget: Budget): Observable<Budget> => {
-      return this._ready$.pipe(
-        filter(ready => ready),
-        switchMap(() => from(this.store.set('budget', (budgets: Budget[]) => budgets.map(a => a.categoryId === budget.categoryId ? budget : a))).pipe(
+        switchMap(() => from(this.store.set('budgets', (budgets: Budget[]) => [...budgets.filter(a => a.categoryId !== budget.categoryId), budget])).pipe(
           map(() => budget)
         )),
       );
@@ -138,7 +138,7 @@ export class DBStateService {
     delete$: (categoryId: string): Observable<string> => {
       return this._ready$.pipe(
         filter(ready => ready),
-        switchMap(() => from(this.store.set('budget', (budgets: Budget[]) => budgets.filter(a => a.categoryId !== categoryId))).pipe(
+        switchMap(() => from(this.store.set('budgets', (budgets: Budget[]) => budgets.filter(a => a.categoryId !== categoryId))).pipe(
           map(() => categoryId)
         )),
       );

@@ -4,14 +4,21 @@
       <span>{{budget.categoryId??'Other'|snakecase:'undo'|titlecase}}</span>
       <span *ngIf="transactions?.length" class="ms-2">({{transactions?.length}})</span>
     </div>
-    <span class="badge badge-primary" (click)="$event.stopPropagation(); onEdit()">edit</span>
   </div>
-  <div class="position-relative">
-    <div class="progress">
-      <div class="progress-bar bg-primary" role="progressbar" [style]="'width: '+progress+'%'"></div>
-    </div>
-    <!-- <div class="today position-absolute text-dark fst-bold" [class.initialized]="initialized"
+  <div class="d-flex">
+    <div class="position-relative">
+      <div class="progress">
+        <div class="progress-bar bg-primary" [class.bg-danger]="isOverBudget" role="progressbar"
+          [style]="'width: '+progress+'%'"></div>
+      </div>
+      <!-- <div class="today position-absolute text-dark fst-bold" [class.initialized]="initialized"
       [style]="'top:-.29em; left: '+monthProgress+'%'">|</div> -->
+    </div>
+    <span class="btn btn-sm btn-outline-primary py-0" (click)="onEdit()">
+      <fa-icon [icon]="editIcon"></fa-icon>
+    </span>
   </div>
-  <div class="text-muted ms-3">{{total|currency}} of {{budget.amount|currency}}</div>
+  <span class="d-flex align-items-center text-muted ms-3">
+    {{total|currency}} of {{budget.amount|currency}}
+  </span>
 </div>

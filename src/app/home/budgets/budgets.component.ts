@@ -30,27 +30,26 @@ export class HomeBudgetsComponent {
     if (changes['transactions']) {
       const earliest = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
       const latest = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).getTime();
-      console.log('earliest', new Date(earliest), 'latest', new Date(latest))
       this.transactionsForMonth = (this.transactions || []).filter(a => a.date >= earliest && a.date <= latest);
     }
   }
 
   get today(): Date { return new Date(); }
   get incomeBudget(): number {
-    return Currency.sum((this.budgets || []).filter(a => (this.incomeCategories || []).includes(a.categoryId)).map(a => a.amount));
+    return Currency.sum((this.budgets || []).filter(budget => (this.incomeCategories?.some(category => budget.categoryId && category!.startsWith(budget.categoryId)))).map(a => a.amount));
   }
   get expenseBudget(): number {
-    return Currency.sum((this.budgets || []).filter(a => !(this.incomeCategories || []).includes(a.categoryId)).map(a => a.amount));
+    return Currency.sum((this.budgets || []).filter(budget => this.incomeCategories && (!budget.categoryId || !this.incomeCategories?.some(category => category!.startsWith(budget.categoryId!)))).map(a => a.amount));
   }
   get totalIncome(): number {
-    return Currency.sum(this.transactionsForMonth.filter(a => (this.incomeCategories || []).includes(a.categoryId)).map(a => a.amount));
+    return Currency.sum(this.transactionsForMonth.filter(a => this.incomeCategories?.includes(a.categoryId)).map(a => a.amount));
   }
   get totalExpenses(): number {
-    return Currency.sum(this.transactionsForMonth.filter(a => !(this.incomeCategories || []).includes(a.categoryId)).map(a => a.amount));
+    return Currency.sum(this.transactionsForMonth.filter(a => this.incomeCategories && !this.incomeCategories?.includes(a.categoryId)).map(a => a.amount));
   }
   get incomeProgress(): number {
     if (this.incomeBudget === 0) return 0;
-    return Math.round((this.totalIncome / this.incomeBudget) * 100);
+    return Math.round((-this.totalIncome / this.incomeBudget) * 100);
   }
   get expenseProgress(): number {
     if (this.expenseBudget === 0) return 0;

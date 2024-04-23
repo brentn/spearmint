@@ -1,5 +1,6 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ReactiveFormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
@@ -38,6 +39,7 @@ import { DBStateService } from './data/database/dbState.service';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { BudgetsViewComponent } from './budgets/view/budgets-view.component';
 import { BudgetComponent } from './budgets/view/budget/budget.component';
+import { ToastrModule } from 'ngx-toastr';
 
 export type AppState = {
   main: MainState
@@ -70,10 +72,12 @@ export type AppState = {
   ],
   imports: [
     BrowserModule,
+    BrowserAnimationsModule,
     AppRoutingModule,
     HttpClientModule,
     ReactiveFormsModule,
     FontAwesomeModule,
+    ToastrModule.forRoot(),
     ScrollingModule,
     NgxPlaidLinkModule,
     StoreModule.forRoot({ main: mainReducer }),

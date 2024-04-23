@@ -1,5 +1,7 @@
-import { ChangeDetectorRef, Component, Input, SimpleChanges } from '@angular/core';
+import { Component, Input, SimpleChanges } from '@angular/core';
+import { FormControl } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Account } from 'src/app/data/models/account';
 import { Transaction } from 'src/app/data/models/transaction';
 import { Budget } from 'src/app/data/types/budget.type';
@@ -17,17 +19,19 @@ export class BudgetsViewComponent {
   @Input() transactions: Transaction[] | undefined;
   @Input() selectedBudget: string | undefined;
   month = new Date();
-  incomeGroups: string[] = ['INCOME', 'TRANSFER_IN'];
+  incomeGroups: string[] = ['INCOME'];
   expenseGroups: string[] = [];
+  editCategory: string | undefined;
+  budgetAmount = new FormControl<number>(0, { updateOn: 'blur' });
   backIcon = faArrowLeft;
 
-  constructor(private cd: ChangeDetectorRef) { }
+  constructor(private db: DBStateService) { }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['categories']) {
       this.expenseGroups = (this.categories || [])
         .reduce((groups, item) => groups.includes(item.group) ? groups : [...groups, item.group], [] as string[])
-        .filter(group => !this.incomeGroups.includes(group));
+        .filter(group => !['INCOME', 'TRANSFER_IN', 'TRANSFER_OUT'].includes(group));
     }
   }
 
@@ -66,6 +70,25 @@ export class BudgetsViewComponent {
       (transaction.date >= earliest && transaction.date <= latest)
       && (transaction.categoryId === undefined || !budgetCategories.some(budgetCategory => transaction.categoryId!.startsWith(budgetCategory.categoryId!)))
     );
+  }
+
+  onEdit(categoryId: string | undefined): void {
+    this.editCategory = categoryId;
+    const budget = this.budgets?.find(a => a.categoryId === categoryId);
+    this.budgetAmount.setValue(budget?.amount || 0, { emitEvent: false });
+  }
+
+  onUpdateBudget(): void {
+    const budget = this.budgets?.find(a => a.categoryId === this.editCategory) || {
+      categoryId: this.editCategory,
+      amount: 0
+    };
+    this.db.Budgets.upsert$({ ...budget, amount: +(this.budgetAmount.value ?? '0') }).subscribe();
+    this.editCategory = undefined;
+  }
+
+  onCancelUpdate(): void {
+    this.editCategory = undefined;
   }
 
 }

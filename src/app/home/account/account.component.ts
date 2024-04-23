@@ -22,6 +22,5 @@ export class AccountComponent {
 
   onSelectAccount(): void {
     this.store.dispatch(selectAccount(this.account));
-    this.router.navigate(['/transactions']);
   }
 }

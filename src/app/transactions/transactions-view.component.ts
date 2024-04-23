@@ -6,7 +6,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
-import { selectBudget } from '../data/state/actions';
+import { selectAccount, selectBudget } from '../data/state/actions';
 
 @Component({
   selector: 'transactions-view',
@@ -38,6 +38,7 @@ export class TransactionsViewComponent {
   onBack(): void {
     switch (this.router.url) {
       case '/budgets': this.store.dispatch(selectBudget(undefined)); break;
+      case '/': this.store.dispatch(selectAccount(undefined)); break;
       default: this.router.navigate(['/']); break;
     }
   }

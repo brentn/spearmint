@@ -80,6 +80,10 @@ export class SettingsComponent {
     this.store.dispatch(refreshAccountsImmediately());
   }
 
+  onDeduplicate(): void {
+    this.dbState.Transactions.deduplicate$().subscribe();
+  }
+
   onResetAllData(): void {
     if (confirm('Are you sure you want to DELETE all account and transaction data?')) {
       this.store.dispatch(reset());

@@ -12,14 +12,16 @@
       <div class="m-3 py-3">
         <span class="p-2 larger text-nowrap">Income:</span>
         <app-budget *ngFor="let budget of incomeBudgets" [budget]="budget"
-          [transactions]="transactionsForCategory(budget.categoryId!)" [isIncome]="true"></app-budget>
+          [transactions]="transactionsForCategory(budget.categoryId!)" [isIncome]="true"
+          (edit)="onEdit(budget.categoryId)"></app-budget>
       </div>
 
       <div class="m-3 pb-3">
         <span class="p-2 larger text-nowrap">Expenses:</span>
         <app-budget *ngFor="let budget of expenseBudgets" [budget]="budget"
-          [transactions]="transactionsForCategory(budget.categoryId!)"></app-budget>
-        <app-budget [budget]="otherBudget" [transactions]="otherBudgetTransactions"></app-budget>
+          [transactions]="transactionsForCategory(budget.categoryId!)" (edit)="onEdit(budget.categoryId)"></app-budget>
+        <app-budget [budget]="otherBudget" [transactions]="otherBudgetTransactions"
+          (edit)="onEdit('other')"></app-budget>
       </div>
     </div>
   </div>
@@ -35,4 +37,11 @@
     <transactions-view *ngIf="otherBudgetTransactions as transactions" [transactions]="otherBudgetTransactions"
       [categories]="categories" [accounts]="accounts" [title]="selectedBudget"></transactions-view>
   </ng-container>
+</div>
+
+<div *ngIf="editCategory" class="editBudget bg-primary">
+  <div class="larger mb-3">{{editCategory}}</div>
+  <input type="text" [formControl]="budgetAmount" class="d-block">
+  <button class="btn btn-secondary" (click)="onCancelUpdate()">cancel</button>
+  <button class="btn btn-primary" (click)="onUpdateBudget()">save</button>
 </div>

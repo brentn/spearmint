@@ -9,6 +9,7 @@ import { Account } from "../models/account";
 import { DBStateService } from "../database/dbState.service";
 import { Transaction } from "../models/transaction";
 import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
+import { ToastrService } from "ngx-toastr";
 
 const MIN_REFRESH_FREQUENCY = 30; //minutes
 
@@ -20,6 +21,7 @@ export class MainEffects {
     private store: Store<AppState>,
     private bank: BankingConnectorService,
     private dbState: DBStateService,
+    private toast: ToastrService,
     private plaidLinkService: NgxPlaidLinkService,
   ) { }
 
@@ -157,7 +159,9 @@ export class MainEffects {
             lastUpdated: new Date()
           })));
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
-          const addAction = addTransactions(response.added.map(item => new Transaction({
+          const newItems = response.added.filter(item => !transactions.find(t => t.id === item.transaction_id));
+          if (newItems.length !== response.added.length) { this.toast.info('Some transactions already exist in the database', (response.added.length - newItems.length) + ' duplicates'); }
+          const addAction = addTransactions(newItems.map(item => new Transaction({
             id: item.transaction_id,
             date: new Date(item.date).getTime(),
             accountId: item.account_id,

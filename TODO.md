@@ -1,4 +1,8 @@
-- edit budget somehow
+- transactions screen slide in (account & budget)
+- transaction hide from budget
+- confirm transaction import fields?? (show all in transaction edit)
+- Logo during spinup
+- PWA
 - don't always prompt to refresh account
 - refresh new accounts immediately after adding
 - move authentication stuff from bank.service to auth.service
@@ -11,8 +15,6 @@ NEXT:
 - import/export data
 - scheduled transactions
 - add parent categories
-- (localDB)
 - graph
 
 BUGS:
-- z-index budget progress on home

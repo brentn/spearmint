@@ -14,6 +14,7 @@ import { Transaction } from '../data/models/transaction';
 export class HomeViewComponent {
   @Input() configuration: Configuration | null = DEFAULT_CONFIGURATION;
   @Input() accounts: Account[] | undefined;
+  @Input() selectedAccount: Account | undefined;
   @Input() transactions: Transaction[] | undefined;
   @Input() categories: Category[] | undefined;
   @Input() budgets: Budget[] | undefined;
@@ -28,6 +29,7 @@ export class HomeViewComponent {
       .reduce((acc: AccountType[], account) => acc.includes(account.type) ? acc : [...acc, account.type], [])
       .sort((a, b) => a.localeCompare(b));
   }
+  get selectedAccountTransactions(): Transaction[] { return (this.transactions || []).filter(a => a.accountId === this.selectedAccount?.id); }
   get recentTransactions(): Transaction[] { return (this.transactions ?? []).slice(0, 5); }
   get uncategorizedTransactions(): Transaction[] | undefined {
     const transactions = this.transactions?.filter(a => a.categoryId === undefined).slice(0, 5);
