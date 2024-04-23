@@ -1,6 +1,4 @@
 - transactions screen slide in (account & budget)
-- transaction hide from budget
-- confirm transaction import fields?? (show all in transaction edit)
 - Logo during spinup
 - PWA
 - don't always prompt to refresh account

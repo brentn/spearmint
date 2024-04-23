@@ -3,6 +3,7 @@ import { DBStateService } from '../data/database/dbState.service';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { selectedBudget } from '../data/state/selectors';
+import { map } from 'rxjs';
 
 @Component({
   template: `
@@ -18,7 +19,9 @@ import { selectedBudget } from '../data/state/selectors';
 export class BudgetsComponent {
 
   budgets$ = this.db.budgets$;
-  transactions$ = this.db.transactions$;
+  transactions$ = this.db.transactions$.pipe(
+    map(items => items.filter(a => !a.hideFromBudget))
+  );
   accounts$ = this.db.accounts$;
   categories$ = this.db.categories$;
   selectedBudget$ = this.store.select(selectedBudget);

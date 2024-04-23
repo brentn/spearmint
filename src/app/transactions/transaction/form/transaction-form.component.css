@@ -1,5 +1,5 @@
 .scroll {
-  height: 100%;
+  height: calc(100vh - 4em);
   overflow-y: auto;
 }
 

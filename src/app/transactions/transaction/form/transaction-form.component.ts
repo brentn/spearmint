@@ -27,6 +27,7 @@ export class TransactionFormComponent {
   saveIcon = faCheck;
 
   form = new FormGroup({
+    name: new FormControl<string>(''),
     merchant: new FormControl<string>(''),
     date: new FormControl<Date>(new Date(), Validators.required),
     dateString: new FormControl<string>('', Validators.required),
@@ -66,7 +67,7 @@ export class TransactionFormComponent {
   }
 
   onSave(): void {
-    this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value } as Transaction));
+    this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value, date: this.form.value.date?.getTime() } as Transaction));
     this.close.emit();
   }
 
@@ -88,6 +89,7 @@ export class TransactionFormComponent {
   private updateFormFields(): void {
     if (this.transaction) {
       this.form.patchValue({
+        name: this.transaction.name,
         merchant: this.transaction.merchant,
         date: new Date(this.transaction.date),
         dateString: new Date(this.transaction.date).toISOString().split('T')[0],

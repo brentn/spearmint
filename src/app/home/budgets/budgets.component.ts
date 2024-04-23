@@ -30,7 +30,7 @@ export class HomeBudgetsComponent {
     if (changes['transactions']) {
       const earliest = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
       const latest = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59).getTime();
-      this.transactionsForMonth = (this.transactions || []).filter(a => a.date >= earliest && a.date <= latest);
+      this.transactionsForMonth = (this.transactions || []).filter(a => !a.hideFromBudget).filter(a => a.date >= earliest && a.date <= latest);
     }
   }
 

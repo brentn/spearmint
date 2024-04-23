@@ -28,7 +28,7 @@
       Transactions
     </div>
   </div>
-  <cdk-virtual-scroll-viewport [itemSize]="48">
+  <cdk-virtual-scroll-viewport [itemSize]="65">
     <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3 fullwidth">
       <transaction [transaction]=" transaction" [categories]="categories" [accounts]="accounts"
         (select)="onSelect($event)">

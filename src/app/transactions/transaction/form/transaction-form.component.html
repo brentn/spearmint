@@ -1,13 +1,27 @@
-<div class="mt-2 larger text-light">
+<div class="mt-2 larger text-light d-flex justify-content-between">
   <span role="button " class="p-3"><fa-icon [icon]="backIcon" (click)="onClose($event)"></fa-icon></span>
+  <div *ngIf="form.dirty && !picking" class="p-3">
+    <button class="btn btn-danger rounded-circle me-2" (click)="onClose($event)">
+      <fa-icon [icon]="cancelIcon"></fa-icon>
+    </button>
+    <button class="btn btn-success rounded-circle me-2" (click)="onSave()">
+      <fa-icon [icon]="saveIcon"></fa-icon>
+    </button>
+  </div>
 </div>
 
-<form *ngIf="transaction scroll" [formGroup]="form" class="p-3 pe-3">
+<form *ngIf="transaction" [formGroup]="form" class="p-3 scroll">
   <div class="text-center">
     <div class="h1">{{transaction.amount|currency}}</div>
     <div>{{transaction.merchant|uppercase}}</div>
     <div class="small text-muted">{{transaction.date|date:'long'}}</div>
     <div *ngIf="account" class="small text-muted">{{account.institution}}: {{account.name}}</div>
+  </div>
+  <div>
+    <label>
+      Name:
+      <input type="text" formControlName="name" class="form-control larger">
+    </label>
   </div>
   <div>
     <label>
@@ -29,17 +43,22 @@
       </div>
     </label>
   </div>
+  <div>
+    <label>
+      Notes:
+      <textarea formControlName="notes" class="form-control" rows="3"></textarea>
+    </label>
+  </div>
+  <div>
+    <div class="form-check">
+      <label class="form-check-label">
+        Hide from budget?
+        <input class="form-check-input" type="checkbox" formControlName="hideFromBudget">
+      </label>
+    </div>
+  </div>
 </form>
 
 <div class="picker bg-light shadow" [class.picking]="picking">
   <category-picker [focus]="focus" (select)="onSelectCategory($event)" (cancel)="onCancelCategory()"></category-picker>
-</div>
-
-<div *ngIf="form.dirty && !picking" class="bottom d-flex justify-content-end p-2">
-  <button class="btn btn-danger rounded-circle me-2" (click)="onClose($event)">
-    <fa-icon [icon]="cancelIcon"></fa-icon>
-  </button>
-  <button class="btn btn-success rounded-circle me-2" (click)="onSave()">
-    <fa-icon [icon]="saveIcon"></fa-icon>
-  </button>
 </div>
