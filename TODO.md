@@ -1,4 +1,3 @@
-- hide budgets with no amount and no transactions
 - clear category when done
 - Button to add budget (subcategory?)
 - transactions screen slide in (account & budget)
