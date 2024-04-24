@@ -31,7 +31,7 @@
       Transactions
     </div>
   </div>
-  <cdk-virtual-scroll-viewport [itemSize]="65">
+  <cdk-virtual-scroll-viewport [itemSize]="81">
     <div *cdkVirtualFor="let transaction of filteredTransactions; let i = index" class="m-3 fullwidth">
       <transaction [transaction]=" transaction" [categories]="categories" [accounts]="accounts"
         (select)="onSelect($event)">
