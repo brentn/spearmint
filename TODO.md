@@ -1,8 +1,6 @@
-- Edit budget not working
-- search transactions
+- hide budgets with no amount and no transactions
 - clear category when done
 - Button to add budget (subcategory?)
-- hide budgets with no amount and no transactions
 - transactions screen slide in (account & budget)
 - Logo during spinup
 - Transaction transforms (merchant name, category)

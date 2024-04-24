@@ -50,7 +50,7 @@ export class DBStateService {
   transactions$: Observable<Transaction[]> = this._ready$.pipe(
     filter(ready => ready),
     switchMap(() => (this.store.get$('transactions') as Observable<Transaction[]>).pipe(
-      map((transactions: Transaction[]) => [...transactions].sort((a, b) => b.date - a.date))
+      map((transactions: Transaction[]) => transactions.map(a => new Transaction(a)).sort((a, b) => b.date - a.date)),
     ))
   );
 

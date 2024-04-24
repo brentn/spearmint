@@ -9,8 +9,11 @@
   </div>
   <div class="p-3 larger">&nbsp;</div>
 </div>
+<div [formGroup]="form" class="d-flex">
+  <input type="search" class="form-control mx-3" formControlName="search" placeholder="search">
+</div>
 
-<div *ngIf="uncategorizedTransactions?.length" class="uncategorized bg-light m-3 rounded">
+<!-- <div *ngIf="uncategorizedTransactions?.length" class="uncategorized bg-light m-3 rounded">
   <div class="d-flex justify-content-between p-3">
     <div class="larger text-nowrap overflow-hidden me-2">
       Uncategorized transactions
@@ -20,7 +23,7 @@
     <transaction [transaction]="transaction" [categories]="categories" [accounts]="accounts"
       (select)="onSelect($event)"></transaction>
   </div>
-</div>
+</div> -->
 
 <div class="transactions bg-light m-3 rounded">
   <div class="d-flex justify-content-between p-3">
@@ -29,7 +32,7 @@
     </div>
   </div>
   <cdk-virtual-scroll-viewport [itemSize]="65">
-    <div *cdkVirtualFor="let transaction of transactions; let i = index" class="m-3 fullwidth">
+    <div *cdkVirtualFor="let transaction of filteredTransactions; let i = index" class="m-3 fullwidth">
       <transaction [transaction]=" transaction" [categories]="categories" [accounts]="accounts"
         (select)="onSelect($event)">
       </transaction>

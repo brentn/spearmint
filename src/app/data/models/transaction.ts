@@ -25,6 +25,17 @@ export class Transaction {
     this.notes = incoming.notes;
     this.hideFromBudget = incoming.hideFromBudget;
   }
+
+  get searchText(): string {
+    return [
+      this.date.toString().substring(4, 15),
+      this.merchant,
+      this.name,
+      '$' + this.amount.toFixed(2),
+      this.categoryId,
+      this.notes,
+    ].join('|').toLowerCase();
+  }
 }
 
 
