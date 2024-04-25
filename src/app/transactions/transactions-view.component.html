@@ -10,7 +10,7 @@
   <div class="p-3 larger">&nbsp;</div>
 </div>
 <div [formGroup]="form" class="d-flex">
-  <input type="search" class="form-control mx-3" formControlName="search" placeholder="search">
+  <input type="search" class="form-control mx-3" formControlName="search" placeholder="search" onclick="this.select()">
 </div>
 
 <!-- <div *ngIf="uncategorizedTransactions?.length" class="uncategorized bg-light m-3 rounded">

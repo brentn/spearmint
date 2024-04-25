@@ -21,7 +21,6 @@ export class CategoryPickerComponent {
   sortedCategories: Category[] = [];
   filteredCategories: Category[] = [];
   expandedGroups: string[] = [];
-  searchText = '';
 
   form = new FormGroup({
     search: new FormControl(''),
@@ -38,8 +37,7 @@ export class CategoryPickerComponent {
         }),
       ).subscribe(),
       this.form.get('search')!.valueChanges.pipe(
-        map(searchText => {
-          this.searchText = searchText?.toLowerCase() ?? '';
+        map(() => {
           this.filterCategories();
         })
       ).subscribe(),
@@ -75,16 +73,19 @@ export class CategoryPickerComponent {
 
   onSelect(id: string): void {
     this.select.emit(id);
+    this.form.get('search')!.setValue('');
   }
 
   onCancel(evt: Event): void {
     evt.stopPropagation();
     this.cancel.emit();
+    this.form.get('search')!.setValue('');
   }
 
   private filterCategories(): void {
+    const searchText = this.form.get('search')!.value?.toLowerCase() || '';
     this.filteredCategories = this.sortedCategories.filter(category => {
-      return ((category.id + '|' + category.name).toLowerCase()).includes(this.searchText);
+      return ((category.id + '|' + category.name).toLowerCase()).includes(searchText);
     });
   }
 }
