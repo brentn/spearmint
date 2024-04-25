@@ -5,8 +5,8 @@
   "background_color": "#b8d7f4",
   "display": "standalone",
   "orientation": "portrait",
-  "scope": "/",
-  "start_url": "/Spearmint",
+  "scope": "/spearmint",
+  "start_url": "/spearmint",
   "icons": [
     {
       "src": "assets/icons/icon-72x72.png",
