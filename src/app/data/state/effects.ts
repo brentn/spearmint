@@ -169,7 +169,6 @@ export class MainEffects {
           })));
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
           const newItems = response.added.filter(item => !transactions.find(t => t.id === item.transaction_id));
-          if (newItems.length !== response.added.length) { this.toast.info('Some transactions already exist in the database', (response.added.length - newItems.length) + ' duplicates'); }
           const addAction = addTransactions(newItems.map(item => new Transaction({
             id: item.transaction_id,
             date: new Date(item.date).getTime(),
