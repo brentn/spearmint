@@ -1,6 +1,6 @@
+- Logo during spinup
 - Button to add budget (subcategory?)
 - transactions screen slide in (account & budget)
-- Logo during spinup
 - Transaction transforms (merchant name, category)
 - PWA
 - don't always prompt to refresh account
