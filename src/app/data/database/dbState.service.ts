@@ -8,6 +8,7 @@ import { Category, DEFAULT_CATEGORIES } from '../types/category.type';
 import { Budget } from '../types/budget.type';
 import { Account } from '../models/account';
 import { Transaction } from '../models/transaction';
+import { Transformation } from '../models/transformation';
 
 addRxPlugin(RxDBStatePlugin);
 if (isDevMode()) addRxPlugin(RxDBDevModePlugin)
@@ -26,6 +27,7 @@ export class DBStateService {
         store.set('budgets', (budgets: Budget[]) => budgets || []);
         store.set('accounts', (accounts: Account[]) => accounts || []);
         store.set('transactions', (transactions: Transaction[]) => transactions || []);
+        store.set('transformations', (transformations: Transformation[]) => transformations || []);
         this.store = store;
         this._ready$.next(true);
       })
@@ -53,6 +55,10 @@ export class DBStateService {
       map((transactions: Transaction[]) => transactions.map(a => new Transaction(a)).sort((a, b) => b.date - a.date)),
     ))
   );
+  transformations$: Observable<Transformation[]> = this._ready$.pipe(
+    filter(ready => ready),
+    switchMap(() => this.store.get('transformations') as Observable<Transformation[]>)
+  )
 
 
   //Actions
@@ -142,6 +148,24 @@ export class DBStateService {
           map(() => categoryId)
         )),
       );
+    }
+  }
+
+  Transformations = {
+    upsert$: (transformation: Transformation): Observable<Transformation> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('transformations', (transformations: Transformation[]) => [
+          ...transformations.filter(a => !(
+            a.accountId === transformation.accountId
+            && a.merchantId === transformation.merchantId
+            && a.categoryId === transformation.categoryId
+            && transformation.name.startsWith(a.name)
+          )), transformation
+        ])).pipe(
+          map(() => transformation)
+        ))
+      )
     }
   }
 
