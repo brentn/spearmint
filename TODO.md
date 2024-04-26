@@ -1,5 +1,6 @@
+- Transactions call appears to update balances as well - redo refresh method
 - Home-Budget different total budgets and total transactions
-- Transaction transforms (merchant name, category)
+- Transaction transforms (account, merchant name, category)(add merchantId, paymentChannel) (Reference Number, Cheque Date, $, Confirmation #)
 - See Other Budget transactions
 - Button to add budget (subcategory?)
 - transactions screen slide in (account & budget)

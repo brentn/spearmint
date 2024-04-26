@@ -175,7 +175,9 @@ export class MainEffects {
             accountId: item.account_id,
             amount: item.amount,
             categoryId: item.personal_finance_category.detailed,
+            merchantId: item.merchant_entity_id,
             merchant: item.merchant_name,
+            paymentChannel: item.payment_channel,
             name: item.name,
           })));
           const updateActions = response.modified.map(item => {
@@ -187,7 +189,9 @@ export class MainEffects {
               accountId: item.account_id,
               amount: item.amount,
               categoryId: item.personal_finance_category.detailed,
+              merchantId: item.merchant_entity_id,
               merchant: item.merchant_name,
+              paymentChannel: item.payment_channel,
               name: item.name,
             }));
           });

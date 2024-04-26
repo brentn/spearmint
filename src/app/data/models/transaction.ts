@@ -4,7 +4,9 @@ export class Transaction {
   id: string;
   date: number;
   accountId: string;
+  merchantId: string;
   merchant: string;
+  paymentChannel: string;
   name: string;
   amount: number;
   categoryId?: string;
@@ -18,7 +20,9 @@ export class Transaction {
     this.id = incoming.id;
     this.date = new Date(incoming.date).getTime();
     this.accountId = incoming.accountId;
+    this.merchantId = incoming.merchantId || '';
     this.merchant = incoming.merchant ?? '';
+    this.paymentChannel = incoming.paymentChannel || '';
     this.name = incoming.name ?? '';
     this.amount = incoming.amount ?? 0;
     this.categoryId = incoming.categoryId;

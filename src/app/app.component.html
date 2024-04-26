@@ -9,6 +9,10 @@
     <router-outlet></router-outlet>
   </div>
 
+  <div *ngIf="!(authenticated$|async) && !(spinningUp$|async)" class="text-center">
+    Not Authenticated
+  </div>
+
 </div>
 
 <div *ngIf="!supportsWebauthn" class="text-center">
