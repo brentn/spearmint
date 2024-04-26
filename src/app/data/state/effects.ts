@@ -74,13 +74,17 @@ export class MainEffects {
 
   addTransactions$ = createEffect(() => this.actions$.pipe(
     ofType(addTransactions),
-    switchMap(action => this.dbState.Transactions.addMany$(action.payload)),
+    withLatestFrom(this.dbState.transformations$),
+    map(([action, transformations]) => action.payload.map(transaction => transformations.reduce((t, transformation) => transformation.transform(t), transaction))),
+    switchMap(transactions => this.dbState.Transactions.addMany$(transactions)),
     map(transactions => transactionsAdded(transactions))
   ));
 
   updateTransaction$ = createEffect(() => this.actions$.pipe(
     ofType(updateTransaction),
-    switchMap(action => this.dbState.Transactions.update$(action.payload)),
+    withLatestFrom(this.dbState.transformations$),
+    map(([action, transformations]) => transformations.reduce((t, transformation) => transformation.transform(t), action.payload)),
+    switchMap(transaction => this.dbState.Transactions.update$(transaction)),
     map(transaction => transactionUpdated(transaction))
   ));
 

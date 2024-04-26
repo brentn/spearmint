@@ -4,8 +4,10 @@ import { faArrowLeft, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons
 import { Store } from '@ngrx/store';
 import { Subject, Subscription } from 'rxjs';
 import { AppState } from 'src/app/app.module';
+import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Account } from 'src/app/data/models/account';
 import { Transaction } from 'src/app/data/models/transaction';
+import { Transformation } from 'src/app/data/models/transformation';
 import { updateTransaction } from 'src/app/data/state/actions';
 import { Category } from 'src/app/data/types/category.type';
 
@@ -36,7 +38,7 @@ export class TransactionFormComponent {
     hideFromBudget: new FormControl<boolean | undefined>(undefined),
   });
 
-  constructor(private store: Store<AppState>) { }
+  constructor(private store: Store<AppState>, private db: DBStateService) { }
 
   ngOnInit(): void {
     this.subscriptions = [
@@ -67,6 +69,14 @@ export class TransactionFormComponent {
   }
 
   onSave(): void {
+    if (this.form.get('merchant')!.dirty || this.form.get('categoryId')!.dirty || this.form.get('hideFromBudget')!.dirty) {
+      this.db.Transformations.upsert$(new Transformation({
+        ...this.transaction,
+        newMerchant: this.form.get('merchant')!.value,
+        newCategoryId: this.form.get('categoryId')!.value,
+        newHideFromBudget: this.form.get('hideFromBudget')!.value,
+      }))
+    }
     this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value, date: this.form.value.date?.getTime() } as Transaction));
     this.close.emit();
   }

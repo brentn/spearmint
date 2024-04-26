@@ -1,4 +1,3 @@
-import { ConfidenceLevel } from "../types/confidenceLevel.type";
 
 export class Transaction {
   id: string;
