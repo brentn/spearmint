@@ -1,9 +1,8 @@
-- Logo during spinup
 - Home-Budget different total budgets and total transactions
+- Transaction transforms (merchant name, category)
 - See Other Budget transactions
 - Button to add budget (subcategory?)
 - transactions screen slide in (account & budget)
-- Transaction transforms (merchant name, category)
 - PWA
 - don't always prompt to refresh account
 - refresh new accounts immediately after adding

@@ -15,6 +15,7 @@ export class HomeBudgetsComponent {
   @Input() categories: Category[] | undefined;
   @Input() transactions: Transaction[] | undefined;
   incomeCategories: (string | undefined)[] | undefined;
+  expenseCategories: (string | undefined)[] | undefined;
   transactionsForMonth: Transaction[] = [];
   todayIcon = faCaretUp;
   initialized = false;
@@ -25,7 +26,8 @@ export class HomeBudgetsComponent {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['categories']) {
-      this.incomeCategories = this.categories?.filter(a => a.group === 'INCOME' || a.group === 'TRANSFER_IN').map(a => a.id) ?? [];
+      this.incomeCategories = this.categories?.filter(a => a.group === 'INCOME').map(a => a.id) ?? [];
+      this.expenseCategories = this.categories?.filter(a => a.group !== 'INCOME' && !a.group.startsWith('TRANSFER')).map(a => a.id) ?? [];
     }
     if (changes['transactions']) {
       const earliest = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
@@ -39,7 +41,7 @@ export class HomeBudgetsComponent {
     return Currency.sum((this.budgets || []).filter(budget => (this.incomeCategories?.some(category => budget.categoryId && category!.startsWith(budget.categoryId)))).map(a => a.amount));
   }
   get expenseBudget(): number {
-    return Currency.sum((this.budgets || []).filter(budget => this.incomeCategories && (!budget.categoryId || !this.incomeCategories?.some(category => category!.startsWith(budget.categoryId!)))).map(a => a.amount));
+    return Currency.sum((this.budgets || []).filter(budget => (this.expenseCategories?.some(category => budget.categoryId && category!.startsWith(budget.categoryId)))).map(a => a.amount));
   }
   get totalIncome(): number {
     return Currency.sum(this.transactionsForMonth.filter(a => this.incomeCategories?.includes(a.categoryId)).map(a => a.amount));
