@@ -7,6 +7,7 @@ import { Configuration } from "../types/configuration.type";
 import { Budget } from "../types/budget.type";
 
 export const initialize = createAction('[Main] Initialize');
+export const serverResponding = createAction('[Main] Server responding');
 export const startLoad = createAction('[Main] Start loading...', (payload: string) => ({ payload }));
 export const endLoad = createAction('[Main] End loading', (payload: string) => ({ payload }));
 export const loggedIn = createAction('[Main] Logged in', (payload: { idToken: string }) => ({ payload }));

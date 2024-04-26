@@ -3,7 +3,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from './app.module';
 import { catchError, from, map, of, switchMap } from 'rxjs';
 import { initialize, reset } from './data/state/actions';
-import { isRefreshing } from './data/state/selectors';
+import { isRefreshing, spinningUp } from './data/state/selectors';
 import 'zone.js/plugins/zone-patch-rxjs'; // This is required for Angular to work with RxJS
 import { BankingConnectorService } from './data/database/banking-connector.service';
 import { client } from '@passwordless-id/webauthn';
@@ -15,6 +15,7 @@ import { client } from '@passwordless-id/webauthn';
 })
 export class AppComponent {
   isRefreshing$ = this.store.select(isRefreshing);
+  spinningUp$ = this.store.select(spinningUp);
   supportsWebauthn = client.isAvailable();
   authenticated$ = this.bank.getChallenge$().pipe(
     switchMap(challenge => {
@@ -62,10 +63,5 @@ export class AppComponent {
     this.store.dispatch(initialize());
   }
 
-  onResetAuth(): void {
-    if (confirm('Reset your user and all data?')) {
-      this.store.dispatch(reset());
-    }
-  }
 
 }

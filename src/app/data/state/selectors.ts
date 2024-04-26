@@ -1,5 +1,6 @@
 import { AppState } from "src/app/app.module";
 
+export const spinningUp = (state: AppState) => state.main.spinningUp;
 export const user = (state: AppState) => state.main.user;
 export const configuration = (state: AppState) => state.main.configuration;
 export const linkToken = (state: AppState) => state.main.linkToken;

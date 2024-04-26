@@ -1,10 +1,11 @@
 import { Action, createReducer, on } from "@ngrx/store";
 import { MainState } from ".";
 
-import { endLoad, loggedIn, selectAccount, selectBudget, setLinkToken, startLoad, updateConfiguration } from "./actions";
+import { endLoad, loggedIn, selectAccount, selectBudget, serverResponding, setLinkToken, startLoad, updateConfiguration } from "./actions";
 import { DEFAULT_CONFIGURATION } from "../types/configuration.type";
 
 export const initialState: MainState = {
+  spinningUp: true,
   user: undefined,
   linkToken: undefined,
   configuration: DEFAULT_CONFIGURATION,
@@ -14,6 +15,7 @@ export const initialState: MainState = {
 }
 
 const reducer = createReducer(initialState,
+  on(serverResponding, (state) => ({ ...state, spinningUp: false })),
   on(loggedIn, (state, action) => ({ ...state, user: action.payload })),
   on(updateConfiguration, (state, action) => ({ ...state, configuration: action.payload })),
   on(startLoad, (state, action) => ({ ...state, loading: [...state.loading, action.payload] })),

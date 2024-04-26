@@ -9,11 +9,10 @@
     <router-outlet></router-outlet>
   </div>
 
-  <div *ngIf="authError" class="text-center mt-2">
-    <button class="btn btn-danger" (click)="onResetAuth()">Reset User</button>
-  </div>
 </div>
 
 <div *ngIf="!supportsWebauthn" class="text-center">
   Browser does not support WebAuthn
 </div>
+
+<app-splash *ngIf="spinningUp$|async"></app-splash>

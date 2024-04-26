@@ -40,6 +40,7 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
 import { BudgetsViewComponent } from './budgets/view/budgets-view.component';
 import { BudgetComponent } from './budgets/view/budget/budget.component';
 import { ToastrModule } from 'ngx-toastr';
+import { SplashComponent } from './splash/splash.component';
 
 export type AppState = {
   main: MainState
@@ -69,6 +70,7 @@ export type AppState = {
     SnakecasePipe,
     BudgetsViewComponent,
     BudgetComponent,
+    SplashComponent,
   ],
   imports: [
     BrowserModule,

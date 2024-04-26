@@ -4,6 +4,7 @@ import { Account } from "../models/account";
 
 
 export interface MainState {
+  spinningUp: boolean;
   user: { idToken: string } | undefined;
   linkToken: string | undefined;
   configuration: Configuration;

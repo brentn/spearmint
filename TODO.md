@@ -1,4 +1,6 @@
 - Logo during spinup
+- Home-Budget different total budgets and total transactions
+- See Other Budget transactions
 - Button to add budget (subcategory?)
 - transactions screen slide in (account & budget)
 - Transaction transforms (merchant name, category)
