@@ -11,7 +11,7 @@ import { Transaction } from "../models/transaction";
 import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
 import { ToastrService } from "ngx-toastr";
 
-const MIN_REFRESH_FREQUENCY = 30; //minutes
+const MIN_REFRESH_FREQUENCY = 360; //minutes
 
 @Injectable()
 export class MainEffects {
