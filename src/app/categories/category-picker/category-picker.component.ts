@@ -1,8 +1,7 @@
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { Observable, Subscription, map } from 'rxjs';
-import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Category } from 'src/app/data/types/category.type';
 
 @Component({
@@ -12,6 +11,7 @@ import { Category } from 'src/app/data/types/category.type';
 })
 export class CategoryPickerComponent {
   @Input() categoryId: string | undefined;
+  @Input() categories: Category[] | undefined;
   @Input() focus: Observable<any> | undefined;
   @Output() cancel = new EventEmitter();
   @Output() select = new EventEmitter<string | undefined>();
@@ -26,16 +26,10 @@ export class CategoryPickerComponent {
     search: new FormControl(''),
   });
 
-  constructor(private dbState: DBStateService) { };
+  constructor() { };
 
   ngOnInit(): void {
     this.subscriptions = [
-      this.dbState.categories$.pipe(
-        map(categories => {
-          this.sortedCategories = [...categories].sort((a, b) => a.id.localeCompare(b.id));
-          this.filterCategories();
-        }),
-      ).subscribe(),
       this.form.get('search')!.valueChanges.pipe(
         map(() => {
           this.filterCategories();
@@ -44,6 +38,13 @@ export class CategoryPickerComponent {
     ]
     if (this.focus) {
       this.subscriptions.push(this.focus?.subscribe(() => this.search?.nativeElement.focus()));
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['categories']) {
+      this.sortedCategories = [...this.categories || []].sort((a, b) => a.id.localeCompare(b.id));
+      this.filterCategories();
     }
   }
 

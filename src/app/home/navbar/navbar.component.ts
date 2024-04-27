@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { faCog, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Account } from 'src/app/data/models/account';
 
@@ -9,9 +9,14 @@ import { Account } from 'src/app/data/models/account';
 })
 export class NavbarComponent {
   @Input() accounts: Account[] | undefined;
+  @Output() addBudget = new EventEmitter();
 
   showDropdown = false;
   settingsIcon = faCog;
   addIcon = faPlus;
+
+  onAddBudget(): void {
+    this.addBudget.emit();
+  }
 
 }

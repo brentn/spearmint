@@ -49,5 +49,6 @@
 </form>
 
 <div class="picker bg-light shadow" [class.picking]="picking">
-  <category-picker [focus]="focus" (select)="onSelectCategory($event)" (cancel)="onCancelCategory()"></category-picker>
+  <category-picker [categories]="categories" [focus]="focus" (select)="onSelectCategory($event)"
+    (cancel)="onCancelCategory()"></category-picker>
 </div>

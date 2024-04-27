@@ -41,7 +41,7 @@ import { BudgetsViewComponent } from './budgets/view/budgets-view.component';
 import { BudgetComponent } from './budgets/view/budget/budget.component';
 import { ToastrModule } from 'ngx-toastr';
 import { SplashComponent } from './splash/splash.component';
-import { NewBudgetComponent } from './budgets/view/new-budget/new-budget.component';
+import { BudgetFormComponent } from './budgets/view/budget/form/budget-form.component';
 
 export type AppState = {
   main: MainState
@@ -72,7 +72,7 @@ export type AppState = {
     BudgetsViewComponent,
     BudgetComponent,
     SplashComponent,
-    NewBudgetComponent,
+    BudgetFormComponent,
   ],
   imports: [
     BrowserModule,

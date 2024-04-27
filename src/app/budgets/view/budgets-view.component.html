@@ -8,7 +8,7 @@
         </span>
         <span class="px-2 larger text-nowrap">{{month|date:'MMMM'}} Budgets</span>
       </span>
-      <span class="larger" role="button">
+      <span class="larger" role="button" (click)="onAddBudget()">
         <fa-icon [icon]="addIcon"></fa-icon>
       </span>
     </div>
@@ -44,9 +44,8 @@
   </ng-container>
 </div>
 
-<div *ngIf="editCategory" class="editBudget bg-primary">
-  <div class="larger mb-3">{{editCategory}}</div>
-  <input type="text" [formControl]="budgetAmount" class="d-block">
-  <button class="btn btn-secondary" (click)="onCancelUpdate()">cancel</button>
-  <button class="btn btn-primary" (click)="onUpdateBudget()">save</button>
-</div>
+<app-budget-form *ngIf="editBudget" [categories]="categories" [budgets]="budgets" [selectedCategory]="editBudget"
+  (close)="editBudget=undefined"></app-budget-form>
+
+<app-budget-form *ngIf="addBudget" [categories]="categories" [budgets]="budgets"
+  (close)="addBudget=false"></app-budget-form>

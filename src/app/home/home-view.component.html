@@ -1,6 +1,6 @@
 <div class="background bg-secondary"></div>
 
-<home-navbar [accounts]="accounts"></home-navbar>
+<home-navbar [accounts]="accounts" (addBudget)="onAddBudget()"></home-navbar>
 
 <home-graph *ngIf="configuration?.showGraph"></home-graph>
 
@@ -37,3 +37,6 @@
 <!-- budgets -->
 <home-budgets *ngIf="transactions?.length" [budgets]="budgets" [categories]="categories"
   [transactions]="transactions"></home-budgets>
+
+<app-budget-form *ngIf="addBudget" [categories]="categories" [budgets]="budgets"
+  (close)="addBudget=false"></app-budget-form>

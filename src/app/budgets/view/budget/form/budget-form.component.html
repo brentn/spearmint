@@ -1,0 +1,51 @@
+<div class="fullscreen bg-secondary">
+  <div class="mx-3 mt-3 text-light d-flex justify-content-between">
+    <span class="larger"><span role="button" class="p-3">
+        <fa-icon [icon]="backIcon" (click)="onClose()"></fa-icon>
+      </span>
+    </span>
+  </div>
+
+
+  <div class="summary text-end pe-3">
+    <div class="d-flex justify-content-end align-items-center">
+      Total Income Budget: <span class="larger ms-2">{{totalIncomeBudget|currency}}</span>
+    </div>
+    <div class="d-flex justify-content-end align-items-center">
+      Total Expense Budget: <span class="larger ms-2">{{totalExpenseBudget|currency}}</span>
+    </div>
+    <div class="d-flex justify-content-end align-items-center">
+      <span [class.text-danger]="totalExpenseBudget>totalIncomeBudget">
+        Remaining Budget: <span
+          class="border-top border-dark larger fst-bold ms-2">{{totalIncomeBudget-totalExpenseBudget|currency}}</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="category m-3">
+    <button *ngIf="!selectedCategory" class="btn btn-outline-primary w-100" (click)="onSelectCategory()">Select Budget
+      Category</button>
+    <div *ngIf="selectedCategory" class="text-light text-center larger">
+      <span *ngIf="selectedCategory.group==='INCOME'">New Income Budget</span>
+      <span *ngIf="selectedCategory.group!=='INCOME'">New Expense Budget</span>
+    </div>
+    <div *ngIf="selectedCategory" class="bg-light rounded" (click)="onSelectCategory()">
+      <category-item [category]="selectedCategory"></category-item>
+    </div>
+    <div class="picker bg-light shadow" [class.picking]="picking">
+      <category-picker [categories]="categories" [focus]="focus" (select)="onCategorySelected($event)"
+        (cancel)="picking=false"></category-picker>
+    </div>
+  </div>
+
+  <div [formGroup]="form" *ngIf="selectedCategory" class="amount m-3">
+    <span>Budgeted Amount:</span>
+    <input type="text" class="form-control larger" formControlName="amount" onclick="this.select()">
+  </div>
+
+  <div *ngIf="form.dirty" class="buttons d-flex justify-content-between m-3">
+    <button class="btn btn-outline-secondary" (click)="onClose()">Cancel</button>
+    <button class="btn btn-primary" (click)="onSave()">Save</button>
+  </div>
+
+</div>

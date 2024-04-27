@@ -44,7 +44,8 @@ export class BudgetComponent {
     this.store.dispatch(selectBudget(this.budget?.categoryId ?? 'other'));
   }
 
-  onEdit(): void {
+  onEdit(evt: Event): void {
+    evt.stopPropagation();
     this.edit.emit();
   }
 

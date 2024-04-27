@@ -19,6 +19,7 @@ export class HomeViewComponent {
   @Input() categories: Category[] | undefined;
   @Input() budgets: Budget[] | undefined;
   selectedTransaction: Transaction | undefined;
+  addBudget = false;
 
   ngOnChanges(changes: SimpleChanges): void {
   }
@@ -41,6 +42,10 @@ export class HomeViewComponent {
 
   onSelect(item: Transaction | undefined): void {
     this.selectedTransaction = item;
+  }
+
+  onAddBudget(): void {
+    this.addBudget = true;
   }
 
 }

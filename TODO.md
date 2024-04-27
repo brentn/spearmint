@@ -1,4 +1,5 @@
 - Button to add budget (subcategory?)
+- understand other transactions
 - seen/unseen transactions
 - transactions screen slide in (account & budget)
 - refresh new accounts immediately after adding

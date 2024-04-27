@@ -1,5 +1,4 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
-import { FormControl } from '@angular/forms';
 import { faArrowLeft, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Account } from 'src/app/data/models/account';
@@ -21,8 +20,8 @@ export class BudgetsViewComponent {
   month = new Date();
   incomeGroups: string[] = ['INCOME'];
   expenseGroups: string[] = [];
-  editCategory: string | undefined;
-  budgetAmount = new FormControl<number>(0, { updateOn: 'blur' });
+  editBudget: Category | undefined;
+  addBudget = false;
   backIcon = faArrowLeft;
   addIcon = faPlus;
 
@@ -73,23 +72,22 @@ export class BudgetsViewComponent {
     );
   }
 
+  onAddBudget(): void {
+    this.addBudget = true;
+  }
+
   onEdit(categoryId: string | undefined): void {
-    this.editCategory = categoryId;
-    const budget = this.budgets?.find(a => a.categoryId === categoryId);
-    this.budgetAmount.setValue(budget?.amount || 0, { emitEvent: false });
-  }
-
-  onUpdateBudget(): void {
-    const budget = this.budgets?.find(a => a.categoryId === this.editCategory) || {
-      categoryId: this.editCategory,
-      amount: 0
-    };
-    this.db.Budgets.upsert$({ ...budget, amount: +(this.budgetAmount.value ?? '0') }).subscribe();
-    this.editCategory = undefined;
-  }
-
-  onCancelUpdate(): void {
-    this.editCategory = undefined;
+    if (categoryId === 'other') {
+      this.editBudget = { id: 'other', group: 'other', name: 'Other' };
+    } else {
+      this.editBudget = this.categories?.find(a => a.id === categoryId);
+      // Allow budgets for category group headings
+      if (categoryId && !this.editBudget) {
+        if (this.categories?.find(a => a.group === categoryId)) {
+          this.editBudget = { id: categoryId, group: categoryId, name: categoryId };
+        }
+      }
+    }
   }
 
 }
