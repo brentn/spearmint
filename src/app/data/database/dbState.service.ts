@@ -57,7 +57,9 @@ export class DBStateService {
   );
   transformations$: Observable<Transformation[]> = this._ready$.pipe(
     filter(ready => ready),
-    switchMap(() => this.store.get('transformations') as Observable<Transformation[]>)
+    switchMap(() => (this.store.get$('transformations') as Observable<Transformation[]>).pipe(
+      map((transformations: Transformation[]) => transformations.map(a => new Transformation(a)))
+    ))
   )
 
 

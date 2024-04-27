@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { faArrowLeft, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, take, tap } from 'rxjs';
 import { AppState } from 'src/app/app.module';
 import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Account } from 'src/app/data/models/account';
@@ -75,8 +75,11 @@ export class TransactionFormComponent {
         newMerchant: this.form.get('merchant')!.value,
         newCategoryId: this.form.get('categoryId')!.value,
         newHideFromBudget: this.form.get('hideFromBudget')!.value,
-      }))
+      })).subscribe();
     }
+    this.db.transformations$.pipe(
+      take(1),
+    ).subscribe();
     this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value, date: this.form.value.date?.getTime() } as Transaction));
     this.close.emit();
   }
