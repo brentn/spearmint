@@ -1,4 +1,3 @@
-- See Other Budget transactions
 - Button to add budget (subcategory?)
 - transactions screen slide in (account & budget)
 - PWA

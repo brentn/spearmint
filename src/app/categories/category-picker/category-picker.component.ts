@@ -84,9 +84,8 @@ export class CategoryPickerComponent {
 
   private filterCategories(): void {
     const searchText = this.form.get('search')!.value?.toLowerCase() || '';
-    this.filteredCategories = this.sortedCategories.filter(category => {
-      return ((category.id + '|' + category.name).toLowerCase()).includes(searchText);
-    });
+    this.filteredCategories = searchText.split(' ').reduce((result: Category[], term) => result.filter(category => [category.id, category.name].join('|').toLowerCase().includes(term)), this.sortedCategories)
+
   }
 }
 
