@@ -14,7 +14,7 @@ import { EffectsModule } from '@ngrx/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { HomeViewComponent } from './home/home-view.component';
 import { AccountComponent } from './home/account/account.component';
-import { AccountTypeComponent } from './home/account-type/account-type.component';
+import { AccountTypeComponent } from './home/account/account-type/account-type.component';
 import { NewAccountComponent } from './home/account/new-account/new-account.component';
 import { SettingsComponent } from './settings/settings.component';
 import { NavbarComponent } from './home/navbar/navbar.component';
@@ -23,7 +23,7 @@ import { TransactionComponent } from './transactions/transaction/transaction.com
 import { AccountIconComponent } from './home/account/account-icon/account-icon.component';
 import { CategoryIconComponent } from './categories/category-icon/category-icon.component';
 import { BudgetsComponent } from './budgets/budgets.component';
-import { HomeBudgetsComponent } from './home/budgets/budgets.component';
+import { HomeBudgetsComponent } from './home/budget/budgets.component';
 import { TransactionsViewComponent } from './transactions/transactions-view.component';
 import { NgxPlaidLinkModule } from 'ngx-plaid-link';
 import { TransactionFormComponent } from './transactions/transaction/form/transaction-form.component';
@@ -41,6 +41,7 @@ import { BudgetsViewComponent } from './budgets/view/budgets-view.component';
 import { BudgetComponent } from './budgets/view/budget/budget.component';
 import { ToastrModule } from 'ngx-toastr';
 import { SplashComponent } from './splash/splash.component';
+import { NewBudgetComponent } from './budgets/view/new-budget/new-budget.component';
 
 export type AppState = {
   main: MainState
@@ -71,6 +72,7 @@ export type AppState = {
     BudgetsViewComponent,
     BudgetComponent,
     SplashComponent,
+    NewBudgetComponent,
   ],
   imports: [
     BrowserModule,
