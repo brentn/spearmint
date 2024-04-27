@@ -1,11 +1,16 @@
 <div *ngIf="!selectedBudget">
   <div *ngIf="categories && transactions">
-    <div class="mx-3 mt-3">
-      <span class="larger"><span role="button" class="p-3">
-          <fa-icon [icon]="backIcon" [routerLink]="['']"></fa-icon>
+    <div class="mx-3 mt-3 text-light d-flex justify-content-between">
+      <span>
+        <span class="larger"><span role="button" class="p-3">
+            <fa-icon [icon]="backIcon" [routerLink]="['']"></fa-icon>
+          </span>
         </span>
+        <span class="px-2 larger text-nowrap">{{month|date:'MMMM'}} Budgets</span>
       </span>
-      <span class="px-2 larger text-nowrap">{{month|date:'MMMM'}} Budgets</span>
+      <span class="larger" role="button">
+        <fa-icon [icon]="addIcon"></fa-icon>
+      </span>
     </div>
 
     <div class="scroll">

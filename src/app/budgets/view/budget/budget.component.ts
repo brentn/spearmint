@@ -41,7 +41,7 @@ export class BudgetComponent {
   }
 
   onViewTransactions(): void {
-    this.store.dispatch(selectBudget(this.budget?.categoryId));
+    this.store.dispatch(selectBudget(this.budget?.categoryId ?? 'other'));
   }
 
   onEdit(): void {

@@ -1,6 +1,6 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
 import { FormControl } from '@angular/forms';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { DBStateService } from 'src/app/data/database/dbState.service';
 import { Account } from 'src/app/data/models/account';
 import { Transaction } from 'src/app/data/models/transaction';
@@ -24,6 +24,7 @@ export class BudgetsViewComponent {
   editCategory: string | undefined;
   budgetAmount = new FormControl<number>(0, { updateOn: 'blur' });
   backIcon = faArrowLeft;
+  addIcon = faPlus;
 
   constructor(private db: DBStateService) { }
 
