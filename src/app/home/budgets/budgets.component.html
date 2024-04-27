@@ -6,7 +6,7 @@
         <span class="d-none d-md-inline small text-muted fst-italic ms-3">as of {{today|date:'MMM d'}}</span>
       </span>
       <span class="d-flex align-items-center">
-        <span class="">{{net|currency}}</span>
+        <span [class.text-danger]="net<0">{{net|currency}}</span>
       </span>
     </div>
     <div class="mb-2">
@@ -18,19 +18,26 @@
         <div class="today position-absolute text-dark fst-bold" [class.initialized]="initialized"
           [style]="'top:-.29em; left: '+monthProgress+'%'">|</div>
       </div>
-      <div class="text-muted ms-3">{{-totalIncome|currency}} of {{incomeBudget|currency}}</div>
+      <div class="d-flex justify-content-between">
+        <div class="text-muted ms-3">{{-totalIncome|currency}} of {{incomeBudget|currency}}</div>
+        <span>{{incomeProgress}}%</span>
+      </div>
     </div>
 
     <div class="mb-3">
       Expenses
       <div class="position-relative">
         <div class="progress">
-          <div class="progress-bar bg-primary" role="progressbar" [style]="'width: '+expenseProgress+'%'"></div>
+          <div class="progress-bar" [class.bg-primary]="!isOverBudget" [class.bg-danger]="isOverBudget"
+            role="progressbar" [style]="'width: '+expenseProgress+'%'"></div>
         </div>
         <div class="today position-absolute text-dark fst-bold" [class.initialized]="initialized"
           [style]="'top:-.29em; left: '+monthProgress+'%'">|</div>
       </div>
-      <div class="text-muted ms-3">{{totalExpenses|currency}} of {{expenseBudget|currency}}</div>
+      <div class="d-flex justify-content-between">
+        <div class="text-muted ms-3">{{totalExpenses|currency}} of {{expenseBudget|currency}}</div>
+        <span>{{expenseProgress}}%</span>
+      </div>
     </div>
     <div class="position-relative" [style]="'margin-top:-1em; margin-left: '+monthProgress+'%'">
     </div>

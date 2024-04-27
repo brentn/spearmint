@@ -57,13 +57,16 @@ export class HomeBudgetsComponent {
     if (this.expenseBudget === 0) return 0;
     return Math.round((this.totalExpenses / this.expenseBudget) * 100);
   }
+  get isOverBudget(): boolean {
+    return this.totalExpenses > (this.expenseBudget * 1.05);
+  }
   get monthProgress(): number {
     const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
     return Math.round(new Date().getDate() / daysInMonth * 100);
   }
 
   get net(): number {
-    return (-this.totalIncome - this.incomeBudget) - (this.totalExpenses - this.expenseBudget)
+    return -this.totalIncome - this.totalExpenses
   }
 
 }
