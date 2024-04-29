@@ -111,7 +111,7 @@ export class MainEffects {
         .filter(account => ((Date.now() - (account.lastUpdated ?? 0)) > (MIN_REFRESH_FREQUENCY * 60 * 1000)))
         .filter(account => !!account.accessToken)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
-        .map(account => [getAccountBalances(account.accessToken), getLatestTransactions(account)]),
+        .map(account => [getLatestTransactions(account)]),
       of(endLoad('refresh'))
     ))
   ));
@@ -179,7 +179,7 @@ export class MainEffects {
         }),
         finalize(() => { this.store.dispatch(endLoad('refreshTransactions')) }),
         catchError(err => {
-          accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
+          accounts.filter(a => a.accessToken === action.payload.accessToken).forEach(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
           switch (err.status) {
             case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload.accessToken, action: refreshAccounts() }));
           }

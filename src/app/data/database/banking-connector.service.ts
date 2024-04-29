@@ -75,12 +75,6 @@ export class BankingConnectorService {
   transactions$(params: { accessToken: string, cursor: string | undefined }): Observable<TransactionsDTO> {
     return this.http.post(`${API}/transactions`, { access_token: params.accessToken, cursor: params.cursor }, this.headers).pipe(
       map((dto: any) => dto.transactions),
-      catchError((error: HttpErrorResponse) => {
-        switch (error.status) {
-          case 401: console.log('401'); break;
-        }
-        return of();
-      })
     )
   }
 

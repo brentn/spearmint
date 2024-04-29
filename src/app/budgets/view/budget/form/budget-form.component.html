@@ -15,9 +15,9 @@
       Total Expense Budget: <span class="larger ms-2">{{totalExpenseBudget|currency}}</span>
     </div>
     <div class="d-flex justify-content-end align-items-center">
-      <span [class.text-danger]="totalExpenseBudget>totalIncomeBudget">
+      <span [class.text-danger]="+totalExpenseBudget>+totalIncomeBudget">
         Remaining Budget: <span
-          class="border-top border-dark larger fst-bold ms-2">{{totalIncomeBudget-totalExpenseBudget|currency}}</span>
+          class="border-top border-dark larger fst-bold ms-2">{{(+totalIncomeBudget)-(+totalExpenseBudget)|currency}}</span>
       </span>
     </div>
   </div>

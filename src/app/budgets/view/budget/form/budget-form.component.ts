@@ -59,7 +59,7 @@ export class BudgetFormComponent {
 
   onSave(): void {
     if (this.selectedCategory) {
-      const amount = this.selectedCategory.group === 'INCOME' ? -(this.form.value.amount ?? 0) : (this.form.value.amount ?? 0);
+      const amount = this.selectedCategory.group === 'INCOME' ? -(this.form.value.amount ?? 0) : +(this.form.value.amount ?? 0);
       this.db.Budgets.upsert$({ categoryId: this.selectedCategory.id, amount }).subscribe();
       this.onClose();
     }
