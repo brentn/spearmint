@@ -11,6 +11,7 @@ export class Transaction {
   categoryId?: string;
   notes?: string;
   hideFromBudget?: boolean;
+  seen?: boolean;
 
   constructor(incoming: any) {
     if (!incoming?.id) throw new Error('Transaction must have an id');
@@ -27,6 +28,7 @@ export class Transaction {
     this.categoryId = incoming.categoryId;
     this.notes = incoming.notes;
     this.hideFromBudget = incoming.hideFromBudget;
+    this.seen = incoming.seen;
   }
 
   get searchText(): string {

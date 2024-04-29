@@ -144,7 +144,8 @@ export class MainEffects {
               ...account,
               balance: newBalance || account.balance,
               cursor: response.next_cursor,
-              lastUpdated: new Date()
+              failure: false,
+              lastUpdated: new Date(),
             }));
           });
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
@@ -159,6 +160,7 @@ export class MainEffects {
             merchant: item.merchant_name,
             paymentChannel: item.payment_channel,
             name: item.name,
+            seen: false,
           })));
           const updateActions = response.modified.map(item => {
             const existing = transactions.find(t => t.id === item.transaction_id);
@@ -173,6 +175,7 @@ export class MainEffects {
               merchant: item.merchant_name,
               paymentChannel: item.payment_channel,
               name: item.name,
+              seen: false,
             }));
           });
           return [...accountActions, ...removeActions, addAction, ...updateActions];

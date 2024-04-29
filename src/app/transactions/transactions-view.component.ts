@@ -8,6 +8,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { selectAccount, selectBudget } from '../data/state/actions';
 import { FormControl, FormGroup } from '@angular/forms';
+import { DBStateService } from '../data/database/dbState.service';
 
 @Component({
   selector: 'transactions-view',
@@ -29,7 +30,7 @@ export class TransactionsViewComponent {
     search: new FormControl<string>(''),
   })
 
-  constructor(private store: Store<AppState>, private router: Router) {
+  constructor(private store: Store<AppState>, private db: DBStateService, private router: Router) {
     this.form.valueChanges.subscribe(() => this.onFilter());
   }
 
@@ -50,6 +51,7 @@ export class TransactionsViewComponent {
 
   onSelect(item: Transaction | undefined): void {
     this.selectedTransaction = item;
+    this.db.Transactions.update$(new Transaction({ ...item, seen: true })).subscribe();
   }
 
   onBack(): void {
