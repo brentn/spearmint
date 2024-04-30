@@ -76,11 +76,6 @@ export class NewAccountComponent {
             lastUpdated: new Date(new Date().getFullYear(), new Date().getMonth(), -1),
           })))
         });
-        this.db.accounts$.pipe(
-          filter(accounts => accounts.some(account => account?.balance === 0)),
-          take(1),
-          tap(() => this.store.dispatch(refreshAccounts()))
-        )
       })
     ).subscribe();
     this.onClose();

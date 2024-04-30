@@ -63,6 +63,11 @@ export class MainEffects {
   addAccount$ = createEffect(() => this.actions$.pipe(
     ofType(addAccount),
     switchMap(action => this.dbState.Accounts.add$(action.payload)),
+    tap(account => {
+      setTimeout(() => {
+        this.store.dispatch(getLatestTransactions({ accessToken: account.accessToken, cursor: undefined }));
+      }, 1000);
+    }),
     map(account => accountAdded(account))
   ));
 
