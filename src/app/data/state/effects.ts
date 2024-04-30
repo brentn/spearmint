@@ -145,7 +145,7 @@ export class MainEffects {
               balance: newBalance || account.balance,
               cursor: response.next_cursor,
               failure: false,
-              lastUpdated: new Date(),
+              lastUpdated: Date.now(),
             }));
           });
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));

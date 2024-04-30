@@ -80,7 +80,7 @@ export class TransactionFormComponent {
     this.db.transformations$.pipe(
       take(1),
     ).subscribe();
-    this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value, date: this.form.value.date?.getTime() } as Transaction));
+    this.store.dispatch(updateTransaction({ ...this.transaction, ...this.form.value, seen: true, date: this.form.value.date?.getTime() } as Transaction));
     this.close.emit();
   }
 
