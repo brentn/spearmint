@@ -35,7 +35,8 @@ export class BudgetFormComponent {
       this.availableCategories = [...this.availableCategories, this.selectedCategory];
     }
     if (changes['selectedCategory']) {
-      this.form.get('amount')?.setValue(this.budgets?.find(a => a.categoryId === this.selectedCategory?.id)?.amount || 0);
+      const existingAmount = this.budgets?.find(a => a.categoryId === this.selectedCategory?.id)?.amount;
+      this.form.get('amount')!.setValue(+(existingAmount || 0));
     }
   }
 
@@ -59,8 +60,7 @@ export class BudgetFormComponent {
 
   onSave(): void {
     if (this.selectedCategory) {
-      const amount = this.selectedCategory.group === 'INCOME' ? -(this.form.value.amount ?? 0) : +(this.form.value.amount ?? 0);
-      this.db.Budgets.upsert$({ categoryId: this.selectedCategory.id, amount }).subscribe();
+      this.db.Budgets.upsert$({ categoryId: this.selectedCategory.id, amount: +(this.form.value.amount ?? 0) }).subscribe();
       this.onClose();
     }
   }
