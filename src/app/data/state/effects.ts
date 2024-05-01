@@ -1,7 +1,7 @@
 import { ApplicationRef, Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
 import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately, selectBudget, updateConfiguration, serverResponding } from "./actions";
-import { catchError, concat, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
+import { catchError, concat, concatMap, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
 import { Action, Store } from "@ngrx/store";
 import { AppState } from "src/app/app.module";
 import { BankingConnectorService } from "../database/banking-connector.service";
@@ -11,7 +11,7 @@ import { Transaction } from "../models/transaction";
 import { NgxPlaidLinkService, PlaidSuccessMetadata } from "ngx-plaid-link";
 import { ToastrService } from "ngx-toastr";
 
-const MIN_REFRESH_FREQUENCY = 360; //minutes
+const MIN_REFRESH_FREQUENCY = 120; //minutes
 
 @Injectable()
 export class MainEffects {
@@ -123,7 +123,7 @@ export class MainEffects {
     ofType(refreshAccountsImmediately),
     switchMap(() => this.dbState.storeReady$),
     withLatestFrom(this.dbState.accounts$),
-    switchMap(([_, accounts]) => concat(
+    concatMap(([_, accounts]) => concat(
       of(startLoad('refresh')),
       ...accounts
         .filter(account => !!account.accessToken)
@@ -137,7 +137,7 @@ export class MainEffects {
   getLatestTransactions$ = createEffect(() => this.actions$.pipe(
     ofType(getLatestTransactions),
     withLatestFrom(this.dbState.accounts$, this.dbState.transactions$),
-    switchMap(([action, accounts, transactions]) => concat(
+    concatMap(([action, accounts, transactions]) => concat(
       of(startLoad('refreshTransactions')),
       this.bank.transactions$(action.payload).pipe(
         switchMap(response => {
