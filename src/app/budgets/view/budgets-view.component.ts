@@ -18,8 +18,7 @@ export class BudgetsViewComponent {
   @Input() transactions: Transaction[] | undefined;
   @Input() selectedBudget: string | undefined;
   month = new Date();
-  incomeGroups: string[] = ['INCOME'];
-  expenseGroups: string[] = [];
+  incomeGroups: string[] = ['INCOME', 'TRANSFER_IN'];
   editBudget: Category | undefined;
   addBudget = false;
   backIcon = faArrowLeft;
@@ -28,25 +27,21 @@ export class BudgetsViewComponent {
   constructor(private db: DBStateService) { }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['categories']) {
-      this.expenseGroups = (this.categories || [])
-        .reduce((groups, item) => groups.includes(item.group) ? groups : [...groups, item.group], [] as string[])
-        .filter(group => !['INCOME', 'TRANSFER_IN', 'TRANSFER_OUT'].includes(group));
-    }
   }
 
   get incomeBudgets(): Budget[] {
-    return this.incomeGroups.map(group => {
-      const budget = this.budgets?.find(a => a.categoryId === group);
-      return budget || { categoryId: group, amount: 0 }
-    })
+    const incomeBudgets = (this.budgets || []).filter(budget => {
+      const budgetGroup = this.categories?.find(a => a.group === budget.categoryId || a.id === budget.categoryId)?.group;
+      return budgetGroup && this.incomeGroups.includes(budgetGroup);
+    });
+    return (incomeBudgets.length > 0) ? incomeBudgets : [{ categoryId: 'INCOME', amount: 0 }];
   }
 
   get expenseBudgets(): Budget[] {
-    return this.expenseGroups.map(group => {
-      const budget = this.budgets?.find(a => a.categoryId === group);
-      return budget || { categoryId: group, amount: 0 }
-    })
+    return (this.budgets || []).filter(budget => {
+      const budgetGroup = this.categories?.find(a => a.group === budget.categoryId || a.id === budget.categoryId)?.group;
+      return !(budgetGroup && this.incomeGroups.includes(budgetGroup));
+    });
   }
 
   get otherBudget(): Budget {
@@ -55,20 +50,21 @@ export class BudgetsViewComponent {
   }
 
   transactionsForCategory(categoryId: string): Transaction[] {
-    const earliest = new Date(this.month.getFullYear(), this.month.getMonth(), 1).getTime();
+    const earliest = new Date(this.month.getFullYear(), this.month.getMonth(), 1, 0, 0, 0).getTime();
     const latest = new Date(this.month.getFullYear(), this.month.getMonth() + 1, 0, 23, 59, 59).getTime();
     return (this.transactions || []).filter(transaction =>
-      transaction.date >= earliest && transaction.date <= latest && transaction.categoryId?.startsWith(categoryId)
+      (transaction.date >= earliest && transaction.date <= latest)
+      && transaction.categoryId?.startsWith(categoryId)
     );
   }
 
   get otherBudgetTransactions(): Transaction[] {
-    const budgetCategories = (this.budgets || []).filter(a => !!a.categoryId);
+    const budgetCategories = (this.budgets || []).reduce((acc, budget) => (!budget.categoryId || acc.includes(budget.categoryId)) ? acc : [...acc, budget.categoryId], [] as string[]);
     const earliest = new Date(this.month.getFullYear(), this.month.getMonth(), 1).getTime();
     const latest = new Date(this.month.getFullYear(), this.month.getMonth() + 1, 0, 23, 59, 59).getTime();
     return (this.transactions || []).filter(transaction =>
       (transaction.date >= earliest && transaction.date <= latest)
-      && (transaction.categoryId === undefined || !budgetCategories.some(budgetCategory => transaction.categoryId!.startsWith(budgetCategory.categoryId!)))
+      && (transaction.categoryId === undefined || !budgetCategories.some(budgetCategory => transaction.categoryId!.startsWith(budgetCategory)))
     );
   }
 

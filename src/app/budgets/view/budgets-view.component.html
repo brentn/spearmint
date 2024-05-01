@@ -1,51 +1,54 @@
-<div *ngIf="!selectedBudget">
-  <div *ngIf="categories && transactions">
-    <div class="mx-3 mt-3 text-light d-flex justify-content-between">
-      <span>
-        <span class="larger"><span role="button" class="p-3">
-            <fa-icon [icon]="backIcon" [routerLink]="['']"></fa-icon>
+<div *ngIf="budgets && categories">
+  <div *ngIf="!selectedBudget">
+    <div *ngIf="categories && transactions">
+      <div class="mx-3 mt-3 text-light d-flex justify-content-between">
+        <span>
+          <span class="larger"><span role="button" class="p-3">
+              <fa-icon [icon]="backIcon" [routerLink]="['']"></fa-icon>
+            </span>
           </span>
+          <span class="px-2 larger text-nowrap">{{month|date:'MMMM'}} Budgets</span>
         </span>
-        <span class="px-2 larger text-nowrap">{{month|date:'MMMM'}} Budgets</span>
-      </span>
-      <span class="larger" role="button" (click)="onAddBudget()">
-        <fa-icon [icon]="addIcon"></fa-icon>
-      </span>
-    </div>
-
-    <div class="scroll">
-      <div class="m-3 py-3">
-        <span class="p-2 larger text-nowrap">Income:</span>
-        <app-budget *ngFor="let budget of incomeBudgets" [budget]="budget"
-          [transactions]="transactionsForCategory(budget.categoryId!)" [isIncome]="true"
-          (edit)="onEdit(budget.categoryId)"></app-budget>
+        <span class="larger" role="button" (click)="onAddBudget()">
+          <fa-icon [icon]="addIcon"></fa-icon>
+        </span>
       </div>
 
-      <div class="m-3 pb-3">
-        <span class="p-2 larger text-nowrap">Expenses:</span>
-        <app-budget *ngFor="let budget of expenseBudgets" [budget]="budget"
-          [transactions]="transactionsForCategory(budget.categoryId!)" (edit)="onEdit(budget.categoryId)"></app-budget>
-        <app-budget [budget]="otherBudget" [transactions]="otherBudgetTransactions"
-          (edit)="onEdit('other')"></app-budget>
+      <div class="scroll">
+        <div class="m-3 py-3">
+          <span class="p-2 larger text-nowrap">Income:</span>
+          <app-budget *ngFor="let budget of incomeBudgets" [budget]="budget"
+            [transactions]="transactionsForCategory(budget.categoryId!)" [isIncome]="true"
+            (edit)="onEdit(budget.categoryId)"></app-budget>
+        </div>
+
+        <div class="m-3 pb-3">
+          <span class="p-2 larger text-nowrap">Expenses:</span>
+          <app-budget *ngFor="let budget of expenseBudgets" [budget]="budget"
+            [transactions]="transactionsForCategory(budget.categoryId!)"
+            (edit)="onEdit(budget.categoryId)"></app-budget>
+          <app-budget [budget]="otherBudget" [transactions]="otherBudgetTransactions"
+            (edit)="onEdit('other')"></app-budget>
+        </div>
       </div>
     </div>
   </div>
+
+  <div *ngIf="selectedBudget">
+    <ng-container *ngIf="selectedBudget!=='other'">
+      <transactions-view *ngIf="transactionsForCategory(selectedBudget) as categoryTransactions"
+        [transactions]="categoryTransactions" [categories]="categories" [accounts]="accounts"
+        [title]="selectedBudget"></transactions-view>
+    </ng-container>
+    <ng-container *ngIf="selectedBudget==='other'">
+      <transactions-view *ngIf="otherBudgetTransactions as transactions" [transactions]="otherBudgetTransactions"
+        [categories]="categories" [accounts]="accounts" [title]="selectedBudget"></transactions-view>
+    </ng-container>
+  </div>
+
+  <app-budget-form *ngIf="editBudget" [categories]="categories" [budgets]="budgets" [selectedCategory]="editBudget"
+    (close)="editBudget=undefined"></app-budget-form>
+
+  <app-budget-form *ngIf="addBudget" [categories]="categories" [budgets]="budgets"
+    (close)="addBudget=false"></app-budget-form>
 </div>
-
-<div *ngIf="selectedBudget">
-  <ng-container *ngIf="selectedBudget!=='other'">
-    <transactions-view *ngIf="transactionsForCategory(selectedBudget) as categoryTransactions"
-      [transactions]="categoryTransactions" [categories]="categories" [accounts]="accounts"
-      [title]="selectedBudget"></transactions-view>
-  </ng-container>
-  <ng-container *ngIf="selectedBudget==='other'">
-    <transactions-view *ngIf="otherBudgetTransactions as transactions" [transactions]="otherBudgetTransactions"
-      [categories]="categories" [accounts]="accounts" [title]="selectedBudget"></transactions-view>
-  </ng-container>
-</div>
-
-<app-budget-form *ngIf="editBudget" [categories]="categories" [budgets]="budgets" [selectedCategory]="editBudget"
-  (close)="editBudget=undefined"></app-budget-form>
-
-<app-budget-form *ngIf="addBudget" [categories]="categories" [budgets]="budgets"
-  (close)="addBudget=false"></app-budget-form>
