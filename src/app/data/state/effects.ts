@@ -128,11 +128,39 @@ export class MainEffects {
       ...accounts
         .filter(account => !!account.accessToken)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
-        .map(account => [getLatestTransactions(account)]),
+        .map(account => [getAccountBalances(account.accessToken), getLatestTransactions(account)]),
       of(endLoad('refresh'))
     ))
   ));
 
+  getAccountBalances$ = createEffect(() => this.actions$.pipe(
+    ofType(getAccountBalances),
+    withLatestFrom(this.dbState.accounts$),
+    concatMap(([action, accounts]) => concat(
+      of(startLoad('refreshBalances')),
+      this.bank.accountBalances$(action.payload).pipe(
+        switchMap(balances =>
+          balances.map(balance => {
+            const account = accounts.find(a => a.id === balance.account_id);
+            return account ? updateAccount({
+              ...account,
+              balance: balance.balances.current,
+              lastUpdated: new Date().getTime(),
+              failure: undefined
+            }) : null;
+          }).filter(a => !!a) as Action[]
+        ),
+        finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),
+        catchError(err => {
+          accounts.filter(a => a.accessToken === action.payload).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
+          switch (err.status) {
+            case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload, action: refreshAccounts() }));
+          }
+          return of();
+        }),
+      )
+    ))
+  ));
 
   getLatestTransactions$ = createEffect(() => this.actions$.pipe(
     ofType(getLatestTransactions),
