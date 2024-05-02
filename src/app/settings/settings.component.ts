@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { Account } from '../data/models/account';
 import { DBStateService } from '../data/database/dbState.service';
 import { BankingConnectorService } from '../data/database/banking-connector.service';
+import { AuthService } from '../auth/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -28,7 +29,7 @@ export class SettingsComponent {
 
   constructor(
     private store: Store<AppState>,
-    private bank: BankingConnectorService,
+    private auth: AuthService,
     private router: Router,
     private dbState: DBStateService
   ) { }
@@ -88,7 +89,7 @@ export class SettingsComponent {
     if (confirm('Are you sure you want to DELETE all fingerprint, account and transaction data?')) {
       this.store.dispatch(reset());
       localStorage.setItem('user', '');
-      this.bank.resetCredentials$().subscribe();
+      this.auth.resetCredentials$().subscribe();
       this.router.navigate(['/']);
     }
   }

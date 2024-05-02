@@ -13,7 +13,6 @@ const API = 'https://spearmint-imnj.onrender.com';
 export class BankingConnectorService {
   headers = { headers: new HttpHeaders().set('Content-Type', 'application/json') };
 
-
   constructor(private http: HttpClient) { }
 
   spinUpServer$(): Observable<void> {
@@ -21,30 +20,6 @@ export class BankingConnectorService {
       map(() => void (0))
     );
   }
-
-  getChallenge$(): Observable<string> {
-    return this.http.get(`${API}/challenge`).pipe(
-      map((response: any) => response.challenge)
-    )
-  }
-
-  registerUser$(registration: { username: string, credential: { id: string, publicKey: string, algorithm: string } }): Observable<object> {
-    return this.http.post(`${API}/register`, registration, this.headers).pipe(
-      map(obj => obj)
-    )
-  }
-
-  authenticateUser$(authentication: { credentialId: string, authenticatorData: string, clientData: string, signature: string }): Observable<void> {
-    return this.http.post(`${API}/authenticate`, authentication, this.headers).pipe(
-      map(() => void (0))
-    )
-  }
-
-  resetCredentials$(): Observable<void> {
-    return this.http.post(`${API}/resetCredentials`, null, this.headers).pipe(
-      map(() => void (0))
-    )
-  };
 
   getLinkToken$(): Observable<string> {
     return this.http.post(`${API}/linkToken`, null, this.headers).pipe(

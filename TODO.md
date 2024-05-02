@@ -1,5 +1,3 @@
-- authenticate locally
-- reinstate refresh balances endpoint
 - remove group from budget name
 - home:budgets today line should be one day to the left
 - rename categories?
