@@ -10,6 +10,9 @@ import { Transaction } from 'src/app/data/models/transaction';
 import { Transformation } from 'src/app/data/models/transformation';
 import { updateTransaction } from 'src/app/data/state/actions';
 import { Category } from 'src/app/data/types/category.type';
+import { Time } from 'src/app/utilities/timeUtilities';
+
+const TimezoneOffset = new Date().getTimezoneOffset() * 60000;
 
 @Component({
   selector: 'transaction-form',
@@ -44,7 +47,7 @@ export class TransactionFormComponent {
     this.subscriptions = [
       this.form.get('dateString')!.valueChanges.subscribe(dateString => {
         if (dateString) {
-          this.form.get('date')!.setValue(new Date(dateString), { emitEvent: false });
+          this.form.get('date')!.setValue(new Date(new Date(dateString).getTime() + TimezoneOffset), { emitEvent: false });
         }
       })
     ]
@@ -105,7 +108,7 @@ export class TransactionFormComponent {
         name: this.transaction.name,
         merchant: this.transaction.merchant,
         date: new Date(this.transaction.date),
-        dateString: new Date(this.transaction.date).toISOString().split('T')[0],
+        dateString: new Date(this.transaction.date - TimezoneOffset).toISOString().substring(0, 10),
         categoryId: this.transaction.categoryId,
         notes: this.transaction.notes,
         hideFromBudget: this.transaction.hideFromBudget,

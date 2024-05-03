@@ -1,5 +1,4 @@
 - remove group from budget name
-- home:budgets today line should be one day to the left
 - rename categories?
 - pull to refresh
 - confirm updates CREATE transforms

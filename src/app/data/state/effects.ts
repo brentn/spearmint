@@ -128,7 +128,7 @@ export class MainEffects {
       ...accounts
         .filter(account => !!account.accessToken)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
-        .map(account => [getAccountBalances(account.accessToken), getLatestTransactions(account)]),
+        .map(account => [getLatestTransactions(account)]),
       of(endLoad('refresh'))
     ))
   ));
@@ -139,8 +139,9 @@ export class MainEffects {
     concatMap(([action, accounts]) => concat(
       of(startLoad('refreshBalances')),
       this.bank.accountBalances$(action.payload).pipe(
-        switchMap(balances =>
-          balances.map(balance => {
+        switchMap(balances => {
+          console.log('got balances for', action.payload);
+          return balances.map(balance => {
             const account = accounts.find(a => a.id === balance.account_id);
             return account ? updateAccount({
               ...account,
@@ -149,7 +150,7 @@ export class MainEffects {
               failure: undefined
             }) : null;
           }).filter(a => !!a) as Action[]
-        ),
+        }),
         finalize(() => { this.store.dispatch(endLoad('refreshBalances')) }),
         catchError(err => {
           accounts.filter(a => a.accessToken === action.payload).map(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
@@ -169,16 +170,21 @@ export class MainEffects {
       of(startLoad('refreshTransactions')),
       this.bank.transactions$(action.payload).pipe(
         switchMap(response => {
+          console.log('got', response.added.length + response.modified.length, 'transactions for', action.payload.accessToken);
           const accountActions = accounts.filter(a => a.accessToken === action.payload.accessToken).map(account => {
             const newBalance = response.accounts.find(a => a.account_id === account.id)?.balances.current;
             return updateAccount(new Account({
               ...account,
               balance: newBalance || account.balance,
               cursor: response.next_cursor,
-              failure: false,
+              failure: undefined,
               lastUpdated: Date.now(),
             }));
           });
+          if (accountActions.length === 0) {
+            console.log('looking up balance for', action.payload.accessToken)
+            this.store.dispatch(getAccountBalances(action.payload.accessToken));
+          }
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
           const newItems = response.added.filter(item => !transactions.find(t => t.id === item.transaction_id));
           const addAction = addTransactions(newItems.map(item => new Transaction({
@@ -193,6 +199,7 @@ export class MainEffects {
             name: item.name,
             seen: false,
           })));
+          console.log('Add Transactions', addAction.payload);
           const updateActions = response.modified.map(item => {
             const existing = transactions.find(t => t.id === item.transaction_id);
             return updateTransaction(new Transaction({
@@ -209,10 +216,12 @@ export class MainEffects {
               seen: false,
             }));
           });
+          console.log('Update Transactions', updateActions.map(a => a.payload));
           return [...accountActions, ...removeActions, addAction, ...updateActions];
         }),
         finalize(() => { this.store.dispatch(endLoad('refreshTransactions')) }),
         catchError(err => {
+          console.error('error getting transactions for', action.payload.accessToken, err)
           accounts.filter(a => a.accessToken === action.payload.accessToken).forEach(account => this.store.dispatch(updateAccount(new Account({ ...account, failure: true }))));
           switch (err.status) {
             case 401: this.store.dispatch(updateLinkToken({ accessToken: action.payload.accessToken, action: refreshAccounts() }));

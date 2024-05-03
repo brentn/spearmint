@@ -62,7 +62,7 @@ export class HomeBudgetsComponent {
   }
   get monthProgress(): number {
     const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-    return Math.round(new Date().getDate() / daysInMonth * 100);
+    return Math.round((new Date().getDate() - 1) / daysInMonth * 100);
   }
 
   get net(): number {
