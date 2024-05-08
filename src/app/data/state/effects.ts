@@ -128,6 +128,7 @@ export class MainEffects {
       ...accounts
         .filter(account => !!account.accessToken && !!account.active)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
+        .map(account => { this.bank.refreshAccount$(account.accessToken).subscribe(); return account; })
         .map(account => [getLatestTransactions(account)]),
       of(endLoad('refresh'))
     ))
@@ -235,6 +236,7 @@ export class MainEffects {
       )
     ))
   ));
+
 
 }
 

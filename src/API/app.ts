@@ -187,7 +187,7 @@ app.post('/transactions', async (req: Request, res: Response) => {
 app.post('/refresh', async (req: Request, res: Response) => {
   try {
     const request = { access_token: req.body?.access_token };
-    const response = await plaidClient.transactionsRefresh;
+    const response = await plaidClient.transactionsRefresh(request);
     return res.status(200).json({
       item: response.data.item
     });
