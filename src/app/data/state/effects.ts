@@ -1,4 +1,4 @@
-import { ApplicationRef, Injectable } from "@angular/core";
+import { Injectable } from "@angular/core";
 import { Actions, createEffect, ofType } from "@ngrx/effects";
 import { accountAdded, accountUpdated, addAccount, addTransactions, endLoad, getLatestTransactions, getLinkToken, initialize, refreshAccounts, reset, setLinkToken, startLoad, transactionUpdated, transactionsAdded, updateAccount, updateTransaction, getAccountBalances, removeTransaction, transactionRemoved, updateLinkToken, refreshAccountsImmediately, selectBudget, updateConfiguration, serverResponding } from "./actions";
 import { catchError, concat, concatMap, filter, finalize, map, of, switchMap, tap, withLatestFrom } from "rxjs";
@@ -128,7 +128,6 @@ export class MainEffects {
       ...accounts
         .filter(account => !!account.accessToken && !!account.active)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
-        .map(account => { this.bank.refreshAccount$(account.accessToken).subscribe(); return account; })
         .map(account => [getLatestTransactions(account)]),
       of(endLoad('refresh'))
     ))

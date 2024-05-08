@@ -41,14 +41,6 @@ export class BankingConnectorService {
     )
   }
 
-  refreshAccount$(accessToken: string): Observable<any> {
-    return this.http.post(`${API}/refresh`, { access_token: accessToken }, this.headers).pipe(
-      map((response: any) => {
-        console.log('Refresh response', accessToken, response)
-      })
-    )
-  }
-
   accountBalances$(accessToken: string): Observable<BalanceDTO[]> {
     return this.http.post(`${API}/balances`, { access_token: accessToken }, this.headers).pipe(
       map((dto: any) => dto.accounts),
