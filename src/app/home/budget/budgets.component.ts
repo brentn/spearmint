@@ -1,4 +1,4 @@
-import { Component, Input, SimpleChanges } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, SimpleChanges } from '@angular/core';
 import { faCaretUp } from '@fortawesome/free-solid-svg-icons';
 import { Transaction } from 'src/app/data/models/transaction';
 import { Budget } from 'src/app/data/types/budget.type';
@@ -20,8 +20,11 @@ export class HomeBudgetsComponent {
   todayIcon = faCaretUp;
   initialized = false;
 
+  constructor(private cd: ChangeDetectorRef) { }
+
   ngAfterViewInit(): void {
     this.initialized = true;
+    this.cd.detectChanges();
   }
 
   ngOnChanges(changes: SimpleChanges): void {

@@ -1,7 +1,7 @@
 :root {
   --primary: 78, 167, 250;
   --primaryColor: rgb(var(--primary));
-  --secondaryColor: rgb(184, 215, 244);
+  --secondaryColor: #b8d7f4;
 }
 
 .larger {

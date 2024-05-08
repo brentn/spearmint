@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { FormArray, FormControl, FormGroup } from '@angular/forms';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import { Store } from '@ngrx/store';
 import { AppState } from '../app.module';
 import { Subscription } from 'rxjs';
@@ -21,6 +21,7 @@ export class SettingsComponent {
   backIcon = faArrowLeft;
   accounts: Account[] = [];
   subscriptions: Subscription[] = [];
+  deleteIcon = faTrashAlt;
 
   form = new FormGroup({
     showGraph: new FormControl<boolean>(true, { updateOn: 'blur' }),
@@ -76,6 +77,14 @@ export class SettingsComponent {
   }
 
   get accountRows(): FormArray { return this.form.get('accountRows') as FormArray; }
+
+  onDeleteAccount(index: number): void {
+    const account = this.accounts[index];
+    if (account && confirm('Delete account ' + account.displayName + '?')) {
+      this.dbState.Accounts.remove$(account).subscribe();
+      this.dbState.Transactions.removeAccount$(account.id).subscribe();
+    }
+  }
 
   onRefreshAccounts(): void {
     this.store.dispatch(refreshAccountsImmediately());

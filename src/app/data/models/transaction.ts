@@ -18,7 +18,12 @@ export class Transaction {
     if (!incoming.date) throw new Error('Transaction must have a date');
     if (!incoming.accountId) throw new Error('Transaction must have an accountId');
     this.id = incoming.id;
-    this.date = new Date(incoming.date).getTime();
+    if (typeof incoming.date === 'string') {
+      const timezoneOffset = new Date().getTimezoneOffset() * 60000;
+      this.date = new Date(incoming.date).getTime() + timezoneOffset;
+    } else {
+      this.date = new Date(incoming.date).getTime();
+    }
     this.accountId = incoming.accountId;
     this.merchantId = incoming.merchantId || '';
     this.merchant = incoming.merchant ?? '';

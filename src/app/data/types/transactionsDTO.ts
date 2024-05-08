@@ -5,5 +5,6 @@ export type TransactionsDTO = {
   added: TransactionDTO[],
   modified: TransactionDTO[],
   removed: { transaction_id: string }[],
+  hasMore: boolean;
   next_cursor: string
 }

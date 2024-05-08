@@ -81,6 +81,14 @@ export class DBStateService {
         )),
       );
     },
+    remove$: (account: Account): Observable<Account> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('accounts', (accounts: Account[]) => accounts.filter(a => a.id !== account.id))).pipe(
+          map(() => account)
+        )),
+      );
+    },
     reset$: (): Observable<void> => {
       return this._ready$.pipe(
         filter(ready => ready),
@@ -121,6 +129,14 @@ export class DBStateService {
         filter(ready => ready),
         switchMap(() => from(this.store.set('transactions', (transactions: Transaction[]) => transactions.filter(t => t.id !== transactionId))).pipe(
           map(() => transactionId)
+        )),
+      );
+    },
+    removeAccount$: (accountId: string): Observable<void> => {
+      return this._ready$.pipe(
+        filter(ready => ready),
+        switchMap(() => from(this.store.set('transactions', (transactions: Transaction[]) => transactions.filter(t => t.accountId !== accountId))).pipe(
+          map(() => void (0))
         )),
       );
     },

@@ -1,8 +1,10 @@
 - remove group from budget name
 - rename categories?
+- pending transactions
 - pull to refresh
+- refresh individual account
+- back button
 - confirm updates CREATE transforms
-- Date off by one (in evening?)
 - budget rollovers
 - change month for budget view
 - remove budget

@@ -111,8 +111,8 @@ export class MainEffects {
     switchMap(([_, accounts]) => concat(
       of(startLoad('refresh')),
       ...accounts
+        .filter(account => !!account.accessToken && !!account.active)
         .filter(account => ((Date.now() - (account.lastUpdated ?? 0)) > (MIN_REFRESH_FREQUENCY * 60 * 1000)))
-        .filter(account => !!account.accessToken)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
         .map(account => [getLatestTransactions(account)]),
       of(endLoad('refresh'))
@@ -126,7 +126,7 @@ export class MainEffects {
     concatMap(([_, accounts]) => concat(
       of(startLoad('refresh')),
       ...accounts
-        .filter(account => !!account.accessToken)
+        .filter(account => !!account.accessToken && !!account.active)
         .reduce((acc: Account[], item) => acc.find(a => a.accessToken === item.accessToken) ? acc : [...acc, item], [])
         .map(account => [getLatestTransactions(account)]),
       of(endLoad('refresh'))
@@ -178,12 +178,16 @@ export class MainEffects {
               balance: newBalance || account.balance,
               cursor: response.next_cursor,
               failure: undefined,
-              lastUpdated: Date.now(),
+              lastUpdated: response.hasMore ? account.lastUpdated : Date.now(),
             }));
           });
           if (accountActions.length === 0) {
             console.log('looking up balance for', action.payload.accessToken)
             this.store.dispatch(getAccountBalances(action.payload.accessToken));
+          }
+          if (response.hasMore) {
+            console.log('getting more transactions for', action.payload.accessToken);
+            this.store.dispatch(getLatestTransactions({ accessToken: action.payload.accessToken, cursor: response.next_cursor }));
           }
           const removeActions = response.removed.map(item => removeTransaction(item.transaction_id));
           const newItems = response.added.filter(item => !transactions.find(t => t.id === item.transaction_id));

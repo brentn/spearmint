@@ -182,6 +182,19 @@ app.post('/transactions', async (req: Request, res: Response) => {
       default: res.status(500).json({ message: 'Failed to get transactions' });
     }
   }
+});
+
+app.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const request = { access_token: req.body?.access_token };
+    const response = await plaidClient.transactionsRefresh;
+    return res.status(200).json({
+      item: response.data.item
+    });
+  } catch (error: any) {
+    console.error('Error refreshing transactions:', error.code);
+    res.status(500).json({ message: 'Failed to get item status' });
+  }
 })
 
 app.listen(process.env.PORT || 4000, () => {
