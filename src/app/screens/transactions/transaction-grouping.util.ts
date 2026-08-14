@@ -47,3 +47,8 @@ export function totalSpentInMonth(transactions: Transaction[], yearMonth: YearMo
 export function countInMonth(transactions: Transaction[], yearMonth: YearMonth): number {
   return transactions.filter((t) => t.date.startsWith(yearMonth)).length;
 }
+
+/** Net signed change (deposits minus spend) for transactions dated within the given calendar month. */
+export function netChangeInMonth(transactions: Transaction[], yearMonth: YearMonth): number {
+  return transactions.filter((t) => t.date.startsWith(yearMonth)).reduce((sum, t) => sum + t.amount, 0);
+}

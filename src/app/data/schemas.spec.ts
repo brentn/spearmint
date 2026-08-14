@@ -4,6 +4,7 @@ import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import {
   accountSchema,
+  appSettingsMigrationStrategies,
   appSettingsSchema,
   budgetSchema,
   categorizationRuleSchema,
@@ -28,7 +29,7 @@ describe('domain schemas', () => {
       transactions: { schema: transactionSchema },
       budgets: { schema: budgetSchema },
       categorizationRules: { schema: categorizationRuleSchema },
-      appSettings: { schema: appSettingsSchema },
+      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
       simplefinLinks: { schema: simplefinLinkSchema },
     });
   });

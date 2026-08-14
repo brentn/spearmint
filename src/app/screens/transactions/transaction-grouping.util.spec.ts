@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Transaction } from '../../data/models';
-import { countInMonth, groupTransactionsByDay, totalSpentInMonth } from './transaction-grouping.util';
+import { countInMonth, groupTransactionsByDay, netChangeInMonth, totalSpentInMonth } from './transaction-grouping.util';
 
 function transaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -92,5 +92,21 @@ describe('countInMonth', () => {
     ];
 
     expect(countInMonth(transactions, '2026-08')).toBe(2);
+  });
+});
+
+describe('netChangeInMonth', () => {
+  it('sums signed amounts within the given month, deposits and spend netted together', () => {
+    const transactions = [
+      transaction({ date: '2026-08-14', amount: -64.2 }),
+      transaction({ date: '2026-08-13', amount: 2104.55 }),
+      transaction({ date: '2026-07-31', amount: -500 }),
+    ];
+
+    expect(netChangeInMonth(transactions, '2026-08')).toBeCloseTo(2040.35);
+  });
+
+  it('is zero when there is nothing in the month', () => {
+    expect(netChangeInMonth([], '2026-08')).toBe(0);
   });
 });

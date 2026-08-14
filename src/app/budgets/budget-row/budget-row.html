@@ -1,0 +1,24 @@
+<li class="budget-row">
+  <a class="budget-row__link" [routerLink]="['/budgets', row().id]">
+    <div class="budget-row__amount-line">
+      <span class="budget-row__cat-name">{{ row().categoryName }}</span>
+      <span>${{ row().spent | number: '1.0-0' }} of ${{ row().available | number: '1.0-0' }}</span>
+    </div>
+    <div class="bar-track">
+      <div
+        class="bar-fill"
+        [class.bar-fill--normal]="row().state === 'normal'"
+        [class.bar-fill--warning]="row().state === 'warning'"
+        [class.bar-fill--over]="row().state === 'over'"
+        [style.width.%]="row().barPercent * 100"
+      ></div>
+      <span
+        class="bar-pct"
+        [class.bar-pct--on-fill]="row().pctLabelOnFill"
+        [style.left]="row().pctLabelOnFill ? null : row().barPercent * 100 + 4 + '%'"
+      >
+        {{ row().pctRounded }}%
+      </span>
+    </div>
+  </a>
+</li>

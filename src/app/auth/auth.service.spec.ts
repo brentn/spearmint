@@ -3,7 +3,7 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { appSettingsSchema } from '../data/schemas';
+import { appSettingsMigrationStrategies, appSettingsSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
 import type { WebauthnCredential } from '../data/models';
 import { AuthService } from './auth.service';
@@ -49,7 +49,9 @@ describe('AuthService', () => {
       name: `auth-test-${Math.random().toString(36).slice(2)}`,
       storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
-    await fakeDb.addCollections({ appSettings: { schema: appSettingsSchema } });
+    await fakeDb.addCollections({
+      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
+    });
 
     TestBed.configureTestingModule({
       providers: [

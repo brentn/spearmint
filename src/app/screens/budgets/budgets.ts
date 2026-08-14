@@ -1,14 +1,14 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { BudgetRow } from '../../budgets/budget-row/budget-row';
 import { BudgetsStore } from '../../budgets/budgets.store';
 import type { CategoryType } from '../../data/models';
 
 @Component({
   selector: 'app-budgets',
-  imports: [RouterLink, FaIconComponent, DecimalPipe],
+  imports: [FaIconComponent, DecimalPipe, BudgetRow],
   templateUrl: './budgets.html',
   styleUrl: './budgets.scss',
   providers: [BudgetsStore],

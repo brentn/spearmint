@@ -1,29 +1,184 @@
-@use '../../../styles/hero-header' as hero;
-
 .overview {
   min-height: 100vh;
   padding-bottom: calc(6rem + env(safe-area-inset-bottom));
 }
 
+// Full-bleed gradient hero, scrolls with the rest of the content (not pinned) per the
+// locked visual spec (§8) — matches transactions.scss/budgets.scss's own hero.
 .overview__hero {
-  @include hero.band;
+  position: relative;
+  color: #fff;
+  padding: 2rem 1rem 4.75rem;
+  background: var(--spearmint-hero-gradient);
+}
+
+.overview__hero-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .overview__hero-label {
-  margin: 0;
-  font-size: 1.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+.overview__hero-icon-btn {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.overview__badge-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 0.56rem;
+  height: 0.56rem;
+  border-radius: 50%;
+  background: var(--spearmint-danger);
+  border: 1.5px solid #0f5e44;
+}
+
+.overview__hero-value {
+  margin-top: 0.4rem;
+  font-size: 2.1rem;
   font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.overview__hero-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+}
+
+.overview__hero-pills {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.overview__pill {
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.overview__pill--active {
+  background: #fff;
+  color: var(--spearmint-success);
+}
+
+.overview__loading {
+  padding: 1.5rem 1rem;
+  color: var(--spearmint-accent);
 }
 
 .overview__content {
-  @include hero.overlap-content;
+  position: relative;
+  z-index: 1;
+  max-width: 32rem;
+  margin: -3rem auto 0;
+  padding: 0 1rem;
+}
+
+.overview__card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.overview__total-card {
+  background: var(--spearmint-surface);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow);
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.overview__total-label {
+  color: var(--spearmint-success);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.overview__total-value {
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--spearmint-ink);
+}
+
+.overview__total-value--negative {
+  color: var(--spearmint-danger);
 }
 
 .overview__card {
-  @include hero.overlap-card;
+  background: var(--spearmint-surface);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow);
+  padding: 1rem;
+  margin-top: 0.6rem;
 }
 
-.overview__card-body {
-  margin: 0;
-  color: var(--spearmint-accent);
+.overview__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.9rem;
 }
+
+.overview__section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--spearmint-ink);
+}
+
+.overview__section-link {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--spearmint-accent);
+  text-decoration: none;
+}
+
+.overview__empty-note {
+  margin: 0;
+  color: var(--spearmint-muted);
+  font-size: 0.85rem;
+}
+
+// ---------- budget rows ----------
+.overview__budget-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// Per-row styling lives in the shared BudgetRow component (../../budgets/budget-row).

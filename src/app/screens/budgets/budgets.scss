@@ -262,34 +262,7 @@
   padding: 0;
 }
 
-.budget-row {
-  margin-bottom: 1.1rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.budget-row__link {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
-.budget-row__amount-line {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 0.75rem;
-  color: var(--spearmint-muted);
-  margin-bottom: 0.25rem;
-}
-
-.budget-row__cat-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--spearmint-ink);
-}
-
-// Progress-bar primitives (.bar-track/.bar-fill*/.bar-pct*) are global (styles.scss) —
-// shared with the Budget detail screen's own larger bar.
+// Per-row styling (.budget-row/.budget-row__*) lives in the shared BudgetRow
+// component (../../budgets/budget-row). Progress-bar primitives
+// (.bar-track/.bar-fill*/.bar-pct*) are global (styles.scss) — shared with the
+// Budget detail screen's own larger bar.

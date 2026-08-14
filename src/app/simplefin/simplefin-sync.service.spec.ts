@@ -5,6 +5,7 @@ import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   accountSchema,
+  appSettingsMigrationStrategies,
   appSettingsSchema,
   institutionSchema,
   transactionSchema,
@@ -63,7 +64,7 @@ describe('SimplefinSyncService', () => {
       accounts: { schema: accountSchema },
       institutions: { schema: institutionSchema },
       transactions: { schema: transactionSchema },
-      appSettings: { schema: appSettingsSchema },
+      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
     });
 
     fetchAccounts = vi.fn();

@@ -1,11 +1,82 @@
 <div class="overview">
   <header class="overview__hero">
-    <h1 class="overview__hero-label">Overview</h1>
+    <div class="overview__hero-topline">
+      <div class="overview__hero-label">Total balance</div>
+      <a
+        class="overview__hero-icon-btn"
+        routerLink="/settings/accounts"
+        aria-label="Notifications"
+      >
+        <fa-icon [icon]="icons.bell"></fa-icon>
+        @if (store.anyAccountNeedsAttention()) {
+          <span class="overview__badge-dot"></span>
+        }
+      </a>
+    </div>
+    <div class="overview__hero-value">${{ store.totalBalance() | number: '1.2-2' }}</div>
+    <div class="overview__hero-delta">
+      {{ store.balanceDeltaThisMonth() >= 0 ? '▲' : '▼' }}
+      ${{ (store.balanceDeltaThisMonth() < 0 ? -store.balanceDeltaThisMonth() : store.balanceDeltaThisMonth()) | number: '1.0-0' }}
+      this month
+    </div>
+    <div class="overview__hero-pills">
+      <button
+        type="button"
+        class="overview__pill"
+        [class.overview__pill--active]="accountFilter() === 'all'"
+        (click)="accountFilter.set('all')"
+      >
+        All
+      </button>
+      <button
+        type="button"
+        class="overview__pill"
+        [class.overview__pill--active]="accountFilter() === 'bank'"
+        (click)="accountFilter.set('bank')"
+      >
+        Cash
+      </button>
+      <button
+        type="button"
+        class="overview__pill"
+        [class.overview__pill--active]="accountFilter() === 'creditCard'"
+        (click)="accountFilter.set('creditCard')"
+      >
+        Credit cards
+      </button>
+    </div>
   </header>
 
   <div class="overview__content">
-    <div class="overview__card">
-      <p class="overview__card-body">Your accounts and budget summary will show up here.</p>
-    </div>
+    @if (store.loading()) {
+      <p class="overview__loading">Loading&hellip;</p>
+    } @else {
+      <div class="overview__card-stack">
+        @for (card of accountCards(); track card.key) {
+          <div class="overview__total-card">
+            <span class="overview__total-label">{{ card.label }}</span>
+            <span class="overview__total-value" [class.overview__total-value--negative]="card.value < 0">
+              {{ card.value < 0 ? '-' : '' }}${{ (card.value < 0 ? -card.value : card.value) | number: '1.2-2' }}
+            </span>
+          </div>
+        }
+      </div>
+
+      <div class="overview__card">
+        <div class="overview__section-header">
+          <h2 class="overview__section-title">Budgets to watch</h2>
+          <a class="overview__section-link" routerLink="/budgets">See all</a>
+        </div>
+        @if (budgetsToWatch().length === 0) {
+          <p class="overview__empty-note">Add a budget to start tracking spending by category.</p>
+        } @else {
+          <ul class="overview__budget-rows">
+            @for (row of budgetsToWatch(); track row.id) {
+              <app-budget-row [row]="row" />
+            }
+          </ul>
+        }
+      </div>
+    }
   </div>
 </div>

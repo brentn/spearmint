@@ -4,7 +4,12 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountSchema, appSettingsSchema, institutionSchema } from '../../../data/schemas';
+import {
+  accountSchema,
+  appSettingsMigrationStrategies,
+  appSettingsSchema,
+  institutionSchema,
+} from '../../../data/schemas';
 import { DatabaseService } from '../../../data/database.service';
 import type { Account } from '../../../data/models';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
@@ -47,7 +52,7 @@ describe('AccountsStore', () => {
     await fakeDb.addCollections({
       accounts: { schema: accountSchema },
       institutions: { schema: institutionSchema },
-      appSettings: { schema: appSettingsSchema },
+      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
     });
     await fakeDb['institutions'].insert({ id: 'org-1', name: 'My Bank', url: null });
     await fakeDb['appSettings'].upsert({
