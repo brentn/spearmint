@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { client, server } from '@passwordless-id/webauthn';
-import { DEFAULT_APP_SETTINGS, getAppSettingsDoc } from '../data/app-settings.util';
+import { getAppSettingsDoc, upsertAppSettings } from '../data/app-settings.util';
 import { DatabaseService } from '../data/database.service';
 import type { WebauthnCredential } from '../data/models';
 
@@ -45,13 +45,8 @@ export class AuthService {
   }
 
   private async saveCredential(credential: WebauthnCredential): Promise<void> {
-    const existing = await this.getSettingsDoc();
-    if (existing) {
-      await existing.incrementalPatch({ webauthnCredential: credential });
-      return;
-    }
     const db = await this.databaseService.getDatabase();
-    await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: credential });
+    await upsertAppSettings(db, { webauthnCredential: credential });
   }
 
   async register(deviceLabel: string): Promise<void> {

@@ -6,6 +6,7 @@ import { Transactions } from './screens/transactions/transactions';
 import { Settings } from './screens/settings/settings';
 import { AccountsScreen } from './screens/settings/accounts/accounts';
 import { CategoriesScreen } from './screens/settings/categories/categories';
+import { ExportImportScreen } from './screens/settings/export-import/export-import';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'overview' },
@@ -16,4 +17,5 @@ export const routes: Routes = [
   { path: 'settings', component: Settings },
   { path: 'settings/accounts', component: AccountsScreen },
   { path: 'settings/categories', component: CategoriesScreen },
+  { path: 'settings/export-import', component: ExportImportScreen },
 ];

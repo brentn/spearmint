@@ -1,0 +1,120 @@
+<div class="export-import">
+  <header class="export-import__header">
+    <a class="export-import__back" routerLink="/settings">&larr; Settings</a>
+    <h1 class="export-import__title">Export / Import backup</h1>
+  </header>
+
+  <div class="export-import__content">
+    <section class="export-import__card">
+      <h2 class="export-import__section-title">Export a backup</h2>
+      <p class="export-import__body">
+        Downloads a full snapshot of everything stored on this device — accounts, transactions, categories, budgets,
+        and your device registration. This is the only backup and the only way to move your data to another device.
+      </p>
+
+      <label class="export-import__checkbox">
+        <input
+          type="checkbox"
+          [checked]="encryptExport()"
+          (change)="encryptExport.set($any($event.target).checked)"
+        />
+        Encrypt this backup with a password
+      </label>
+
+      @if (encryptExport()) {
+        <div class="export-import__password-fields">
+          <label class="export-import__label">
+            Password
+            <input
+              type="password"
+              [value]="exportPassword()"
+              (input)="exportPassword.set($any($event.target).value)"
+            />
+          </label>
+          <label class="export-import__label">
+            Confirm password
+            <input
+              type="password"
+              [value]="exportPasswordConfirm()"
+              (input)="exportPasswordConfirm.set($any($event.target).value)"
+            />
+          </label>
+          @if (exportPassword() && exportPassword().length < minPasswordLength) {
+            <p class="export-import__hint">Password must be at least {{ minPasswordLength }} characters.</p>
+          } @else if (exportPasswordConfirm() && exportPassword() !== exportPasswordConfirm()) {
+            <p class="export-import__hint">Passwords don't match.</p>
+          }
+        </div>
+      }
+
+      @if (exportError()) {
+        <p class="export-import__banner export-import__banner--error">{{ exportError() }}</p>
+      }
+      @if (exportDone()) {
+        <p class="export-import__banner export-import__banner--success">Backup downloaded.</p>
+      }
+
+      <button
+        class="export-import__primary-button"
+        type="button"
+        [disabled]="
+          exporting() ||
+          (encryptExport() &&
+            (exportPassword().length < minPasswordLength || exportPassword() !== exportPasswordConfirm()))
+        "
+        (click)="exportBackup()"
+      >
+        {{ exporting() ? 'Exporting…' : 'Export backup' }}
+      </button>
+    </section>
+
+    <section class="export-import__card">
+      <h2 class="export-import__section-title">Import a backup</h2>
+      <p class="export-import__body">
+        Replaces everything currently stored on this device with the contents of a previously exported backup file.
+        This can't be undone.
+      </p>
+
+      <input
+        class="export-import__file-input"
+        type="file"
+        accept="application/json,.json"
+        (change)="onFileSelected($event)"
+      />
+
+      @if (importFile()) {
+        <label class="export-import__label">
+          Password (only if this backup is encrypted)
+          <input
+            type="password"
+            [value]="importPassword()"
+            (input)="importPassword.set($any($event.target).value)"
+          />
+        </label>
+      }
+
+      <button class="export-import__danger-button" type="button" [disabled]="!importFile()" (click)="openImportDialog()">
+        Import backup&hellip;
+      </button>
+    </section>
+  </div>
+
+  <dialog #importDialog class="export-import__dialog" (close)="closeImportDialog()">
+    <h2 class="export-import__dialog-title">Replace all local data?</h2>
+    <p class="export-import__dialog-body">
+      Importing <strong>{{ importFile()?.name }}</strong> replaces everything currently stored on this device with
+      the contents of that backup. This can't be undone.
+    </p>
+    @if (importError()) {
+      <p class="export-import__dialog-error">{{ importError() }}</p>
+    }
+    <div class="export-import__dialog-actions">
+      <button class="export-import__dialog-cancel" type="button" [disabled]="importing()" (click)="closeImportDialog()">
+        Cancel
+      </button>
+      <button class="export-import__dialog-confirm" type="button" [disabled]="importing()" (click)="confirmImport()">
+        {{ importing() ? 'Importing…' : 'Replace local data' }}
+      </button>
+    </div>
+  </dialog>
+</div>
