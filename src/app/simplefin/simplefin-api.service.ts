@@ -14,7 +14,7 @@ export class SimplefinApiService {
     const claimUrl = decodeSetupToken(setupToken);
     const response = await fetch(claimUrl, { method: 'POST' });
     if (!response.ok) {
-      throw new Error(`SimpleFIN rejected that setup token (HTTP ${response.status}).`);
+      throw new Error(`SimpleFIN rejected that setup token (HTTP ${response.status})${await responseDetail(response)}`);
     }
     const accessUrl = (await response.text()).trim();
     if (!accessUrl) {
@@ -36,8 +36,18 @@ export class SimplefinApiService {
       headers: { Authorization: authorizationHeader },
     });
     if (!response.ok) {
-      throw new Error(`SimpleFIN sync request failed (HTTP ${response.status}).`);
+      throw new Error(`SimpleFIN sync request failed (HTTP ${response.status})${await responseDetail(response)}`);
     }
     return (await response.json()) as SimplefinAccountSet;
+  }
+}
+
+/** SimpleFIN error responses often carry a specific reason in the body; surface it when present. */
+async function responseDetail(response: Response): Promise<string> {
+  try {
+    const body = (await response.text()).trim();
+    return body ? `: ${body}` : '.';
+  } catch {
+    return '.';
   }
 }

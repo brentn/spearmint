@@ -41,6 +41,17 @@ describe('SimplefinApiService', () => {
       await expect(service.claimSetupToken(token)).rejects.toThrow(/403/);
     });
 
+    it('includes the response body in the error when the claim request fails', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: () => Promise.resolve('setup token already claimed'),
+      });
+      const token = btoa('https://bridge.simplefin.org/simplefin/claim/demo');
+
+      await expect(service.claimSetupToken(token)).rejects.toThrow(/setup token already claimed/);
+    });
+
     it('throws when the claim response body is empty', async () => {
       fetchMock.mockResolvedValue({ ok: true, status: 200, text: () => Promise.resolve('') });
       const token = btoa('https://bridge.simplefin.org/simplefin/claim/demo');
@@ -81,6 +92,21 @@ describe('SimplefinApiService', () => {
           end: '2026-08-13',
         })
       ).rejects.toThrow(/429/);
+    });
+
+    it('includes the response body in the error when the accounts request fails', async () => {
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 403,
+        text: () => Promise.resolve('access revoked'),
+      });
+
+      await expect(
+        service.fetchAccounts('https://demo:pass@bridge.simplefin.org/simplefin', {
+          start: '2026-08-01',
+          end: '2026-08-13',
+        })
+      ).rejects.toThrow(/access revoked/);
     });
 
     it('returns the parsed account set on success', async () => {
