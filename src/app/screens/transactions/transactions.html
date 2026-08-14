@@ -1,0 +1,59 @@
+<div class="transactions">
+  <header class="transactions__hero">
+    <h1 class="transactions__hero-label">Transactions</h1>
+    <div class="transactions__hero-value">
+      ${{ totalSpentThisMonth() | number: '1.0-0' }}
+      <span class="transactions__hero-sub">spent this month</span>
+    </div>
+    <p class="transactions__hero-note">Across {{ transactionCountThisMonth() }} transactions</p>
+  </header>
+
+  @if (store.loading()) {
+    <p class="transactions__loading">Loading&hellip;</p>
+  } @else if (dayGroups().length === 0) {
+    <div class="empty-state">
+      <h2 class="empty-state__title">No transactions yet</h2>
+      <p class="empty-state__body">Your synced transactions will show up here.</p>
+    </div>
+  } @else {
+    <section class="transactions__list">
+      @for (group of dayGroups(); track group.date) {
+        <h2 class="transactions__day-heading">{{ group.heading }}</h2>
+        <ul class="transactions__group">
+          @for (transaction of group.transactions; track transaction.id) {
+            <li class="transactions__row">
+              <span class="transactions__icon">{{ transaction.description.charAt(0).toUpperCase() }}</span>
+              <div class="transactions__mid">
+                <div class="transactions__desc">
+                  {{ transaction.description }}
+                  @if (transaction.pending) {
+                    <span class="transactions__pending-badge">PENDING</span>
+                  }
+                </div>
+                <select
+                  class="transactions__category"
+                  [disabled]="transaction.pending"
+                  (change)="assignCategory(transaction.id, $event.target)"
+                >
+                  <option value="" [selected]="!transaction.categoryId">Uncategorized</option>
+                  @for (catGroup of categoryGroups(); track catGroup.label) {
+                    <optgroup [label]="catGroup.label">
+                      @for (option of catGroup.options; track option.id) {
+                        <option [value]="option.id" [selected]="option.id === transaction.categoryId">
+                          {{ option.name }}
+                        </option>
+                      }
+                    </optgroup>
+                  }
+                </select>
+              </div>
+              <span class="transactions__amt" [class.transactions__amt--positive]="transaction.amount > 0">
+                {{ transaction.amount < 0 ? '-' : '+' }}${{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2' }}
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+</div>

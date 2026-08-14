@@ -1,0 +1,96 @@
+<div class="categories">
+  <header class="categories__header">
+    <a class="categories__back" routerLink="/settings">&larr; Settings</a>
+    <h1 class="categories__title">Categories</h1>
+  </header>
+
+  @if (store.error()) {
+    <p class="categories__banner categories__banner--error">{{ store.error() }}</p>
+  }
+
+  @if (store.loading()) {
+    <p class="categories__loading">Loading&hellip;</p>
+  } @else {
+    <ul class="categories__list">
+      @for (top of store.topLevel(); track top.id) {
+        <li class="category-card">
+          <div class="category-card__row">
+            <input
+              class="category-card__name"
+              type="text"
+              [value]="top.name"
+              (change)="rename(top.id, $event.target)"
+            />
+            <span class="category-card__type">{{ top.type }}</span>
+            <button
+              class="category-card__delete"
+              type="button"
+              [disabled]="store.childrenOf(top.id).length > 0"
+              [title]="store.childrenOf(top.id).length > 0 ? 'Delete or move its subcategories first' : 'Delete'"
+              (click)="delete(top.id)"
+            >
+              <fa-icon [icon]="icons.delete"></fa-icon>
+            </button>
+          </div>
+
+          <ul class="category-card__children">
+            @for (child of store.childrenOf(top.id); track child.id) {
+              <li class="category-card__child-row">
+                <input
+                  class="category-card__name category-card__name--child"
+                  type="text"
+                  [value]="child.name"
+                  (change)="rename(child.id, $event.target)"
+                />
+                <button class="category-card__delete" type="button" title="Delete" (click)="delete(child.id)">
+                  <fa-icon [icon]="icons.delete"></fa-icon>
+                </button>
+              </li>
+            }
+          </ul>
+
+          <div class="category-card__add-row">
+            <input #newChildName class="category-card__add-input" type="text" placeholder="Add subcategory" />
+            <button
+              class="category-card__add-button"
+              type="button"
+              (click)="addSubcategory(top.id, newChildName); newChildName.value = ''"
+            >
+              <fa-icon [icon]="icons.add"></fa-icon>
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    <section class="categories__section">
+      <h2 class="categories__section-title">Add a top-level category</h2>
+      <div class="categories__add-form">
+        <input
+          class="categories__add-input"
+          type="text"
+          placeholder="Category name"
+          [value]="newTopLevelName()"
+          (input)="newTopLevelName.set($any($event.target).value)"
+        />
+        <select
+          class="categories__add-type"
+          [value]="newTopLevelType()"
+          (change)="newTopLevelType.set($any($event.target).value)"
+        >
+          @for (type of categoryTypes; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+        <button
+          class="categories__add-button"
+          type="button"
+          [disabled]="!newTopLevelName().trim()"
+          (click)="addTopLevel()"
+        >
+          Add
+        </button>
+      </div>
+    </section>
+  }
+</div>

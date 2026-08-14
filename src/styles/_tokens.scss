@@ -9,6 +9,7 @@ $spearmint-danger:         #DF2030;
 $spearmint-warning:        #FFB029;
 $spearmint-success:        #137C67;   // deep teal-green — 32° hue-shift from primary, deliberately not a tint of it
 $spearmint-ink:             #15251B;
+$spearmint-muted:           #6B7A70;   // secondary text (day headings, category labels) — key screens prototype (#18)
 $spearmint-on-primary:     #15251B;   // text/icons ON primary — primary fails white-text contrast (1.97)
 $spearmint-on-accent:      #FFFFFF;
 $spearmint-overlay:        rgba(21, 37, 27, 0.45);
@@ -31,6 +32,7 @@ $spearmint-hero-gradient: linear-gradient(165deg, #0D2A20 0%, #0F5E44 35%, #12A8
   --spearmint-warning: #{$spearmint-warning};
   --spearmint-success: #{$spearmint-success};
   --spearmint-ink: #{$spearmint-ink};
+  --spearmint-muted: #{$spearmint-muted};
   --spearmint-on-primary: #{$spearmint-on-primary};
   --spearmint-on-accent: #{$spearmint-on-accent};
   --spearmint-overlay: #{$spearmint-overlay};

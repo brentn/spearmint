@@ -23,6 +23,7 @@ import {
   simplefinLinkSchema,
   transactionSchema,
 } from './schemas';
+import { seedDefaultCategoriesIfEmpty } from '../categories/default-category-seed';
 
 export type SpearmintCollections = {
   institutions: RxCollection<Institution>;
@@ -78,6 +79,8 @@ export class DatabaseService {
       appSettings: { schema: appSettingsSchema },
       simplefinLinks: { schema: simplefinLinkSchema },
     });
+
+    await seedDefaultCategoriesIfEmpty(db);
 
     return db;
   }

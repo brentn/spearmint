@@ -4,6 +4,7 @@ import { Budgets } from './screens/budgets/budgets';
 import { Transactions } from './screens/transactions/transactions';
 import { Settings } from './screens/settings/settings';
 import { AccountsScreen } from './screens/settings/accounts/accounts';
+import { CategoriesScreen } from './screens/settings/categories/categories';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'overview' },
@@ -12,4 +13,5 @@ export const routes: Routes = [
   { path: 'transactions', component: Transactions },
   { path: 'settings', component: Settings },
   { path: 'settings/accounts', component: AccountsScreen },
+  { path: 'settings/categories', component: CategoriesScreen },
 ];
