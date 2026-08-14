@@ -1,8 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import type { RxDumpDatabaseAny } from 'rxdb';
+import { addRxPlugin, type RxDumpDatabaseAny } from 'rxdb';
 import { decryptString, encryptString } from 'rxdb/plugins/encryption-crypto-js';
+import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
 import { DEFAULT_APP_SETTINGS, getAppSettingsDoc, upsertAppSettings } from './app-settings.util';
 import { DatabaseService, type SpearmintCollections } from './database.service';
+
+// Registered here (not in DatabaseService, which every route loads eagerly) so
+// db.exportJSON()/importJSON() and the crypto-js-backed encrypt/decrypt helpers
+// above only enter the bundle when this file does — this module is only ever
+// reached via the lazy-loaded Settings -> Export/Import route, and crypto-js
+// alone is ~600kB unminified, enough on its own to blow the app's initial
+// bundle-size budget if pulled into the eagerly-loaded main chunk instead.
+addRxPlugin(RxDBJsonDumpPlugin);
 
 const BACKUP_FORMAT = 'spearmint-backup';
 const BACKUP_VERSION = 1;
@@ -18,12 +27,12 @@ type SpearmintDump = RxDumpDatabaseAny<SpearmintCollections>;
 
 /**
  * Whole-dataset export/import — the app's only backup and only cross-device sync
- * mechanism (spec §5). Wraps RxDB's json-dump plugin (registered in
- * DatabaseService) for the actual collection dump/restore, plus an optional
- * password-based AES layer over the resulting blob: RxDB's own storage-level
- * encryption would mean re-creating the whole local database with a password,
- * which is a different feature (data-at-rest protection) than "can this
- * particular exported file be safely dropped in a cloud drive".
+ * mechanism (spec §5). Wraps RxDB's json-dump plugin (registered above) for the
+ * actual collection dump/restore, plus an optional password-based AES layer
+ * over the resulting blob: RxDB's own storage-level encryption would mean
+ * re-creating the whole local database with a password, which is a different
+ * feature (data-at-rest protection) than "can this particular exported file be
+ * safely dropped in a cloud drive".
  */
 @Injectable({ providedIn: 'root' })
 export class BackupService {

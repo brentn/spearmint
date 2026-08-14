@@ -2,7 +2,6 @@ import { Injectable, Injector, inject } from '@angular/core';
 import { RxCollection, RxDatabase, RxError, RxStorage, addRxPlugin, createRxDatabase, removeRxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { AngularSignalReactivityLambda, createReactivityFactory } from 'rxdb/plugins/reactivity-angular';
-import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
 import { isDevMode } from '@angular/core';
 import type {
   Account,
@@ -41,10 +40,6 @@ export type SpearmintCollections = {
 export type SpearmintDatabase = RxDatabase<SpearmintCollections, unknown, unknown, AngularSignalReactivityLambda>;
 
 const DATABASE_NAME = 'spearmint';
-
-// Needed in production too (BackupService's export/import), not just dev-mode,
-// so this registers unconditionally at module load rather than inside buildStorage().
-addRxPlugin(RxDBJsonDumpPlugin);
 
 @Injectable({ providedIn: 'root' })
 export class DatabaseService {
