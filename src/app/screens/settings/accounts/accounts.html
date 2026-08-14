@@ -134,7 +134,7 @@
         <ul class="accounts__list">
           @for (ignored of store.ignoredExternalAccounts(); track ignored.key) {
             <li class="account-card account-card--compact">
-              <span>{{ ignored.name }} &middot; {{ ignored.institutionName }}</span>
+              <span>{{ ignored.institutionName ? ignored.name + ' · ' + ignored.institutionName : ignored.name }}</span>
               <button class="account-card__action account-card__action--ghost" type="button" (click)="store.unignore(ignored.key)">
                 Un-ignore
               </button>

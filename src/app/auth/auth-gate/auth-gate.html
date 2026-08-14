@@ -32,6 +32,11 @@
         {{ busy() ? 'Verifying…' : 'Unlock' }}
       </button>
     }
+    @case ('error') {
+      <h1 class="auth-gate__title">Couldn't open Spearmint</h1>
+      <p class="auth-gate__body">{{ startupError() }}</p>
+      <button class="auth-gate__button" type="button" (click)="reload()">Try again</button>
+    }
   }
   @if (error()) {
     <p class="auth-gate__error">{{ error() }}</p>

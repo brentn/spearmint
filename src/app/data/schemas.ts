@@ -1,4 +1,5 @@
-import type { RxJsonSchema } from 'rxdb';
+import { addRxPlugin, type MigrationStrategies, type RxJsonSchema } from 'rxdb';
+import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 import type {
   Account,
   AppSettings,
@@ -9,6 +10,11 @@ import type {
   SimplefinLink,
   Transaction,
 } from './models';
+
+// Any collection here can gain a migrationStrategies entry when its schema's
+// version bumps (see appSettingsSchema below) — the plugin needs to be active
+// everywhere these schemas are used, not just in the production DatabaseService.
+addRxPlugin(RxDBMigrationSchemaPlugin);
 
 export const institutionSchema: RxJsonSchema<Institution> = {
   title: 'institution',
@@ -155,7 +161,7 @@ export const simplefinLinkSchema: RxJsonSchema<SimplefinLink> = {
 
 export const appSettingsSchema: RxJsonSchema<AppSettings> = {
   title: 'appSettings',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -185,4 +191,22 @@ export const appSettingsSchema: RxJsonSchema<AppSettings> = {
     exportEncryptionDefault: { type: 'boolean' },
   },
   required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault'],
+};
+
+/**
+ * v0 -> v1: ignoredExternalAccounts widened from raw `connId:externalAccountId`
+ * strings to { key, name, institutionName } records (issue #8, ignored-accounts
+ * labeling). v0 never captured name/institution, so migrated entries fall back to
+ * the key itself as the display name — the account stays correctly ignored
+ * (matched by key) even though its label can't be reconstructed retroactively.
+ */
+export const appSettingsMigrationStrategies: MigrationStrategies = {
+  1: (oldDoc: { ignoredExternalAccounts: unknown }) => ({
+    ...oldDoc,
+    ignoredExternalAccounts: Array.isArray(oldDoc.ignoredExternalAccounts)
+      ? oldDoc.ignoredExternalAccounts.map((entry: unknown) =>
+          typeof entry === 'string' ? { key: entry, name: entry, institutionName: '' } : entry
+        )
+      : [],
+  }),
 };

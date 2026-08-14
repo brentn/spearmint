@@ -10,8 +10,13 @@ export class AuthGate {
   private readonly authService = inject(AuthService);
 
   readonly credentialStatus = this.authService.credentialStatus;
+  readonly startupError = this.authService.startupError;
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
+
+  reload(): void {
+    window.location.reload();
+  }
 
   async register(deviceLabel: string): Promise<void> {
     const label = deviceLabel.trim();

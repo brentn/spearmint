@@ -4,7 +4,7 @@ import { DEFAULT_APP_SETTINGS, getAppSettingsDoc } from '../data/app-settings.ut
 import { DatabaseService } from '../data/database.service';
 import type { WebauthnCredential } from '../data/models';
 
-export type CredentialStatus = 'loading' | 'present' | 'absent';
+export type CredentialStatus = 'loading' | 'present' | 'absent' | 'error';
 
 /**
  * Fully local WebAuthn auth: registration and authentication both run
@@ -19,6 +19,7 @@ export class AuthService {
 
   readonly credentialStatus = signal<CredentialStatus>('loading');
   readonly isUnlocked = signal(false);
+  readonly startupError = signal<string | null>(null);
 
   constructor() {
     void this.loadCredentialStatus();
@@ -30,8 +31,17 @@ export class AuthService {
   }
 
   private async loadCredentialStatus(): Promise<void> {
-    const settings = await this.getSettingsDoc();
-    this.credentialStatus.set(settings?.webauthnCredential ? 'present' : 'absent');
+    try {
+      const settings = await this.getSettingsDoc();
+      this.credentialStatus.set(settings?.webauthnCredential ? 'present' : 'absent');
+    } catch (error) {
+      // Surface this instead of leaving credentialStatus stuck at 'loading' forever:
+      // a rejected getDatabase() here previously vanished silently, showing an
+      // unexplained infinite spinner with no way for the user to know anything failed.
+      console.error('Failed to open the local database:', error);
+      this.startupError.set(error instanceof Error ? error.message : 'Could not open the local database.');
+      this.credentialStatus.set('error');
+    }
   }
 
   private async saveCredential(credential: WebauthnCredential): Promise<void> {
