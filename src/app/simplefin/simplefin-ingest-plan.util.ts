@@ -1,6 +1,12 @@
 import type { Account, DateOnly, IgnoredExternalAccount, Institution } from '../data/models';
 import { epochSecondsToDateOnly, parseDecimalAmount } from './simplefin-mapping.util';
-import type { SimplefinAccount, SimplefinAccountSet, SimplefinError, SimplefinTransaction } from './simplefin-protocol';
+import type {
+  SimplefinAccount,
+  SimplefinAccountSet,
+  SimplefinConnection,
+  SimplefinError,
+  SimplefinTransaction,
+} from './simplefin-protocol';
 
 /** The composite key `IgnoredExternalAccount` and the permanent-ignore lookup are keyed by. */
 export function externalAccountKey(connId: string, externalAccountId: string): string {
@@ -42,6 +48,24 @@ export interface IngestPlan {
   outcomes: AccountSyncOutcome[];
   discovered: DiscoveredSimplefinAccount[];
   institutions: Institution[];
+}
+
+/** Builds a discovered-account entry from a sync response account plus its connection. */
+export function toDiscoveredAccount(
+  response: SimplefinAccount,
+  connections: SimplefinConnection[] | undefined
+): DiscoveredSimplefinAccount {
+  const connection = connections?.find((c) => c.conn_id === response.conn_id);
+  return {
+    connId: response.conn_id,
+    externalAccountId: response.id,
+    name: response.name,
+    orgId: connection?.org_id ?? response.conn_id,
+    orgName: connection?.org_name ?? 'Unknown institution',
+    currencyCode: response.currency,
+    balance: response.balance,
+    balanceDateEpoch: response['balance-date'],
+  };
 }
 
 function errorMatchesAccount(error: SimplefinError, externalAccountId: string, connId: string): boolean {
@@ -155,17 +179,7 @@ export function planIngest(
     if (ignoredKeys.has(externalAccountKey(response.conn_id, response.id))) {
       continue;
     }
-    const connection = merged.connections?.find((c) => c.conn_id === response.conn_id);
-    discovered.push({
-      connId: response.conn_id,
-      externalAccountId: response.id,
-      name: response.name,
-      orgId: connection?.org_id ?? response.conn_id,
-      orgName: connection?.org_name ?? 'Unknown institution',
-      currencyCode: response.currency,
-      balance: response.balance,
-      balanceDateEpoch: response['balance-date'],
-    });
+    discovered.push(toDiscoveredAccount(response, merged.connections));
   }
 
   const institutions: Institution[] = (merged.connections ?? []).map((c) => ({

@@ -18,6 +18,7 @@
     </button>
   </header>
 
+  <div class="accounts__content">
   @if (syncService.lastSyncError()) {
     <p class="accounts__banner accounts__banner--error">
       <fa-icon [icon]="icons.error"></fa-icon>
@@ -144,6 +145,7 @@
       </section>
     }
   }
+  </div>
 
   <dialog #connectDialog class="accounts__dialog" (close)="closeConnectDialog()">
     <h2 class="accounts__dialog-title">Connect a bank</h2>

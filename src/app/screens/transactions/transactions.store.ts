@@ -1,24 +1,32 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { CategoriesService } from '../../categories/categories.service';
 import { DatabaseService } from '../../data/database.service';
 import type { Category, Transaction } from '../../data/models';
+import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
 
 /**
  * Screen-scoped store for the Transaction list: loads transactions/categories from RxDB
  * and re-reads them after every mutating action, matching this codebase's existing
- * convention (AccountsStore) of plain signals refreshed imperatively.
+ * convention (AccountsStore) of plain signals refreshed imperatively. Also re-reads
+ * whenever a background sync (e.g. app-open auto-sync) finishes, so opening this screen
+ * while a sync is still in flight doesn't leave it stuck showing a stale/empty snapshot.
  */
 @Injectable()
 export class TransactionsStore {
   private readonly databaseService = inject(DatabaseService);
   private readonly categoriesService = inject(CategoriesService);
+  private readonly syncService = inject(SimplefinSyncService);
 
   readonly loading = signal(true);
   readonly transactions = signal<Transaction[]>([]);
   readonly categories = signal<Category[]>([]);
 
   constructor() {
-    void this.refresh();
+    effect(() => {
+      if (!this.syncService.syncing()) {
+        void this.refresh();
+      }
+    });
   }
 
   async refresh(): Promise<void> {

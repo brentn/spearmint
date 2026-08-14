@@ -1,21 +1,26 @@
 <div class="settings">
-  <h1 class="settings__title">Settings</h1>
-  <ul class="settings__list">
-    <li>
-      <a class="settings__link" routerLink="accounts">Accounts</a>
-    </li>
-    <li>
-      <a class="settings__link" routerLink="categories">Categories</a>
-    </li>
-  </ul>
+  <header class="settings__header">
+    <h1 class="settings__title">Settings</h1>
+  </header>
 
-  <section class="settings__danger-zone">
-    <h2 class="settings__danger-title">Danger zone</h2>
-    <p class="settings__danger-body">
-      Permanently delete everything stored on this device — accounts, transactions, categories, budgets, and your device registration.
-    </p>
-    <button class="settings__danger-button" type="button" (click)="openResetDialog()">Reset local data</button>
-  </section>
+  <div class="settings__content">
+    <ul class="settings__list">
+      <li>
+        <a class="settings__link" routerLink="accounts">Accounts</a>
+      </li>
+      <li>
+        <a class="settings__link" routerLink="categories">Categories</a>
+      </li>
+    </ul>
+
+    <section class="settings__danger-zone">
+      <h2 class="settings__danger-title">Danger zone</h2>
+      <p class="settings__danger-body">
+        Permanently delete everything stored on this device — accounts, transactions, categories, budgets, and your device registration.
+      </p>
+      <button class="settings__danger-button" type="button" (click)="openResetDialog()">Reset local data</button>
+    </section>
+  </div>
 
   <dialog #resetDialog class="settings__dialog" (close)="closeResetDialog()">
     <h2 class="settings__dialog-title">Reset local data?</h2>

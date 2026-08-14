@@ -8,6 +8,7 @@ import { SimplefinLinkService } from './simplefin-link.service';
 import {
   externalAccountKey,
   planIngest,
+  toDiscoveredAccount,
   type AccountSyncOutcome,
   type DiscoveredSimplefinAccount,
 } from './simplefin-ingest-plan.util';
@@ -168,6 +169,29 @@ export class SimplefinSyncService {
       await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, ignoredExternalAccounts: [entry] });
     }
     this.removeDiscovered(discovered);
+  }
+
+  /** Reverses ignoreDiscoveredAccount: restores the entry to discoveredAccounts from the
+   * last sync response if one has landed this session, else falls back to a full resync
+   * (e.g. the account was ignored in an earlier session and nothing has synced yet). */
+  async unignoreDiscoveredAccount(key: string): Promise<void> {
+    const db = await this.databaseService.getDatabase();
+    const settingsDoc = await getAppSettingsDoc(db);
+    if (!settingsDoc) {
+      return;
+    }
+    await settingsDoc.incrementalPatch({
+      ignoredExternalAccounts: settingsDoc.ignoredExternalAccounts.filter((i) => i.key !== key),
+    });
+
+    const response = this.lastMergedSet?.accounts.find(
+      (a) => externalAccountKey(a.conn_id, a.id) === key
+    );
+    if (!response) {
+      await this.syncNow();
+      return;
+    }
+    this.discoveredAccounts.update((list) => [...list, toDiscoveredAccount(response, this.lastMergedSet?.connections)]);
   }
 
   private removeDiscovered(discovered: DiscoveredSimplefinAccount): void {

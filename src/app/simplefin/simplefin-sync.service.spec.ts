@@ -339,6 +339,76 @@ describe('SimplefinSyncService', () => {
     ]);
   });
 
+  it('unignoreDiscoveredAccount removes the permanent-ignore entry and restores the discovery', async () => {
+    await seedSettings({ lastSyncDate: RECENT_PAST });
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [
+        {
+          id: 'ext-new',
+          name: 'New Savings',
+          currency: 'USD',
+          balance: '500',
+          'balance-date': 1786608000,
+          conn_id: 'CON-1',
+          transactions: [],
+        },
+      ],
+    } satisfies SimplefinAccountSet);
+    await service.syncNow();
+    const discovered = service.discoveredAccounts()[0];
+    await service.ignoreDiscoveredAccount(discovered);
+    expect(service.discoveredAccounts()).toHaveLength(0);
+
+    await service.unignoreDiscoveredAccount('CON-1:ext-new');
+
+    const settings = await fakeDb['appSettings'].findOne('settings').exec();
+    expect(settings.ignoredExternalAccounts).toEqual([]);
+    expect(service.discoveredAccounts()).toEqual([
+      {
+        connId: 'CON-1',
+        externalAccountId: 'ext-new',
+        name: 'New Savings',
+        orgId: 'org-1',
+        orgName: 'My Bank',
+        currencyCode: 'USD',
+        balance: '500',
+        balanceDateEpoch: 1786608000,
+      },
+    ]);
+  });
+
+  it('unignoreDiscoveredAccount falls back to a full resync when nothing has synced this session', async () => {
+    await seedSettings({
+      lastSyncDate: RECENT_PAST,
+      ignoredExternalAccounts: [{ key: 'CON-1:ext-new', name: 'New Savings', institutionName: 'My Bank' }],
+    });
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [
+        {
+          id: 'ext-new',
+          name: 'New Savings',
+          currency: 'USD',
+          balance: '500',
+          'balance-date': 1786608000,
+          conn_id: 'CON-1',
+          transactions: [],
+        },
+      ],
+    } satisfies SimplefinAccountSet);
+
+    await service.unignoreDiscoveredAccount('CON-1:ext-new');
+
+    expect(fetchAccounts).toHaveBeenCalled();
+    const settings = await fakeDb['appSettings'].findOne('settings').exec();
+    expect(settings.ignoredExternalAccounts).toEqual([]);
+    expect(service.discoveredAccounts()).toHaveLength(1);
+    expect(service.discoveredAccounts()[0].externalAccountId).toBe('ext-new');
+  });
+
   describe('runAutoSyncIfDue', () => {
     it('syncs when lastSyncDate is not today', async () => {
       await seedSettings({ lastSyncDate: YESTERDAY });

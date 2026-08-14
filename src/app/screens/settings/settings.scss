@@ -1,20 +1,33 @@
 .settings {
-  padding: 1.5rem 1rem;
-  max-width: 32rem;
-  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.settings__header {
+  padding: 2rem 1rem 1.5rem;
+  background: var(--spearmint-hero-gradient);
 }
 
 .settings__title {
-  margin: 0 0 1rem;
+  margin: 0;
   font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--spearmint-ink);
+  font-weight: 800;
+  color: #fff;
+}
+
+.settings__content {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 0;
 }
 
 .settings__list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .settings__link {

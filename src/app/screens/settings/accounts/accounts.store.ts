@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, effect, inject, signal } from '@angular/core';
 import { getAppSettingsDoc } from '../../../data/app-settings.util';
 import { DatabaseService } from '../../../data/database.service';
 import type { Account, AccountType, IgnoredExternalAccount, Institution } from '../../../data/models';
@@ -10,7 +10,9 @@ import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service'
  * Screen-scoped store for Settings -> Accounts: loads accounts/institutions from RxDB
  * and re-reads them after every mutating action. Simpler than wiring RxDB's own query
  * reactivity end-to-end, and matches this codebase's existing convention (AuthService)
- * of plain signals refreshed imperatively rather than a live query subscription.
+ * of plain signals refreshed imperatively rather than a live query subscription. Also
+ * re-reads whenever a background sync finishes, so opening this screen while a sync is
+ * still in flight doesn't leave it stuck showing a stale snapshot.
  */
 @Injectable()
 export class AccountsStore {
@@ -27,7 +29,11 @@ export class AccountsStore {
   readonly connectError = signal<string | null>(null);
 
   constructor() {
-    void this.refresh();
+    effect(() => {
+      if (!this.syncService.syncing()) {
+        void this.refresh();
+      }
+    });
   }
 
   institutionName(institutionId: string): string {
@@ -91,14 +97,7 @@ export class AccountsStore {
   }
 
   async unignore(key: string): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const settingsDoc = await getAppSettingsDoc(db);
-    if (!settingsDoc) {
-      return;
-    }
-    await settingsDoc.incrementalPatch({
-      ignoredExternalAccounts: settingsDoc.ignoredExternalAccounts.filter((i) => i.key !== key),
-    });
+    await this.syncService.unignoreDiscoveredAccount(key);
     await this.refresh();
   }
 }

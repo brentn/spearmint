@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
@@ -34,6 +35,7 @@ describe('AccountsStore', () => {
   let syncNow: ReturnType<typeof vi.fn>;
   let addDiscoveredAccount: ReturnType<typeof vi.fn>;
   let ignoreDiscoveredAccount: ReturnType<typeof vi.fn>;
+  let unignoreDiscoveredAccount: ReturnType<typeof vi.fn>;
   let store: AccountsStore;
 
   beforeEach(async () => {
@@ -59,6 +61,7 @@ describe('AccountsStore', () => {
     syncNow = vi.fn().mockResolvedValue({ success: true, error: null });
     addDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
     ignoreDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
+    unignoreDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
 
     TestBed.configureTestingModule({
       providers: [
@@ -67,7 +70,13 @@ describe('AccountsStore', () => {
         { provide: SimplefinLinkService, useValue: { claim } },
         {
           provide: SimplefinSyncService,
-          useValue: { syncNow, addDiscoveredAccount, ignoreDiscoveredAccount },
+          useValue: {
+            syncing: signal(false),
+            syncNow,
+            addDiscoveredAccount,
+            ignoreDiscoveredAccount,
+            unignoreDiscoveredAccount,
+          },
         },
       ],
     });
@@ -129,10 +138,10 @@ describe('AccountsStore', () => {
     expect(store.accounts()[0].type).toBe('creditCard');
   });
 
-  it('unignore removes the key from the permanent ignore list', async () => {
+  it('unignore delegates to the sync service and refreshes', async () => {
     await store.unignore('CON-1:ext-ignored');
 
-    expect(store.ignoredExternalAccounts()).toEqual([]);
+    expect(unignoreDiscoveredAccount).toHaveBeenCalledWith('CON-1:ext-ignored');
   });
 
   it('addDiscovered delegates to the sync service and refreshes', async () => {
