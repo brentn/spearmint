@@ -1,29 +1,295 @@
-@use '../../../styles/hero-header' as hero;
-
 .budgets {
   min-height: 100vh;
   padding-bottom: calc(6rem + env(safe-area-inset-bottom));
 }
 
+// Full-bleed gradient hero, scrolls with the rest of the content (not pinned) per the
+// locked visual spec (§8) — matches transactions.scss's own hero (not the shared stub mixin).
 .budgets__hero {
-  @include hero.band;
+  position: relative;
+  color: #fff;
+  padding: 2rem 1rem 4.75rem;
+  background: var(--spearmint-hero-gradient);
+}
+
+.budgets__hero-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .budgets__hero-label {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 800;
 }
 
+.budgets__hero-icon-btn {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.budgets__hero-value {
+  margin-top: 1.4rem;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.budgets__hero-sub {
+  font-size: 0.95rem;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-left: 0.4rem;
+}
+
+.budgets__hero-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.budgets__loading {
+  padding: 1.5rem 1rem;
+  color: var(--spearmint-accent);
+}
+
+.budgets__banner {
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem 0.9rem;
+  margin: 0 1rem 1rem;
+}
+
+.budgets__banner--error {
+  background: rgba(223, 32, 48, 0.1);
+  color: var(--spearmint-danger);
+}
+
 .budgets__content {
-  @include hero.overlap-content;
+  position: relative;
+  z-index: 1;
+  max-width: 32rem;
+  margin: -3rem auto 0;
+  padding: 0 1rem;
 }
 
 .budgets__card {
-  @include hero.overlap-card;
+  background: var(--spearmint-surface);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-.budgets__card-body {
-  margin: 0;
-  color: var(--spearmint-accent);
+.budgets__section-title {
+  margin: 0 0 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--spearmint-ink);
 }
+
+// ---------- add-budget form ----------
+.budgets__add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.budgets__add-select,
+.budgets__add-input {
+  border: 1px solid var(--spearmint-border);
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--spearmint-ink);
+  background: var(--spearmint-bg);
+}
+
+.budgets__add-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--spearmint-muted);
+}
+
+.budgets__add-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.budgets__add-button {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.budgets__add-cancel {
+  border: 1px solid var(--spearmint-border);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: none;
+  color: var(--spearmint-muted);
+  cursor: pointer;
+}
+
+// ---------- progress-this-month card ----------
+.budgets__progress-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--spearmint-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 1.4rem;
+}
+
+.budgets__progress-track {
+  position: relative;
+}
+
+.budgets__today-tick {
+  position: absolute;
+  top: -0.4rem;
+  width: 2px;
+  height: 1rem;
+  background: var(--spearmint-ink);
+  transform: translateX(-50%);
+}
+
+.budgets__today-label {
+  position: absolute;
+  top: 0.9rem;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+  white-space: nowrap;
+}
+
+// ---------- cash-flow card ----------
+.budgets__flow-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--spearmint-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.budgets__flow-net {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-top: 0.25rem;
+  color: var(--spearmint-ink);
+}
+
+.budgets__flow-bars {
+  display: flex;
+  gap: 1.75rem;
+  align-items: flex-end;
+  height: 7rem;
+  margin-top: 0.9rem;
+}
+
+.budgets__flow-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.budgets__flow-bar-caption {
+  text-align: center;
+
+  span {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--spearmint-muted);
+  }
+
+  strong {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--spearmint-ink);
+  }
+}
+
+.budgets__flow-bar {
+  width: 2.75rem;
+  border-radius: 0.4rem 0.4rem 0 0;
+}
+
+.budgets__flow-bar--earned {
+  background: var(--spearmint-primary);
+}
+
+.budgets__flow-bar--spent {
+  background: var(--spearmint-accent);
+}
+
+// ---------- budget rows ----------
+.budgets__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.budget-row {
+  margin-bottom: 1.1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.budget-row__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.budget-row__amount-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.75rem;
+  color: var(--spearmint-muted);
+  margin-bottom: 0.25rem;
+}
+
+.budget-row__cat-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--spearmint-ink);
+}
+
+// Progress-bar primitives (.bar-track/.bar-fill*/.bar-pct*) are global (styles.scss) —
+// shared with the Budget detail screen's own larger bar.

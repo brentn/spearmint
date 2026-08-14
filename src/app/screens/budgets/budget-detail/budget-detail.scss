@@ -1,0 +1,196 @@
+.budget-detail {
+  min-height: 100vh;
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.budget-detail__topbar {
+  padding: 1.25rem 1rem 0;
+}
+
+.budget-detail__back {
+  color: var(--spearmint-ink);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+// Full-bleed gradient hero, scrolls with the rest of the content (not pinned) per the
+// locked visual spec (§8).
+.budget-detail__hero {
+  position: relative;
+  color: #fff;
+  padding: 0.75rem 1rem 3.5rem;
+  background: var(--spearmint-hero-gradient);
+}
+
+.budget-detail__hero-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.budget-detail__hero-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.budget-detail__hero-value {
+  margin-top: 1rem;
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.budget-detail__hero-sub {
+  font-size: 0.95rem;
+  font-weight: 600;
+  opacity: 0.75;
+  margin-left: 0.4rem;
+}
+
+.budget-detail__rollover-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+}
+
+.budget-detail__content {
+  position: relative;
+  z-index: 1;
+  max-width: 32rem;
+  margin: -2.25rem auto 0;
+  padding: 0 1rem;
+}
+
+.budget-detail__card {
+  background: var(--spearmint-surface);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.budget-detail__explainer {
+  margin: 0.9rem 0 0;
+  font-size: 0.75rem;
+  color: var(--spearmint-muted);
+}
+
+.budget-detail__section-title {
+  margin: 0 0 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--spearmint-ink);
+}
+
+.budget-detail__banner {
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.budget-detail__banner--error {
+  background: rgba(223, 32, 48, 0.1);
+  color: var(--spearmint-danger);
+}
+
+// ---------- edit form ----------
+.budget-detail__edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.budget-detail__edit-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--spearmint-muted);
+
+  input {
+    border: 1px solid var(--spearmint-border);
+    border-radius: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--spearmint-ink);
+    background: var(--spearmint-bg);
+  }
+}
+
+.budget-detail__edit-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--spearmint-muted);
+}
+
+.budget-detail__edit-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.budget-detail__save {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+  cursor: pointer;
+}
+
+.budget-detail__cancel {
+  border: 1px solid var(--spearmint-border);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: none;
+  color: var(--spearmint-muted);
+  cursor: pointer;
+}
+
+// ---------- view actions ----------
+.budget-detail__actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.budget-detail__edit-button {
+  flex: 1;
+  border: 1px solid var(--spearmint-border);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: var(--spearmint-surface);
+  color: var(--spearmint-ink);
+  cursor: pointer;
+}
+
+.budget-detail__delete-button {
+  flex: 1;
+  border: 1px solid var(--spearmint-danger);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: none;
+  color: var(--spearmint-danger);
+  cursor: pointer;
+}

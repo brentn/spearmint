@@ -1,11 +1,155 @@
 <div class="budgets">
   <header class="budgets__hero">
-    <h1 class="budgets__hero-label">Budgets</h1>
+    <div class="budgets__hero-topline">
+      <h1 class="budgets__hero-label">{{ store.aggregate().monthName }} budget</h1>
+      <button class="budgets__hero-icon-btn" type="button" (click)="toggleAddForm()" aria-label="Add a budget">
+        <fa-icon [icon]="icons.add"></fa-icon>
+      </button>
+    </div>
+    <div class="budgets__hero-value">
+      ${{ store.aggregate().totalSpent | number: '1.0-0' }}
+      <span class="budgets__hero-sub">of ${{ store.aggregate().totalBudget | number: '1.0-0' }}</span>
+    </div>
+    <p class="budgets__hero-note">{{ store.aggregate().message }}</p>
   </header>
 
   <div class="budgets__content">
-    <div class="budgets__card">
-      <p class="budgets__card-body">Your category budgets and rollover status will show up here.</p>
-    </div>
+    @if (store.error()) {
+      <p class="budgets__banner budgets__banner--error">{{ store.error() }}</p>
+    }
+
+    @if (showAddForm()) {
+      <div class="budgets__card">
+        <h2 class="budgets__section-title">Add a budget</h2>
+        <div class="budgets__add-form">
+          <select
+            class="budgets__add-select"
+            [value]="newCategoryId()"
+            (change)="newCategoryId.set($any($event.target).value)"
+          >
+            <option value="" disabled>Select a category</option>
+            @for (category of store.categoriesWithoutCurrentBudget(); track category.id) {
+              <option [value]="category.id">{{ category.name }}</option>
+            }
+          </select>
+          <input
+            class="budgets__add-input"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Amount"
+            [value]="newAmount() ?? ''"
+            (input)="newAmount.set($any($event.target).valueAsNumber)"
+          />
+          @if (newCategoryId() && selectedCategoryType() !== 'income') {
+            <label class="budgets__add-checkbox">
+              <input
+                type="checkbox"
+                [checked]="newRollOver()"
+                (change)="newRollOver.set($any($event.target).checked)"
+              />
+              Roll over unused amount into next month
+            </label>
+          }
+          <div class="budgets__add-actions">
+            <button
+              type="button"
+              class="budgets__add-button"
+              [disabled]="!newCategoryId() || newAmount() === null"
+              (click)="submitAdd()"
+            >
+              Add budget
+            </button>
+            <button type="button" class="budgets__add-cancel" (click)="toggleAddForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (store.loading()) {
+      <p class="budgets__loading">Loading&hellip;</p>
+    } @else if (store.rows().length === 0) {
+      <div class="empty-state">
+        <h2 class="empty-state__title">No budgets yet</h2>
+        <p class="empty-state__body">Add a budget to start tracking spending by category.</p>
+      </div>
+    } @else {
+      <div class="budgets__card">
+        <div class="budgets__progress-label">Progress this month</div>
+        <div class="budgets__progress-track">
+          <div class="bar-track bar-track--thin">
+            <div
+              class="bar-fill"
+              [class.bar-fill--normal]="store.aggregate().overallState === 'normal'"
+              [class.bar-fill--warning]="store.aggregate().overallState === 'warning'"
+              [class.bar-fill--over]="store.aggregate().overallState === 'over'"
+              [style.width.%]="store.aggregate().overallBarPercent * 100"
+            ></div>
+          </div>
+          <div class="budgets__today-tick" [style.left.%]="store.aggregate().todayPercent">
+            <span class="budgets__today-label">&#9650; Today</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="budgets__card">
+        <div class="budgets__flow-label">{{ store.aggregate().monthName }} cash flow</div>
+        <div class="budgets__flow-net">${{ store.aggregate().cashFlowNet | number: '1.0-0' }}</div>
+        <div class="budgets__flow-bars">
+          <div class="budgets__flow-bar-group">
+            <div class="budgets__flow-bar-caption">
+              <span>Earned</span>
+              <strong>${{ store.aggregate().earned | number: '1.0-0' }}</strong>
+            </div>
+            <div
+              class="budgets__flow-bar budgets__flow-bar--earned"
+              [style.height.px]="flowBarHeight(store.aggregate().earned)"
+            ></div>
+          </div>
+          <div class="budgets__flow-bar-group">
+            <div class="budgets__flow-bar-caption">
+              <span>Spent</span>
+              <strong>${{ store.aggregate().spent | number: '1.0-0' }}</strong>
+            </div>
+            <div
+              class="budgets__flow-bar budgets__flow-bar--spent"
+              [style.height.px]="flowBarHeight(store.aggregate().spent)"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="budgets__card">
+        <h2 class="budgets__section-title">Spending by category</h2>
+        <ul class="budgets__rows">
+          @for (row of store.rows(); track row.id) {
+            <li class="budget-row">
+              <a class="budget-row__link" [routerLink]="['/budgets', row.id]">
+                <div class="budget-row__amount-line">
+                  <span class="budget-row__cat-name">{{ row.categoryName }}</span>
+                  <span>${{ row.spent | number: '1.0-0' }} of ${{ row.available | number: '1.0-0' }}</span>
+                </div>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    [class.bar-fill--normal]="row.state === 'normal'"
+                    [class.bar-fill--warning]="row.state === 'warning'"
+                    [class.bar-fill--over]="row.state === 'over'"
+                    [style.width.%]="row.barPercent * 100"
+                  ></div>
+                  <span
+                    class="bar-pct"
+                    [class.bar-pct--on-fill]="row.pctLabelOnFill"
+                    [style.left]="row.pctLabelOnFill ? null : row.barPercent * 100 + 4 + '%'"
+                  >
+                    {{ row.pctRounded }}%
+                  </span>
+                </div>
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
   </div>
 </div>

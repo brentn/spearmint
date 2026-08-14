@@ -1,0 +1,97 @@
+@if (row(); as row) {
+  <div class="budget-detail">
+    <div class="budget-detail__topbar">
+      <a class="budget-detail__back" routerLink="/budgets">&larr; Budgets</a>
+    </div>
+
+    <header class="budget-detail__hero">
+      <div class="budget-detail__hero-label">
+        {{ row.categoryType === 'income' ? 'Target vs. actual' : 'Spent this month' }}
+      </div>
+      <h1 class="budget-detail__hero-title">{{ row.categoryName }}</h1>
+      <div class="budget-detail__hero-value">
+        ${{ row.spent | number: '1.0-0' }}
+        <span class="budget-detail__hero-sub">of ${{ row.available | number: '1.0-0' }}</span>
+      </div>
+      @if (row.rolloverAmount > 0) {
+        <div class="budget-detail__rollover-pill">
+          +${{ row.rolloverAmount | number: '1.0-0' }} rolled over from last month
+        </div>
+      }
+    </header>
+
+    <div class="budget-detail__content">
+      <div class="budget-detail__card">
+        <div class="bar-track bar-track--large">
+          <div
+            class="bar-fill"
+            [class.bar-fill--normal]="row.state === 'normal'"
+            [class.bar-fill--warning]="row.state === 'warning'"
+            [class.bar-fill--over]="row.state === 'over'"
+            [style.width.%]="row.barPercent * 100"
+          ></div>
+          <span
+            class="bar-pct"
+            [class.bar-pct--on-fill]="row.pctLabelOnFill"
+            [style.left]="row.pctLabelOnFill ? null : row.barPercent * 100 + 4 + '%'"
+          >
+            {{ row.pctRounded }}%
+          </span>
+        </div>
+        <p class="budget-detail__explainer">
+          @if (row.categoryType === 'income') {
+            Income budgets track a target to meet, not a ceiling — green once you hit it.
+          } @else {
+            Green under 85% of budget, amber 85&ndash;100%, red at 100% and over.
+          }
+        </p>
+      </div>
+
+      @if (store.error()) {
+        <p class="budget-detail__banner budget-detail__banner--error">{{ store.error() }}</p>
+      }
+
+      @if (editing()) {
+        <div class="budget-detail__card">
+          <h2 class="budget-detail__section-title">Edit budget</h2>
+          <div class="budget-detail__edit-form">
+            <label class="budget-detail__edit-label">
+              Amount
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                [value]="editAmount() ?? ''"
+                (input)="editAmount.set($any($event.target).valueAsNumber)"
+              />
+            </label>
+            @if (row.categoryType !== 'income') {
+              <label class="budget-detail__edit-checkbox">
+                <input
+                  type="checkbox"
+                  [checked]="editRollOver()"
+                  (change)="editRollOver.set($any($event.target).checked)"
+                />
+                Roll over unused amount into next month
+              </label>
+            }
+            <div class="budget-detail__edit-actions">
+              <button type="button" class="budget-detail__save" (click)="saveEdit()">Save changes</button>
+              <button type="button" class="budget-detail__cancel" (click)="cancelEdit()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="budget-detail__actions">
+          <button type="button" class="budget-detail__edit-button" (click)="startEdit()">Edit budget</button>
+          <button type="button" class="budget-detail__delete-button" (click)="deleteBudget()">Delete budget</button>
+        </div>
+      }
+    </div>
+  </div>
+} @else if (!store.loading()) {
+  <div class="empty-state">
+    <h2 class="empty-state__title">Budget not found</h2>
+    <p class="empty-state__body"><a routerLink="/budgets">Back to Budgets</a></p>
+  </div>
+}
