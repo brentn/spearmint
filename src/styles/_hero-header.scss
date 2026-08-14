@@ -1,0 +1,27 @@
+// Full-bleed gradient hero with a content card overlapping its bottom edge, per the
+// locked visual spec (§8). Shared by stub screens (Overview, Budgets) that don't yet
+// have hero-specific content of their own — screens with a hero value/pills
+// (Transactions) keep their own markup since theirs diverges further.
+
+@mixin band {
+  position: relative;
+  color: #fff;
+  padding: 2rem 1rem 3.75rem;
+  background: var(--spearmint-hero-gradient);
+}
+
+@mixin overlap-content {
+  position: relative;
+  z-index: 1;
+  max-width: 32rem;
+  margin: -1.75rem auto 0;
+  padding: 0 1rem;
+}
+
+@mixin overlap-card {
+  background: var(--spearmint-surface);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow);
+  padding: 2rem 1.25rem;
+  text-align: center;
+}

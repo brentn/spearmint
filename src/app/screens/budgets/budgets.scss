@@ -1,0 +1,29 @@
+@use '../../../styles/hero-header' as hero;
+
+.budgets {
+  min-height: 100vh;
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+.budgets__hero {
+  @include hero.band;
+}
+
+.budgets__hero-label {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.budgets__content {
+  @include hero.overlap-content;
+}
+
+.budgets__card {
+  @include hero.overlap-card;
+}
+
+.budgets__card-body {
+  margin: 0;
+  color: var(--spearmint-accent);
+}
