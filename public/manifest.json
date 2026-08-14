@@ -1,13 +1,13 @@
 {
-  "id": "/",
+  "id": ".",
   "name": "Spearmint",
   "short_name": "Spearmint",
   "theme_color": "#0F5E44",
   "background_color": "#0D2A20",
   "display": "standalone",
   "orientation": "portrait",
-  "scope": "/",
-  "start_url": "/",
+  "scope": ".",
+  "start_url": ".",
   "icons": [
     {
       "src": "icons/icon-72x72.png",
