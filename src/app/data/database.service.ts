@@ -1,5 +1,5 @@
 import { Injectable, Injector, inject } from '@angular/core';
-import { RxCollection, RxDatabase, RxStorage, addRxPlugin, createRxDatabase } from 'rxdb';
+import { RxCollection, RxDatabase, RxError, RxStorage, addRxPlugin, createRxDatabase, removeRxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { AngularSignalReactivityLambda, createReactivityFactory } from 'rxdb/plugins/reactivity-angular';
 import { isDevMode } from '@angular/core';
@@ -38,6 +38,8 @@ export type SpearmintCollections = {
 
 export type SpearmintDatabase = RxDatabase<SpearmintCollections, unknown, unknown, AngularSignalReactivityLambda>;
 
+const DATABASE_NAME = 'spearmint';
+
 @Injectable({ providedIn: 'root' })
 export class DatabaseService {
   private readonly injector = inject(Injector);
@@ -51,6 +53,24 @@ export class DatabaseService {
   }
 
   private async createDatabase(): Promise<SpearmintDatabase> {
+    const storage = await this.buildStorage();
+
+    try {
+      return await this.openDatabase(storage);
+    } catch (error) {
+      if (!(error instanceof RxError) || error.code !== 'DB6') {
+        throw error;
+      }
+      // No migration path (spec §2): a schema change makes the existing local
+      // database stale, not a candidate for a migration strategy. Drop it and
+      // start fresh rather than leaving the user stuck on an unrecoverable
+      // "another instance created this collection with a different schema" error.
+      await removeRxDatabase(DATABASE_NAME, storage);
+      return this.openDatabase(storage);
+    }
+  }
+
+  private async buildStorage(): Promise<RxStorage<unknown, unknown>> {
     let storage: RxStorage<unknown, unknown> = getRxStorageDexie();
 
     if (isDevMode()) {
@@ -63,22 +83,33 @@ export class DatabaseService {
       storage = wrappedValidateAjvStorage({ storage });
     }
 
+    return storage;
+  }
+
+  private async openDatabase(storage: RxStorage<unknown, unknown>): Promise<SpearmintDatabase> {
     const db: SpearmintDatabase = await createRxDatabase<SpearmintCollections, unknown, unknown, AngularSignalReactivityLambda>({
-      name: 'spearmint',
+      name: DATABASE_NAME,
       storage,
       reactivity: createReactivityFactory(this.injector),
     });
 
-    await db.addCollections({
-      institutions: { schema: institutionSchema },
-      accounts: { schema: accountSchema },
-      categories: { schema: categorySchema },
-      transactions: { schema: transactionSchema },
-      budgets: { schema: budgetSchema },
-      categorizationRules: { schema: categorizationRuleSchema },
-      appSettings: { schema: appSettingsSchema },
-      simplefinLinks: { schema: simplefinLinkSchema },
-    });
+    try {
+      await db.addCollections({
+        institutions: { schema: institutionSchema },
+        accounts: { schema: accountSchema },
+        categories: { schema: categorySchema },
+        transactions: { schema: transactionSchema },
+        budgets: { schema: budgetSchema },
+        categorizationRules: { schema: categorizationRuleSchema },
+        appSettings: { schema: appSettingsSchema },
+        simplefinLinks: { schema: simplefinLinkSchema },
+      });
+    } catch (error) {
+      // Close this half-open instance first so a caller-side removeRxDatabase()
+      // retry (on schema mismatch) isn't blocked by its still-open connections.
+      await db.close();
+      throw error;
+    }
 
     await seedDefaultCategoriesIfEmpty(db);
 
