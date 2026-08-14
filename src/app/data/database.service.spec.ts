@@ -1,5 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, removeRxDatabase, type RxJsonSchema, type RxStorage } from 'rxdb';
+import {
+  createRxDatabase,
+  getDefaultRevision,
+  getDefaultRxDocumentMeta,
+  getPrimaryKeyOfInternalDocument,
+  removeRxDatabase,
+  randomToken,
+  INTERNAL_CONTEXT_STORAGE_TOKEN,
+  INTERNAL_STORAGE_NAME,
+  INTERNAL_STORE_SCHEMA,
+  type RxJsonSchema,
+  type RxStorage,
+} from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -118,5 +130,49 @@ describe('DatabaseService', () => {
     expect(settings?.ignoredExternalAccounts).toEqual([
       { key: 'CON-1:ext-ignored', name: 'CON-1:ext-ignored', institutionName: '' },
     ]);
+  });
+
+  it('silently resets a database left over from an incompatible RxDB major version', async () => {
+    // Simulate a database created by an old RxDB major version (e.g. the
+    // pre-rebuild Spearmint app, RxDB 15, on the same default dev-server
+    // origin) by writing a storage-token doc tagged with that version
+    // directly — this is what createRxDatabase() checks to throw DM5.
+    const internalStoreInstance = await currentStorage.createStorageInstance({
+      databaseInstanceToken: randomToken(10),
+      databaseName: 'spearmint',
+      collectionName: INTERNAL_STORAGE_NAME,
+      schema: INTERNAL_STORE_SCHEMA,
+      options: {},
+      multiInstance: false,
+      devMode: false,
+    });
+    const key = 'storageToken';
+    await internalStoreInstance.bulkWrite(
+      [
+        {
+          document: {
+            id: getPrimaryKeyOfInternalDocument(key, INTERNAL_CONTEXT_STORAGE_TOKEN),
+            context: INTERNAL_CONTEXT_STORAGE_TOKEN,
+            key,
+            data: { rxdbVersion: '15.17.0', token: randomToken(10), instanceToken: randomToken(10) },
+            _deleted: false,
+            _meta: getDefaultRxDocumentMeta(),
+            _rev: getDefaultRevision(),
+            _attachments: {},
+          },
+        },
+      ],
+      'test-setup'
+    );
+    await internalStoreInstance.close();
+
+    const service = TestBed.inject(DatabaseService);
+    const db = await service.getDatabase();
+    openDb = db;
+
+    // No error, no hang — just a fresh, usable database.
+    expect(Object.keys(db.collections).sort()).toEqual(
+      ['accounts', 'appSettings', 'budgets', 'categories', 'categorizationRules', 'institutions', 'simplefinLinks', 'transactions'].sort()
+    );
   });
 });
