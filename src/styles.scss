@@ -1,0 +1,32 @@
+@use 'bootstrap/scss/bootstrap';
+@use './styles/tokens';
+
+body {
+  margin: 0;
+  font-family: var(--spearmint-font-family);
+  background: var(--spearmint-bg);
+  color: var(--spearmint-ink);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 2rem;
+  text-align: center;
+  color: var(--spearmint-ink);
+}
+
+.empty-state__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.empty-state__body {
+  margin: 0;
+  color: var(--spearmint-accent);
+}
+

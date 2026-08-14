@@ -1,0 +1,39 @@
+<div class="auth-gate">
+  @switch (credentialStatus()) {
+    @case ('loading') {
+      <p class="auth-gate__loading">Loading&hellip;</p>
+    }
+    @case ('absent') {
+      <h1 class="auth-gate__title">Set up Spearmint</h1>
+      <p class="auth-gate__body">
+        Register this device to unlock the app with Face ID, Touch ID, or your device PIN.
+        Everything stays on this device — nothing is sent to a server.
+      </p>
+      <input
+        #deviceLabelInput
+        class="auth-gate__input"
+        type="text"
+        placeholder="e.g. Brent's iPhone"
+        [disabled]="busy()"
+      />
+      <button
+        class="auth-gate__button"
+        type="button"
+        [disabled]="busy()"
+        (click)="register(deviceLabelInput.value)"
+      >
+        {{ busy() ? 'Registering…' : 'Register device' }}
+      </button>
+    }
+    @case ('present') {
+      <h1 class="auth-gate__title">Welcome back</h1>
+      <p class="auth-gate__body">Unlock Spearmint to continue.</p>
+      <button class="auth-gate__button" type="button" [disabled]="busy()" (click)="unlock()">
+        {{ busy() ? 'Verifying…' : 'Unlock' }}
+      </button>
+    }
+  }
+  @if (error()) {
+    <p class="auth-gate__error">{{ error() }}</p>
+  }
+</div>

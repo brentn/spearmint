@@ -1,8 +1,0 @@
-.today {
-  margin-left: -100%;
-  transition: margin-left 2s ease-out;
-}
-
-.today.initialized {
-  margin-left: 0;
-}

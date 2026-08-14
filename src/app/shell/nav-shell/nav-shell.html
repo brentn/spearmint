@@ -1,0 +1,14 @@
+<nav class="nav-shell" [class.nav-shell--hidden]="hidden()">
+  @for (tab of tabs; track tab.path) {
+    <a
+      class="nav-shell__tab"
+      [routerLink]="tab.path"
+      routerLinkActive="nav-shell__tab--active"
+    >
+      <span class="nav-shell__icon">
+        <fa-icon [icon]="tab.icon"></fa-icon>
+      </span>
+      <span class="nav-shell__label">{{ tab.label }}</span>
+    </a>
+  }
+</nav>

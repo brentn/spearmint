@@ -1,0 +1,8 @@
+@if (authService.isUnlocked()) {
+  <div class="app-content">
+    <router-outlet></router-outlet>
+  </div>
+  <app-nav-shell></app-nav-shell>
+} @else {
+  <app-auth-gate></app-auth-gate>
+}

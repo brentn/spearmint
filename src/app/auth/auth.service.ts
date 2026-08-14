@@ -1,66 +1,106 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable, from, map, of } from 'rxjs';
-import { server as webauthn } from '@passwordless-id/webauthn';
+import { Injectable, inject, signal } from '@angular/core';
+import { client, server } from '@passwordless-id/webauthn';
+import { DatabaseService } from '../data/database.service';
+import type { AppSettings, WebauthnCredential } from '../data/models';
 
-// const API = 'https://spearmint-imnj.onrender.com';
-const API = 'http://localhost:4000';
+export type CredentialStatus = 'loading' | 'present' | 'absent';
 
-@Injectable({
-  providedIn: 'root'
-})
+const DEFAULT_SETTINGS: Omit<AppSettings, 'webauthnCredential'> = {
+  id: 'settings',
+  lastSyncDate: null,
+  ignoredExternalAccounts: [],
+  exportEncryptionDefault: false,
+};
+
+/**
+ * Fully local WebAuthn auth: registration and authentication both run
+ * client-side (client.* triggers the platform authenticator, server.*
+ * verifies the signature — both run in-browser here, no network round trip).
+ * The credential is the only thing persisted; losing it means lockout,
+ * recoverable only via export/import (a later ticket), not by this service.
+ */
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  headers = { headers: new HttpHeaders().set('Content-Type', 'application/json') };
-  challenge: string | undefined;
+  private readonly databaseService = inject(DatabaseService);
 
-  constructor(private http: HttpClient) { }
+  readonly credentialStatus = signal<CredentialStatus>('loading');
+  readonly isUnlocked = signal(false);
 
-  getChallenge$(): Observable<string> {
-    return this.http.get(`${API}/challenge`).pipe(
-      map((response: any) => response.challenge)
-    )
+  constructor() {
+    void this.loadCredentialStatus();
   }
 
-  registerUser$(registration: { username: string, credential: { id: string, publicKey: string, algorithm: string } }): Observable<object> {
-    return this.http.post(`${API}/register`, registration, this.headers).pipe(
-      map((verifiedRegistration: any) => {
-        localStorage.setItem('credential', JSON.stringify(verifiedRegistration.credential));
-        return verifiedRegistration;
-      })
-    )
+  private async getSettingsDoc() {
+    const db = await this.databaseService.getDatabase();
+    return db.appSettings.findOne('settings').exec();
   }
 
-  authenticateUser$(authentication: { credentialId: string, authenticatorData: string, clientData: string, signature: string }): Observable<void> {
-    return this.http.post(`${API}/authenticate`, authentication, this.headers).pipe(
-      map(() => void (0))
-    )
+  private async loadCredentialStatus(): Promise<void> {
+    const settings = await this.getSettingsDoc();
+    this.credentialStatus.set(settings?.webauthnCredential ? 'present' : 'absent');
   }
 
-  getLocalChallenge(): string {
-    this.challenge = crypto.randomUUID();
-    return this.challenge;
+  private async saveCredential(credential: WebauthnCredential): Promise<void> {
+    const existing = await this.getSettingsDoc();
+    if (existing) {
+      await existing.incrementalPatch({ webauthnCredential: credential });
+      return;
+    }
+    const db = await this.databaseService.getDatabase();
+    await db.appSettings.insert({ ...DEFAULT_SETTINGS, webauthnCredential: credential });
   }
 
-  authenticateUserLocally$(authentication: { credentialId: string, authenticatorData: string, clientData: string, signature: string }): Observable<void> {
+  async register(deviceLabel: string): Promise<void> {
+    const challenge = server.randomChallenge();
+    const registrationJson = await client.register({
+      user: deviceLabel,
+      challenge,
+      userVerification: 'required',
+      // `authenticatorAttachment: 'platform'` is a registration-time-only WebAuthn
+      // option (it constrains where the key is created, e.g. FaceID/TouchID) —
+      // there's no first-class field for it on this library's RegisterOptions,
+      // so it's merged in via customProperties into the underlying create() call.
+      customProperties: { authenticatorSelection: { authenticatorAttachment: 'platform' } },
+    });
+
+    const { credential } = await server.verifyRegistration(registrationJson, {
+      challenge,
+      origin: window.location.origin,
+    });
+
+    await this.saveCredential(credential);
+    this.credentialStatus.set('present');
+    this.isUnlocked.set(true);
+  }
+
+  async authenticate(): Promise<boolean> {
+    const settings = await this.getSettingsDoc();
+    const credential = settings?.webauthnCredential;
+    if (!credential) {
+      return false;
+    }
+
     try {
-      const credential = JSON.parse(localStorage.getItem('credential') || '{}');
-      if (!credential) { throw new Error('Credential not found'); };
-      const challenge = this.challenge!;
-      return from(webauthn.verifyAuthentication(authentication, credential, {
+      const challenge = server.randomChallenge();
+      const authenticationJson = await client.authenticate({
         challenge,
-        origin: (origin: string) => true,
+        allowCredentials: [credential.id],
+        userVerification: 'required',
+      });
+      await server.verifyAuthentication(authenticationJson, credential, {
+        challenge,
+        origin: window.location.origin,
         userVerified: true,
-        verbose: false
-      })).pipe(map(() => void (0)));
+      });
+      this.isUnlocked.set(true);
+      return true;
     } catch (error) {
-      console.error('Error authenticating user locally:', error);
-      return of(void (0));
+      console.error('Local authentication failed:', error);
+      return false;
     }
   }
 
-  resetCredentials$(): Observable<void> {
-    return this.http.post(`${API}/resetCredentials`, null, this.headers).pipe(
-      map(() => void (0))
-    )
-  };
+  lock(): void {
+    this.isUnlocked.set(false);
+  }
 }

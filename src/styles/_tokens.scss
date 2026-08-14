@@ -1,0 +1,42 @@
+// Spearmint Theme Variables — locked in the rebuild spec (§8), derived fresh from #00D639.
+$spearmint-primary:        #00D639;   // HSL 136°, 100%, 42%
+$spearmint-primary-rgb:    0, 214, 57;
+$spearmint-accent:         #699ABF;   // muted blue — links/icons/secondary UI
+$spearmint-bg:              #F9FBFA;
+$spearmint-surface:        #FFFFFF;
+$spearmint-border:         #DDE4DF;
+$spearmint-danger:         #DF2030;
+$spearmint-warning:        #FFB029;
+$spearmint-success:        #137C67;   // deep teal-green — 32° hue-shift from primary, deliberately not a tint of it
+$spearmint-ink:             #15251B;
+$spearmint-on-primary:     #15251B;   // text/icons ON primary — primary fails white-text contrast (1.97)
+$spearmint-on-accent:      #FFFFFF;
+$spearmint-overlay:        rgba(21, 37, 27, 0.45);
+$spearmint-shadow:         0 2px 8px rgba(21, 37, 27, 0.10);
+$spearmint-shadow-strong:  0 4px 16px rgba(21, 37, 27, 0.18);
+$spearmint-radius:         14px;
+$spearmint-font-family:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+// Full-bleed hero gradient used on the bottom-nav shell and every screen's header band.
+$spearmint-hero-gradient: linear-gradient(165deg, #0D2A20 0%, #0F5E44 35%, #12A85A 70%, #00D639 100%);
+
+:root {
+  --spearmint-primary: #{$spearmint-primary};
+  --spearmint-primary-rgb: #{$spearmint-primary-rgb};
+  --spearmint-accent: #{$spearmint-accent};
+  --spearmint-bg: #{$spearmint-bg};
+  --spearmint-surface: #{$spearmint-surface};
+  --spearmint-border: #{$spearmint-border};
+  --spearmint-danger: #{$spearmint-danger};
+  --spearmint-warning: #{$spearmint-warning};
+  --spearmint-success: #{$spearmint-success};
+  --spearmint-ink: #{$spearmint-ink};
+  --spearmint-on-primary: #{$spearmint-on-primary};
+  --spearmint-on-accent: #{$spearmint-on-accent};
+  --spearmint-overlay: #{$spearmint-overlay};
+  --spearmint-shadow: #{$spearmint-shadow};
+  --spearmint-shadow-strong: #{$spearmint-shadow-strong};
+  --spearmint-radius: #{$spearmint-radius};
+  --spearmint-font-family: #{$spearmint-font-family};
+  --spearmint-hero-gradient: #{$spearmint-hero-gradient};
+}

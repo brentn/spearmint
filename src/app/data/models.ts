@@ -1,0 +1,95 @@
+// Domain model — locked in the rebuild spec (.scratch/spearmint-rebuild/assets/19-spearmint-rebuild-spec.md §1).
+
+import type { ExtendedAuthenticatorTransport, NamedAlgo } from '@passwordless-id/webauthn';
+
+export type DateOnly = string; // YYYY-MM-DD
+export type UtcTimestamp = string; // ISO 8601
+export type PeriodType = 'month' | 'year';
+export type YearMonth = string; // YYYY-MM
+
+export interface Institution {
+  id: string; // = SimpleFIN's org_id
+  name: string;
+  url: string | null;
+}
+
+export type AccountType = 'bank' | 'creditCard';
+
+export interface Account {
+  id: string;
+  institutionId: string;
+  connId: string;
+  externalAccountId: string;
+  originalAccountName: string;
+  name: string;
+  type: AccountType;
+  currencyCode: string;
+  balance: number;
+  balanceDate: DateOnly;
+  needsReconnect: boolean;
+  syncIssue: string | null;
+  missing: boolean;
+}
+
+export type CategoryType = 'expense' | 'income' | 'transfer';
+
+export interface Category {
+  id: string;
+  name: string;
+  parentCategoryId: string | null;
+  type: CategoryType;
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  date: DateOnly;
+  description: string;
+  amount: number;
+  pending: boolean;
+  categoryId: string | null;
+  excludeFromBudget: boolean;
+  notes: string | null;
+}
+
+export interface Budget {
+  id: string;
+  categoryId: string;
+  periodType: PeriodType;
+  period: YearMonth;
+  rollOver: boolean;
+  rolloverAmount?: number;
+  amount: number;
+}
+
+export interface CategorizationRule {
+  id: string;
+  accountId: string;
+  normalizedDescription: string;
+  amount: number;
+  dayOfMonth: number;
+  categoryId: string;
+  createdAtUtc: UtcTimestamp;
+  updatedAtUtc: UtcTimestamp;
+}
+
+/**
+ * A local WebAuthn credential, sufficient to verify a signature fully client-side
+ * (id + publicKey + algorithm, per @passwordless-id/webauthn's server.verifyAuthentication).
+ * A refinement of the spec's `webauthnCredentialId: string` field — a bare id can't
+ * verify a signature without the public key, so the full credential is stored here.
+ */
+export interface WebauthnCredential {
+  id: string;
+  publicKey: string;
+  algorithm: NamedAlgo;
+  transports: ExtendedAuthenticatorTransport[];
+}
+
+export interface AppSettings {
+  id: 'settings'; // singleton document
+  lastSyncDate: DateOnly | null;
+  webauthnCredential: WebauthnCredential | null;
+  ignoredExternalAccounts: string[];
+  exportEncryptionDefault: boolean;
+}
