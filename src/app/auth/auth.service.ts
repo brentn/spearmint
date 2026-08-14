@@ -1,16 +1,10 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { client, server } from '@passwordless-id/webauthn';
+import { DEFAULT_APP_SETTINGS, getAppSettingsDoc } from '../data/app-settings.util';
 import { DatabaseService } from '../data/database.service';
-import type { AppSettings, WebauthnCredential } from '../data/models';
+import type { WebauthnCredential } from '../data/models';
 
 export type CredentialStatus = 'loading' | 'present' | 'absent';
-
-const DEFAULT_SETTINGS: Omit<AppSettings, 'webauthnCredential'> = {
-  id: 'settings',
-  lastSyncDate: null,
-  ignoredExternalAccounts: [],
-  exportEncryptionDefault: false,
-};
 
 /**
  * Fully local WebAuthn auth: registration and authentication both run
@@ -32,7 +26,7 @@ export class AuthService {
 
   private async getSettingsDoc() {
     const db = await this.databaseService.getDatabase();
-    return db.appSettings.findOne('settings').exec();
+    return getAppSettingsDoc(db);
   }
 
   private async loadCredentialStatus(): Promise<void> {
@@ -47,7 +41,7 @@ export class AuthService {
       return;
     }
     const db = await this.databaseService.getDatabase();
-    await db.appSettings.insert({ ...DEFAULT_SETTINGS, webauthnCredential: credential });
+    await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: credential });
   }
 
   async register(deviceLabel: string): Promise<void> {

@@ -6,6 +6,7 @@ import type {
   Category,
   CategorizationRule,
   Institution,
+  SimplefinLink,
   Transaction,
 } from './models';
 
@@ -137,6 +138,19 @@ export const categorizationRuleSchema: RxJsonSchema<CategorizationRule> = {
     'updatedAtUtc',
   ],
   indexes: ['accountId'],
+};
+
+export const simplefinLinkSchema: RxJsonSchema<SimplefinLink> = {
+  title: 'simplefinLink',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 100 },
+    accessUrl: { type: 'string' },
+    claimedAtUtc: { type: 'string' },
+  },
+  required: ['id', 'accessUrl', 'claimedAtUtc'],
 };
 
 export const appSettingsSchema: RxJsonSchema<AppSettings> = {

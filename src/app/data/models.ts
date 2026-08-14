@@ -93,3 +93,17 @@ export interface AppSettings {
   ignoredExternalAccounts: string[];
   exportEncryptionDefault: boolean;
 }
+
+/**
+ * A claimed SimpleFIN setup token, resolved to an access URL. Not itself part of the
+ * spec's §1 domain model (which deliberately has no Connection entity) — this exists
+ * one level below that: the credential used to call SimpleFIN's API at all. A user can
+ * claim more than one token over time (the Connect-a-bank screen is reused for adding
+ * further connections), and each claim may resolve to a distinct access URL, so a sync
+ * run walks every stored link rather than assuming exactly one.
+ */
+export interface SimplefinLink {
+  id: string;
+  accessUrl: string; // plaintext, embeds Basic Auth credentials — see AppSettings storage note in spec §3
+  claimedAtUtc: UtcTimestamp;
+}

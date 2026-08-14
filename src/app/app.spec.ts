@@ -1,10 +1,11 @@
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { App } from './app';
 import { AuthService, type CredentialStatus } from './auth/auth.service';
 import { routes } from './app.routes';
+import { SimplefinSyncService } from './simplefin/simplefin-sync.service';
 
 function configureWithAuth(overrides: Partial<Pick<AuthService, 'isUnlocked' | 'credentialStatus'>>) {
   TestBed.configureTestingModule({
@@ -19,6 +20,10 @@ function configureWithAuth(overrides: Partial<Pick<AuthService, 'isUnlocked' | '
           credentialStatus: signal<CredentialStatus>('absent'),
           ...overrides,
         },
+      },
+      {
+        provide: SimplefinSyncService,
+        useValue: { runAutoSyncIfDue: vi.fn().mockResolvedValue(undefined) },
       },
     ],
   });
@@ -45,5 +50,20 @@ describe('App', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('app-nav-shell')).toBeTruthy();
     expect(compiled.querySelector('app-auth-gate')).toBeFalsy();
+  });
+
+  it('triggers an auto-sync check once unlocked, but not while locked', async () => {
+    configureWithAuth({ isUnlocked: signal(false), credentialStatus: signal('absent') });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const syncService = TestBed.inject(SimplefinSyncService);
+    expect(syncService.runAutoSyncIfDue).not.toHaveBeenCalled();
+
+    fixture.componentInstance['authService'].isUnlocked.set(true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(syncService.runAutoSyncIfDue).toHaveBeenCalled();
   });
 });

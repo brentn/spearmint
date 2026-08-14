@@ -1,0 +1,29 @@
+.settings {
+  padding: 1.5rem 1rem;
+  max-width: 32rem;
+  margin: 0 auto;
+}
+
+.settings__title {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
+.settings__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings__link {
+  display: block;
+  padding: 0.9rem 1rem;
+  background: var(--spearmint-surface);
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  color: var(--spearmint-ink);
+  text-decoration: none;
+  font-weight: 600;
+}

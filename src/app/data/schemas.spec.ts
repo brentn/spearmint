@@ -9,6 +9,7 @@ import {
   categorizationRuleSchema,
   categorySchema,
   institutionSchema,
+  simplefinLinkSchema,
   transactionSchema,
 } from './schemas';
 
@@ -28,6 +29,7 @@ describe('domain schemas', () => {
       budgets: { schema: budgetSchema },
       categorizationRules: { schema: categorizationRuleSchema },
       appSettings: { schema: appSettingsSchema },
+      simplefinLinks: { schema: simplefinLinkSchema },
     });
   });
 
@@ -150,5 +152,14 @@ describe('domain schemas', () => {
       exportEncryptionDefault: false,
     });
     expect(doc.webauthnCredential?.algorithm).toBe('ES256');
+  });
+
+  it('accepts a minimal valid simplefin link', async () => {
+    const doc = await db['simplefinLinks'].insert({
+      id: 'link-1',
+      accessUrl: 'https://user:pass@bridge.simplefin.org/simplefin',
+      claimedAtUtc: '2026-08-01T00:00:00.000Z',
+    });
+    expect(doc.accessUrl).toBe('https://user:pass@bridge.simplefin.org/simplefin');
   });
 });

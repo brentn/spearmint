@@ -10,6 +10,7 @@ import type {
   Category,
   CategorizationRule,
   Institution,
+  SimplefinLink,
   Transaction,
 } from './models';
 import {
@@ -19,6 +20,7 @@ import {
   categorizationRuleSchema,
   categorySchema,
   institutionSchema,
+  simplefinLinkSchema,
   transactionSchema,
 } from './schemas';
 
@@ -30,6 +32,7 @@ export type SpearmintCollections = {
   budgets: RxCollection<Budget>;
   categorizationRules: RxCollection<CategorizationRule>;
   appSettings: RxCollection<AppSettings>;
+  simplefinLinks: RxCollection<SimplefinLink>;
 };
 
 export type SpearmintDatabase = RxDatabase<SpearmintCollections, unknown, unknown, AngularSignalReactivityLambda>;
@@ -73,6 +76,7 @@ export class DatabaseService {
       budgets: { schema: budgetSchema },
       categorizationRules: { schema: categorizationRuleSchema },
       appSettings: { schema: appSettingsSchema },
+      simplefinLinks: { schema: simplefinLinkSchema },
     });
 
     return db;
