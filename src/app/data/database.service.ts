@@ -53,6 +53,15 @@ export class DatabaseService {
     return this.databasePromise;
   }
 
+  /** Permanently deletes every local collection's data. Callers should reload the app
+   * afterward — this only closes and wipes the database, it doesn't reset in-memory
+   * app state (signals, WebAuthn unlock, etc.) that assumed the old data existed. */
+  async resetDatabase(): Promise<void> {
+    const db = await this.getDatabase();
+    await db.remove();
+    this.databasePromise = null;
+  }
+
   private async createDatabase(): Promise<SpearmintDatabase> {
     const storage = await this.buildStorage();
 
