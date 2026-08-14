@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
@@ -42,6 +42,24 @@ export class AccountsScreen {
 
   protected readonly setupToken = signal('');
   private readonly connectDialog = viewChild<ElementRef<HTMLDialogElement>>('connectDialog');
+  private readonly discoveredDialog = viewChild<ElementRef<HTMLDialogElement>>('discoveredDialog');
+  private previousDiscoveredCount = 0;
+
+  constructor() {
+    // Surfacing new discoveries as a dialog (rather than an inline list) only helps if it
+    // actually opens itself when a sync finds something — otherwise it's just as easy to
+    // miss as the inline section it replaced. Closes itself once nothing's left to review.
+    effect(() => {
+      const count = this.syncService.discoveredAccounts().length;
+      const dialog = this.discoveredDialog()?.nativeElement;
+      if (dialog && count > 0 && this.previousDiscoveredCount === 0 && !dialog.open) {
+        dialog.showModal();
+      } else if (dialog?.open && count === 0) {
+        dialog.close();
+      }
+      this.previousDiscoveredCount = count;
+    });
+  }
 
   openConnectDialog(): void {
     this.store.connectError.set(null);
@@ -50,6 +68,14 @@ export class AccountsScreen {
 
   closeConnectDialog(): void {
     this.connectDialog()?.nativeElement.close();
+  }
+
+  openDiscoveredDialog(): void {
+    this.discoveredDialog()?.nativeElement.showModal();
+  }
+
+  closeDiscoveredDialog(): void {
+    this.discoveredDialog()?.nativeElement.close();
   }
 
   async connect(): Promise<void> {

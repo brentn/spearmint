@@ -91,6 +91,27 @@
   color: var(--spearmint-danger);
 }
 
+.accounts__discovered-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  border: 1px solid var(--spearmint-warning);
+  border-radius: var(--spearmint-radius);
+  padding: 0.75rem 0.9rem;
+  margin: 0 0 1rem;
+  background: rgba(255, 176, 41, 0.12);
+  color: var(--spearmint-ink);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+
+  fa-icon {
+    color: var(--spearmint-warning);
+  }
+}
+
 .accounts__empty {
   display: flex;
   flex-direction: column;

@@ -2,17 +2,15 @@
   <header class="accounts__header">
     <a class="accounts__back" routerLink="/settings">&larr; Settings</a>
     <h1 class="accounts__title">Accounts</h1>
-    @if (store.accounts().length > 0) {
-      <button
-        class="accounts__sync-button"
-        type="button"
-        [disabled]="syncService.syncing()"
-        (click)="store.syncNow()"
-      >
-        <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
-        {{ syncService.syncing() ? 'Syncing…' : 'Sync now' }}
-      </button>
-    }
+    <button
+      class="accounts__sync-button"
+      type="button"
+      [disabled]="syncService.syncing()"
+      (click)="store.syncNow()"
+    >
+      <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
+      {{ syncService.syncing() ? 'Syncing…' : 'Sync now' }}
+    </button>
     <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
       <fa-icon [icon]="icons.add"></fa-icon>
     </button>
@@ -24,6 +22,14 @@
       <fa-icon [icon]="icons.error"></fa-icon>
       Last sync failed: {{ syncService.lastSyncError() }}
     </p>
+  }
+
+  @if (syncService.discoveredAccounts().length > 0) {
+    <button class="accounts__discovered-banner" type="button" (click)="openDiscoveredDialog()">
+      <fa-icon [icon]="icons.add"></fa-icon>
+      {{ syncService.discoveredAccounts().length }}
+      new account{{ syncService.discoveredAccounts().length === 1 ? '' : 's' }} found — Review
+    </button>
   }
 
   @if (store.loading()) {
@@ -89,44 +95,6 @@
           </ul>
         </section>
       }
-
-      @if (syncService.discoveredAccounts().length > 0) {
-        <section class="accounts__section">
-          <h2 class="accounts__section-title">New accounts found</h2>
-          <ul class="accounts__list">
-            @for (discovered of syncService.discoveredAccounts(); track discovered.connId + discovered.externalAccountId) {
-              <li class="account-card">
-                <div class="account-card__top">
-                  <span class="account-card__name">{{ discovered.name }}</span>
-                  <span class="account-card__balance">{{ discovered.balance | number: '1.2-2' }} {{ discovered.currencyCode }}</span>
-                </div>
-                <p class="account-card__institution">{{ discovered.orgName }}</p>
-                <div class="account-card__row account-card__row--end">
-                  <select #newType class="account-card__type">
-                    <option value="bank">Bank</option>
-                    <option value="creditCard">Credit card</option>
-                  </select>
-                  <button
-                    class="account-card__action"
-                    type="button"
-                    (click)="addDiscovered(discovered, newType.value === 'creditCard' ? 'creditCard' : 'bank')"
-                  >
-                    <fa-icon [icon]="icons.add"></fa-icon>
-                    Add
-                  </button>
-                  <button
-                    class="account-card__action account-card__action--ghost"
-                    type="button"
-                    (click)="ignoreDiscovered(discovered)"
-                  >
-                    Ignore
-                  </button>
-                </div>
-              </li>
-            }
-          </ul>
-        </section>
-      }
     }
 
     @if (store.ignoredExternalAccounts().length > 0) {
@@ -175,5 +143,43 @@
       <p class="accounts__banner accounts__banner--error">{{ store.connectError() }}</p>
     }
     <button class="accounts__dialog-close" type="button" (click)="closeConnectDialog()">Cancel</button>
+  </dialog>
+
+  <dialog #discoveredDialog class="accounts__dialog" (close)="closeDiscoveredDialog()">
+    <h2 class="accounts__dialog-title">New accounts found</h2>
+    <p class="accounts__body">Add each account you want to track, or ignore the ones you don't.</p>
+    <ul class="accounts__list">
+      @for (discovered of syncService.discoveredAccounts(); track discovered.connId + discovered.externalAccountId) {
+        <li class="account-card">
+          <div class="account-card__top">
+            <span class="account-card__name">{{ discovered.name }}</span>
+            <span class="account-card__balance">{{ discovered.balance | number: '1.2-2' }} {{ discovered.currencyCode }}</span>
+          </div>
+          <p class="account-card__institution">{{ discovered.orgName }}</p>
+          <div class="account-card__row account-card__row--end">
+            <select #newType class="account-card__type">
+              <option value="bank">Bank</option>
+              <option value="creditCard">Credit card</option>
+            </select>
+            <button
+              class="account-card__action"
+              type="button"
+              (click)="addDiscovered(discovered, newType.value === 'creditCard' ? 'creditCard' : 'bank')"
+            >
+              <fa-icon [icon]="icons.add"></fa-icon>
+              Add
+            </button>
+            <button
+              class="account-card__action account-card__action--ghost"
+              type="button"
+              (click)="ignoreDiscovered(discovered)"
+            >
+              Ignore
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+    <button class="accounts__dialog-close" type="button" (click)="closeDiscoveredDialog()">Close</button>
   </dialog>
 </div>
