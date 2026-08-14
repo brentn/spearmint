@@ -51,7 +51,7 @@ describe('AccountsStore', () => {
       id: 'settings',
       lastSyncDate: null,
       webauthnCredential: null,
-      ignoredExternalAccounts: ['CON-1:ext-ignored'],
+      ignoredExternalAccounts: [{ key: 'CON-1:ext-ignored', name: 'Old Savings', institutionName: 'My Bank' }],
       exportEncryptionDefault: false,
     });
 
@@ -81,7 +81,9 @@ describe('AccountsStore', () => {
 
   it('loads accounts, institutions, and ignored external accounts on construction', () => {
     expect(store.institutions()).toEqual([{ id: 'org-1', name: 'My Bank', url: null }]);
-    expect(store.ignoredExternalAccounts()).toEqual(['CON-1:ext-ignored']);
+    expect(store.ignoredExternalAccounts()).toEqual([
+      { key: 'CON-1:ext-ignored', name: 'Old Savings', institutionName: 'My Bank' },
+    ]);
   });
 
   it('institutionName resolves a known institution and falls back for an unknown one', () => {

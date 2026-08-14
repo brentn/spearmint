@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
@@ -41,6 +41,16 @@ export class AccountsScreen {
   };
 
   protected readonly setupToken = signal('');
+  private readonly connectDialog = viewChild<ElementRef<HTMLDialogElement>>('connectDialog');
+
+  openConnectDialog(): void {
+    this.store.connectError.set(null);
+    this.connectDialog()?.nativeElement.showModal();
+  }
+
+  closeConnectDialog(): void {
+    this.connectDialog()?.nativeElement.close();
+  }
 
   async connect(): Promise<void> {
     const token = this.setupToken().trim();
@@ -50,6 +60,7 @@ export class AccountsScreen {
     await this.store.connectBank(token);
     if (!this.store.connectError()) {
       this.setupToken.set('');
+      this.closeConnectDialog();
     }
   }
 

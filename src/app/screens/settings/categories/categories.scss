@@ -67,14 +67,16 @@
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--spearmint-border);
   border-radius: var(--spearmint-radius);
-  font-size: 0.9rem;
+  // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+  // computed font-size is below this.
+  font-size: 1rem;
 }
 
 .categories__add-type {
   border: 1px solid var(--spearmint-border);
   border-radius: var(--spearmint-radius);
   padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
+  font-size: 1rem;
   background: var(--spearmint-surface);
   text-transform: capitalize;
 }
@@ -118,7 +120,7 @@
 }
 
 .category-card__name--child {
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -170,7 +172,7 @@
   border: 1px solid var(--spearmint-border);
   border-radius: var(--spearmint-radius);
   padding: 0.35rem 0.6rem;
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 .category-card__add-button {

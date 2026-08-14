@@ -198,7 +198,11 @@ describe('planIngest', () => {
 
   it('excludes a discovered account already on the permanent ignore list', () => {
     const newAccount = simplefinAccount({ id: 'ext-new', name: 'New Savings', conn_id: 'CON-1' });
-    const plan = planIngest([], set({ accounts: [newAccount] }), ['CON-1:ext-new']);
+    const plan = planIngest(
+      [],
+      set({ accounts: [newAccount] }),
+      [{ key: 'CON-1:ext-new', name: 'New Savings', institutionName: 'My Bank' }]
+    );
 
     expect(plan.discovered).toHaveLength(0);
   });

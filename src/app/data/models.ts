@@ -86,11 +86,22 @@ export interface WebauthnCredential {
   transports: ExtendedAuthenticatorTransport[];
 }
 
+/**
+ * A permanently-ignored SimpleFIN discovery, identified by its `${connId}:${externalAccountId}`
+ * composite key. Carries the name/institution seen at ignore time so the Ignored accounts list
+ * can label entries without re-fetching a discovery record that no longer exists post-ignore.
+ */
+export interface IgnoredExternalAccount {
+  key: string;
+  name: string;
+  institutionName: string;
+}
+
 export interface AppSettings {
   id: 'settings'; // singleton document
   lastSyncDate: DateOnly | null;
   webauthnCredential: WebauthnCredential | null;
-  ignoredExternalAccounts: string[];
+  ignoredExternalAccounts: IgnoredExternalAccount[];
   exportEncryptionDefault: boolean;
 }
 

@@ -1,6 +1,11 @@
-import type { Account, DateOnly, Institution } from '../data/models';
+import type { Account, DateOnly, IgnoredExternalAccount, Institution } from '../data/models';
 import { epochSecondsToDateOnly, parseDecimalAmount } from './simplefin-mapping.util';
 import type { SimplefinAccount, SimplefinAccountSet, SimplefinError, SimplefinTransaction } from './simplefin-protocol';
+
+/** The composite key `IgnoredExternalAccount` and the permanent-ignore lookup are keyed by. */
+export function externalAccountKey(connId: string, externalAccountId: string): string {
+  return `${connId}:${externalAccountId}`;
+}
 
 /** A SimpleFIN account id seen in a sync response that isn't tracked, remapped, or ignored. */
 export interface DiscoveredSimplefinAccount {
@@ -82,8 +87,9 @@ function buildMatchedOutcome(
 export function planIngest(
   trackedAccounts: Account[],
   merged: SimplefinAccountSet,
-  ignoredExternalAccounts: string[]
+  ignoredExternalAccounts: IgnoredExternalAccount[]
 ): IngestPlan {
+  const ignoredKeys = new Set(ignoredExternalAccounts.map((i) => i.key));
   const responseById = new Map(merged.accounts.map((a) => [a.id, a]));
   const claimedExternalIds = new Set<string>();
 
@@ -146,7 +152,7 @@ export function planIngest(
     if (claimedExternalIds.has(response.id)) {
       continue;
     }
-    if (ignoredExternalAccounts.includes(`${response.conn_id}:${response.id}`)) {
+    if (ignoredKeys.has(externalAccountKey(response.conn_id, response.id))) {
       continue;
     }
     const connection = merged.connections?.find((c) => c.conn_id === response.conn_id);

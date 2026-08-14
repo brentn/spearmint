@@ -170,7 +170,18 @@ export const appSettingsSchema: RxJsonSchema<AppSettings> = {
         transports: { type: 'array', items: { type: 'string' } },
       },
     },
-    ignoredExternalAccounts: { type: 'array', items: { type: 'string' } },
+    ignoredExternalAccounts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          key: { type: 'string' },
+          name: { type: 'string' },
+          institutionName: { type: 'string' },
+        },
+        required: ['key', 'name', 'institutionName'],
+      },
+    },
     exportEncryptionDefault: { type: 'boolean' },
   },
   required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault'],

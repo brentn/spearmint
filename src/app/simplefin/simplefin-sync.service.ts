@@ -6,6 +6,7 @@ import { epochSecondsToDateOnly, parseDecimalAmount } from './simplefin-mapping.
 import { SimplefinApiService } from './simplefin-api.service';
 import { SimplefinLinkService } from './simplefin-link.service';
 import {
+  externalAccountKey,
   planIngest,
   type AccountSyncOutcome,
   type DiscoveredSimplefinAccount,
@@ -154,16 +155,17 @@ export class SimplefinSyncService {
 
   async ignoreDiscoveredAccount(discovered: DiscoveredSimplefinAccount): Promise<void> {
     const db = await this.databaseService.getDatabase();
-    const key = `${discovered.connId}:${discovered.externalAccountId}`;
+    const key = externalAccountKey(discovered.connId, discovered.externalAccountId);
+    const entry = { key, name: discovered.name, institutionName: discovered.orgName };
     const settingsDoc = await getAppSettingsDoc(db);
     if (settingsDoc) {
-      if (!settingsDoc.ignoredExternalAccounts.includes(key)) {
+      if (!settingsDoc.ignoredExternalAccounts.some((i) => i.key === key)) {
         await settingsDoc.incrementalPatch({
-          ignoredExternalAccounts: [...settingsDoc.ignoredExternalAccounts, key],
+          ignoredExternalAccounts: [...settingsDoc.ignoredExternalAccounts, entry],
         });
       }
     } else {
-      await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, ignoredExternalAccounts: [key] });
+      await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, ignoredExternalAccounts: [entry] });
     }
     this.removeDiscovered(discovered);
   }

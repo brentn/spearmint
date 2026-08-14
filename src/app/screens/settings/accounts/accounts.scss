@@ -49,6 +49,21 @@
   animation: accounts-spin 1s linear infinite;
 }
 
+.accounts__add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
 @keyframes accounts-spin {
   to {
     transform: rotate(360deg);
@@ -69,6 +84,36 @@
 .accounts__banner--error {
   background: rgba(223, 32, 48, 0.1);
   color: var(--spearmint-danger);
+}
+
+.accounts__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  gap: 1.25rem;
+}
+
+.accounts__empty-body {
+  margin: 0;
+  color: var(--spearmint-accent);
+  font-size: 1rem;
+}
+
+.accounts__empty-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: var(--spearmint-radius);
+  padding: 1rem 1.75rem;
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
 }
 
 .accounts__section {
@@ -111,7 +156,41 @@
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--spearmint-border);
   border-radius: var(--spearmint-radius);
-  font-size: 0.9rem;
+  // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+  // computed font-size is below this.
+  font-size: 1rem;
+}
+
+.accounts__dialog {
+  border: none;
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow-strong);
+  padding: 1.25rem;
+  width: min(24rem, calc(100vw - 2.5rem));
+
+  &::backdrop {
+    background: var(--spearmint-overlay);
+  }
+}
+
+.accounts__dialog-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
+.accounts__dialog-close {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .accounts__connect-button {
@@ -134,14 +213,44 @@
   border: 1px solid var(--spearmint-border);
   border-radius: var(--spearmint-radius);
   box-shadow: var(--spearmint-shadow);
-  padding: 0.9rem 1rem;
+  padding: 1.15rem 1.25rem;
 }
 
 .account-card--compact {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   font-size: 0.85rem;
+
+  span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.account-card__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.account-card__balance {
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+  text-align: right;
+}
+
+.account-card__institution {
+  margin: 0.1rem 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--spearmint-accent);
 }
 
 .account-card__row {
@@ -150,11 +259,16 @@
   align-items: center;
 }
 
+.account-card__row--end {
+  justify-content: flex-end;
+}
+
 .account-card__name {
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--spearmint-ink);
   padding: 0.2rem 0;
@@ -168,14 +282,10 @@
   border: 1px solid var(--spearmint-border);
   border-radius: var(--spearmint-radius);
   padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
+  // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+  // computed font-size is below this.
+  font-size: 1rem;
   background: var(--spearmint-surface);
-}
-
-.account-card__meta {
-  margin: 0.2rem 0 0;
-  font-size: 0.85rem;
-  color: var(--spearmint-accent);
 }
 
 .account-card__badge {
@@ -202,6 +312,8 @@
 .account-card__action {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
   gap: 0.35rem;
   border: none;
   border-radius: var(--spearmint-radius);

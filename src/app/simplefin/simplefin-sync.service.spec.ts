@@ -9,7 +9,7 @@ import {
   transactionSchema,
 } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Account, Transaction } from '../data/models';
+import type { Account, IgnoredExternalAccount, Transaction } from '../data/models';
 import { SimplefinApiService } from './simplefin-api.service';
 import { SimplefinLinkService } from './simplefin-link.service';
 import { SimplefinSyncService } from './simplefin-sync.service';
@@ -83,7 +83,9 @@ describe('SimplefinSyncService', () => {
     await fakeDb.remove();
   });
 
-  async function seedSettings(overrides: Partial<{ lastSyncDate: string | null; ignoredExternalAccounts: string[] }> = {}) {
+  async function seedSettings(
+    overrides: Partial<{ lastSyncDate: string | null; ignoredExternalAccounts: IgnoredExternalAccount[] }> = {}
+  ) {
     await fakeDb['appSettings'].upsert({
       id: 'settings',
       lastSyncDate: null,
@@ -332,7 +334,9 @@ describe('SimplefinSyncService', () => {
 
     expect(service.discoveredAccounts()).toHaveLength(0);
     const settings = await fakeDb['appSettings'].findOne('settings').exec();
-    expect(settings.ignoredExternalAccounts).toEqual(['CON-1:ext-new']);
+    expect(settings.ignoredExternalAccounts).toEqual([
+      { key: 'CON-1:ext-new', name: 'New Savings', institutionName: 'My Bank' },
+    ]);
   });
 
   describe('runAutoSyncIfDue', () => {

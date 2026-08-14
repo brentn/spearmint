@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { getAppSettingsDoc } from '../../../data/app-settings.util';
 import { DatabaseService } from '../../../data/database.service';
-import type { Account, AccountType, Institution } from '../../../data/models';
+import type { Account, AccountType, IgnoredExternalAccount, Institution } from '../../../data/models';
 import type { DiscoveredSimplefinAccount } from '../../../simplefin/simplefin-ingest-plan.util';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
@@ -21,7 +21,7 @@ export class AccountsStore {
   readonly loading = signal(true);
   readonly accounts = signal<Account[]>([]);
   readonly institutions = signal<Institution[]>([]);
-  readonly ignoredExternalAccounts = signal<string[]>([]);
+  readonly ignoredExternalAccounts = signal<IgnoredExternalAccount[]>([]);
 
   readonly connecting = signal(false);
   readonly connectError = signal<string | null>(null);
@@ -97,7 +97,7 @@ export class AccountsStore {
       return;
     }
     await settingsDoc.incrementalPatch({
-      ignoredExternalAccounts: settingsDoc.ignoredExternalAccounts.filter((k) => k !== key),
+      ignoredExternalAccounts: settingsDoc.ignoredExternalAccounts.filter((i) => i.key !== key),
     });
     await this.refresh();
   }

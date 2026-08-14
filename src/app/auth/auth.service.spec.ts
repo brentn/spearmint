@@ -104,7 +104,7 @@ describe('AuthService', () => {
       id: 'settings',
       lastSyncDate: '2026-08-01',
       webauthnCredential: null,
-      ignoredExternalAccounts: ['conn-1:acct-9'],
+      ignoredExternalAccounts: [{ key: 'conn-1:acct-9', name: 'Old Savings', institutionName: 'My Bank' }],
       exportEncryptionDefault: true,
     });
     const service = createService();
@@ -118,7 +118,9 @@ describe('AuthService', () => {
     const doc = await fakeDb['appSettings'].findOne('settings').exec();
     expect(doc?.webauthnCredential).toEqual(storedCredential);
     expect(doc?.lastSyncDate).toBe('2026-08-01');
-    expect(doc?.ignoredExternalAccounts).toEqual(['conn-1:acct-9']);
+    expect(doc?.ignoredExternalAccounts).toEqual([
+      { key: 'conn-1:acct-9', name: 'Old Savings', institutionName: 'My Bank' },
+    ]);
     expect(doc?.exportEncryptionDefault).toBe(true);
   });
 

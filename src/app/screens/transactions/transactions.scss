@@ -129,7 +129,9 @@
   border: none;
   background: transparent;
   padding: 0;
-  font-size: 0.78rem;
+  // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+  // computed font-size is below this.
+  font-size: 1rem;
   color: var(--spearmint-muted);
   max-width: 100%;
 
