@@ -27,6 +27,7 @@ export class AccountsStore {
 
   readonly connecting = signal(false);
   readonly connectError = signal<string | null>(null);
+  readonly discoveredActionPending = signal(false);
 
   constructor() {
     effect(() => {
@@ -73,13 +74,23 @@ export class AccountsStore {
   }
 
   async addDiscovered(discovered: DiscoveredSimplefinAccount, type: AccountType): Promise<void> {
-    await this.syncService.addDiscoveredAccount(discovered, type);
-    await this.refresh();
+    this.discoveredActionPending.set(true);
+    try {
+      await this.syncService.addDiscoveredAccount(discovered, type);
+      await this.refresh();
+    } finally {
+      this.discoveredActionPending.set(false);
+    }
   }
 
   async ignoreDiscovered(discovered: DiscoveredSimplefinAccount): Promise<void> {
-    await this.syncService.ignoreDiscoveredAccount(discovered);
-    await this.refresh();
+    this.discoveredActionPending.set(true);
+    try {
+      await this.syncService.ignoreDiscoveredAccount(discovered);
+      await this.refresh();
+    } finally {
+      this.discoveredActionPending.set(false);
+    }
   }
 
   async renameAccount(accountId: string, name: string): Promise<void> {

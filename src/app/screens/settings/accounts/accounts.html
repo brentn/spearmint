@@ -164,6 +164,7 @@
             <button
               class="account-card__action"
               type="button"
+              [disabled]="store.discoveredActionPending()"
               (click)="addDiscovered(discovered, newType.value === 'creditCard' ? 'creditCard' : 'bank')"
             >
               <fa-icon [icon]="icons.add"></fa-icon>
@@ -172,6 +173,7 @@
             <button
               class="account-card__action account-card__action--ghost"
               type="button"
+              [disabled]="store.discoveredActionPending()"
               (click)="ignoreDiscovered(discovered)"
             >
               Ignore

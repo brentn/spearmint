@@ -58,6 +58,7 @@ export class SimplefinSyncService {
   readonly discoveredAccounts = signal<DiscoveredSimplefinAccount[]>([]);
 
   private lastMergedSet: SimplefinAccountSet | null = null;
+  private readonly pendingAdds = new Set<string>();
 
   async runAutoSyncIfDue(): Promise<void> {
     const db = await this.databaseService.getDatabase();
@@ -121,37 +122,58 @@ export class SimplefinSyncService {
   }
 
   async addDiscoveredAccount(discovered: DiscoveredSimplefinAccount, type: AccountType): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    await db.institutions.upsert({ id: discovered.orgId, name: discovered.orgName, url: null });
-
-    const accountId = crypto.randomUUID();
-    await db.accounts.insert({
-      id: accountId,
-      institutionId: discovered.orgId,
-      connId: discovered.connId,
-      externalAccountId: discovered.externalAccountId,
-      originalAccountName: discovered.name,
-      name: discovered.name,
-      type,
-      currencyCode: discovered.currencyCode,
-      balance: parseDecimalAmount(discovered.balance),
-      balanceDate: epochSecondsToDateOnly(discovered.balanceDateEpoch),
-      needsReconnect: false,
-      syncIssue: null,
-      missing: false,
-    });
-
-    const response = this.lastMergedSet?.accounts.find(
-      (a) => a.id === discovered.externalAccountId && a.conn_id === discovered.connId
-    );
-    if (response) {
-      const posted = response.transactions.filter((t) => !t.pending);
-      const pending = response.transactions.filter((t) => t.pending);
-      await this.upsertPostedTransactions(db, accountId, posted);
-      await this.replacePendingTransactions(db, accountId, pending);
+    const key = externalAccountKey(discovered.connId, discovered.externalAccountId);
+    // Guards against double-adding the same external account (e.g. a double-click firing
+    // two overlapping calls before the first one's insert clears it from discoveredAccounts).
+    // Checked and claimed synchronously, before any await, so a second concurrent call for
+    // the same key can never slip through the gap a plain "does it exist yet" DB check leaves.
+    if (this.pendingAdds.has(key)) {
+      return;
     }
+    this.pendingAdds.add(key);
+    try {
+      const db = await this.databaseService.getDatabase();
+      const existing = await db.accounts
+        .findOne({ selector: { connId: discovered.connId, externalAccountId: discovered.externalAccountId } })
+        .exec();
+      if (existing) {
+        this.removeDiscovered(discovered);
+        return;
+      }
 
-    this.removeDiscovered(discovered);
+      await db.institutions.upsert({ id: discovered.orgId, name: discovered.orgName, url: null });
+
+      const accountId = crypto.randomUUID();
+      await db.accounts.insert({
+        id: accountId,
+        institutionId: discovered.orgId,
+        connId: discovered.connId,
+        externalAccountId: discovered.externalAccountId,
+        originalAccountName: discovered.name,
+        name: discovered.name,
+        type,
+        currencyCode: discovered.currencyCode,
+        balance: parseDecimalAmount(discovered.balance),
+        balanceDate: epochSecondsToDateOnly(discovered.balanceDateEpoch),
+        needsReconnect: false,
+        syncIssue: null,
+        missing: false,
+      });
+
+      const response = this.lastMergedSet?.accounts.find(
+        (a) => a.id === discovered.externalAccountId && a.conn_id === discovered.connId
+      );
+      if (response) {
+        const posted = response.transactions.filter((t) => !t.pending);
+        const pending = response.transactions.filter((t) => t.pending);
+        await this.upsertPostedTransactions(db, accountId, posted);
+        await this.replacePendingTransactions(db, accountId, pending);
+      }
+
+      this.removeDiscovered(discovered);
+    } finally {
+      this.pendingAdds.delete(key);
+    }
   }
 
   async ignoreDiscoveredAccount(discovered: DiscoveredSimplefinAccount): Promise<void> {

@@ -310,6 +310,35 @@ describe('SimplefinSyncService', () => {
     expect(txn).not.toBeNull();
   });
 
+  it('addDiscoveredAccount is idempotent: calling it twice for the same discovery does not create a duplicate account', async () => {
+    await seedSettings({ lastSyncDate: RECENT_PAST });
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [
+        {
+          id: 'ext-new',
+          name: 'New Savings',
+          currency: 'USD',
+          balance: '500.00',
+          'balance-date': 1786608000,
+          conn_id: 'CON-1',
+          transactions: [],
+        },
+      ],
+    } satisfies SimplefinAccountSet);
+    await service.syncNow();
+    const discovered = service.discoveredAccounts()[0];
+
+    await Promise.all([
+      service.addDiscoveredAccount(discovered, 'bank'),
+      service.addDiscoveredAccount(discovered, 'bank'),
+    ]);
+
+    const accounts = await fakeDb['accounts'].find().exec();
+    expect(accounts).toHaveLength(1);
+  });
+
   it('ignoreDiscoveredAccount permanently records the connId:externalId key and clears the discovery', async () => {
     await seedSettings({ lastSyncDate: RECENT_PAST });
     fetchAccounts.mockResolvedValue({
