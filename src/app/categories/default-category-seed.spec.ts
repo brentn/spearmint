@@ -1,5 +1,6 @@
 import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { categorySchema } from '../data/schemas';
 import type { Category } from '../data/models';
@@ -72,7 +73,7 @@ describe('seedDefaultCategoriesIfEmpty', () => {
   beforeEach(async () => {
     rawDb = await createRxDatabase({
       name: `default-category-seed-test-${Math.random().toString(36).slice(2)}`,
-      storage: getRxStorageMemory(),
+      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await rawDb.addCollections({ categories: { schema: categorySchema } });
     db = rawDb as unknown as SpearmintDatabase;

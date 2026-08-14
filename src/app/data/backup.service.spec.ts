@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   accountSchema,
@@ -20,15 +21,14 @@ import { seedDefaultCategoriesIfEmpty } from '../categories/default-category-see
 
 // A hand-rolled fake DatabaseService (real RxDB memory storage underneath, same
 // trick as auth.service.spec.ts) rather than routing through the production
-// DatabaseService: that class enables RxDB's dev-mode plugin globally the moment
-// it opens a database in this (isDevMode() === true) test environment, and dev-mode
-// then requires *every* RxDB database created anywhere in the same test worker —
-// including plain `createRxDatabase()` calls in unrelated spec files — to use a
-// schema-validating storage wrapper, or fail with RxDB error DVM1. Since this
-// service's own import/reset behavior is what's under test here (not
-// DatabaseService's storage/migration internals — that's database.service.spec.ts's
-// job), a lighter fake avoids making this file an accidental trigger for that
-// cross-file flakiness. It still calls seedDefaultCategoriesIfEmpty on every open,
+// DatabaseService: this service's own import/reset behavior is what's under test
+// here, not DatabaseService's storage/migration internals — that's
+// database.service.spec.ts's job. The storage is still wrapped with
+// wrappedValidateAjvStorage: RxDB's dev-mode plugin is a module-level toggle
+// (registered via addRxPlugin), so once any spec file in the same vitest worker
+// enables it, every createRxDatabase() call in that worker must use a
+// schema-validating storage or fail with RxDB error DVM1 — regardless of which
+// file triggered it. It still calls seedDefaultCategoriesIfEmpty on every open,
 // same as the real DatabaseService.openDatabase() — that's the one behavior of the
 // real class this file's round-trip tests need to reproduce faithfully, since a
 // reset-then-reopen mid-import re-triggers it on the now-empty categories collection.
@@ -51,7 +51,7 @@ class FakeDatabaseService {
   private async createDatabase(): Promise<RxDatabase<SpearmintCollections>> {
     const db = await createRxDatabase<SpearmintCollections>({
       name: `backup-test-${Math.random().toString(36).slice(2)}`,
-      storage: getRxStorageMemory(),
+      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
       multiInstance: false,
     });
     await db.addCollections({

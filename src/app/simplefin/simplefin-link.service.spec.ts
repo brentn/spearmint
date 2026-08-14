@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
+import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { simplefinLinkSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
@@ -15,7 +16,7 @@ describe('SimplefinLinkService', () => {
   beforeEach(async () => {
     fakeDb = await createRxDatabase({
       name: `simplefin-link-test-${Math.random().toString(36).slice(2)}`,
-      storage: getRxStorageMemory(),
+      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await fakeDb.addCollections({ simplefinLinks: { schema: simplefinLinkSchema } });
 
