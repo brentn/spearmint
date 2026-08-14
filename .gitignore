@@ -45,3 +45,6 @@ Thumbs.db
 .env
 *.crt
 *.key
+
+# Local scratch
+mock-api-server.js

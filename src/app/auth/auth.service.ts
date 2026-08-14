@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { Observable, from, map, of } from 'rxjs';
 import { server as webauthn } from '@passwordless-id/webauthn';
 
-const API = 'https://spearmint-imnj.onrender.com';
+// const API = 'https://spearmint-imnj.onrender.com';
+const API = 'http://localhost:4000';
 
 @Injectable({
   providedIn: 'root'

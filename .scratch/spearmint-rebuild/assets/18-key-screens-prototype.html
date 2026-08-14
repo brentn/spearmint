@@ -1,0 +1,660 @@
+<!--
+  PROTOTYPE — throwaway. Answers ticket #18 (key-screens-prototype) on the
+  spearmint-rebuild wayfinder map: "what should the 4 identity-carrying
+  screens look like?"
+
+  Iteration 2: the "Card Stack" direction won over the other two structural
+  treatments. This pass restyles it around a gradient hero card (balance +
+  trend delta + type filter pills) with white summary cards overlapping its
+  bottom edge, borrowed from a mint.com-style reference screenshot. The
+  reference's own line chart is deliberately NOT reproduced — Trends/graphs
+  is ruled Out of scope on the map (see ticket #06) — so the "trend" only
+  ever shows as a plain-text delta pill, never a chart.
+
+  Real navigation: tap the bottom nav tabs, tap a budget row to drill into
+  Budget Detail, tap the back arrow to return, tap the bell to jump to
+  Settings (where the reconnect flag lives). All data below is fixture data
+  reflecting the locked domain model (#16), category taxonomy (#13), color
+  tokens (#15), budget alert-bar rules (#14), and rollover display rule (#17).
+
+  DO NOT promote this file into the real app. Capture the winning verdict on
+  ticket #18, then this file's home is the throwaway branch, not main.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Spearmint Key Screens</title>
+<style>
+  :root {
+    --spearmint-primary: #00D639;
+    --spearmint-primary-rgb: 0, 214, 57;
+    --spearmint-accent: #699ABF;
+    --spearmint-bg: #F9FBFA;
+    --spearmint-surface: #FFFFFF;
+    --spearmint-border: #DDE4DF;
+    --spearmint-danger: #DF2030;
+    --spearmint-warning: #FFB029;
+    --spearmint-success: #137C67;
+    --spearmint-ink: #15251B;
+    --spearmint-on-primary: #15251B;
+    --spearmint-muted: #6B7A70;
+    --spearmint-shadow: 0 2px 8px rgba(21, 37, 27, 0.10);
+    --spearmint-shadow-strong: 0 4px 16px rgba(21, 37, 27, 0.18);
+    --spearmint-radius: 14px;
+    --spearmint-font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--spearmint-bg);
+    color: var(--spearmint-ink);
+    font-family: var(--spearmint-font-family);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #device {
+    max-width: 430px;
+    min-height: 100vh;
+    margin: 0 auto;
+    background: var(--spearmint-bg);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--spearmint-shadow-strong);
+  }
+
+  #screen-content {
+    flex: 1;
+    padding: 16px 16px 96px;
+    overflow-y: auto;
+  }
+
+  h1, h2, h3 { margin: 0; }
+
+  /* ---------- gradient hero (balance card / budget-detail card) ---------- */
+  .hero {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    border-radius: 0;
+    padding: 26px 16px 48px;
+    margin: -16px -16px -26px -16px;
+    color: #fff;
+    background: linear-gradient(165deg, #0D2A20 0%, #0F5E44 46%, #12A85A 80%, #00D639 100%);
+  }
+  .hero-note { position: relative; font-size: 13px; font-weight: 600; opacity: .9; margin-top: 8px; }
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: -34px; right: -34px;
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+  }
+  .hero-topline { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+  .hero-label { font-size: 12px; font-weight: 600; letter-spacing: .02em; opacity: .85; }
+  .hero-icons { display: flex; gap: 8px; }
+  .hero-icon-btn {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.16); border: none; color: #fff;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative; flex-shrink: 0;
+  }
+  .hero-icon-btn .badge-dot {
+    position: absolute; top: -1px; right: -1px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--spearmint-danger);
+    border: 1.5px solid #0F5E44;
+  }
+  .hero-value { position: relative; font-size: 34px; font-weight: 800; margin-top: 6px; letter-spacing: -0.01em; }
+  .hero-value .hero-value-sub { font-size: 15px; font-weight: 600; opacity: .75; margin-left: 6px; }
+  .hero-delta {
+    position: relative; display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 8px; font-size: 12px; font-weight: 700;
+    background: rgba(255,255,255,0.16); padding: 4px 11px; border-radius: 999px;
+  }
+  .hero-pills { position: relative; display: flex; gap: 6px; margin-top: 16px; }
+  .pill {
+    background: rgba(255,255,255,0.16); border: none; color: rgba(255,255,255,0.85);
+    font-size: 12px; font-weight: 700; padding: 6px 13px; border-radius: 999px;
+    cursor: pointer; font-family: inherit;
+  }
+  .pill.active { background: #fff; color: var(--spearmint-success); }
+
+  /* ---------- white cards floating over the hero's bottom edge ---------- */
+  .card-stack { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 10px; }
+  .total-card {
+    background: var(--spearmint-surface);
+    border-radius: var(--spearmint-radius);
+    box-shadow: var(--spearmint-shadow);
+    padding: 15px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .total-card .t-label { color: var(--spearmint-success); font-weight: 700; font-size: 13px; }
+  .total-card .t-value { font-weight: 800; font-size: 16px; }
+  .total-card .t-value.negative { color: var(--spearmint-danger); }
+
+  .section-card {
+    background: var(--spearmint-surface);
+    border-radius: 18px;
+    box-shadow: var(--spearmint-shadow);
+    padding: 16px;
+    margin-top: 16px;
+  }
+  .section-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; }
+
+  /* ---------- shared: top bar (Budget Detail back nav) ---------- */
+  .detail-topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 0 14px;
+  }
+  .back-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: var(--spearmint-ink);
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+  }
+  .back-btn:active { background: var(--spearmint-border); }
+  .detail-title { font-size: 17px; font-weight: 700; }
+
+  /* ---------- shared: bottom nav shell ---------- */
+  #bottomnav {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex;
+    background: linear-gradient(100deg, #0D2A20 0%, #0F5E44 55%, #12A85A 100%);
+    border-top: none;
+    box-shadow: 0 -4px 14px rgba(13,42,32,0.28);
+    padding-bottom: env(safe-area-inset-bottom);
+    transition: transform .25s ease;
+  }
+  #bottomnav.nav-hidden { transform: translateY(100%); }
+  .nav-tab {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 4px 8px;
+    background: none; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.62);
+    font-family: inherit;
+  }
+  .nav-tab .icon { font-size: 20px; line-height: 1; }
+  .nav-tab .label { font-size: 11px; font-weight: 600; }
+  .nav-tab.active { color: #fff; }
+  .nav-tab.active .icon-wrap {
+    background: var(--spearmint-primary);
+    color: var(--spearmint-on-primary);
+    border-radius: 10px;
+    width: 34px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-tab .icon-wrap { width: 34px; height: 22px; display: flex; align-items: center; justify-content: center; }
+
+  /* ---------- shared: progress bar (budget alert-bar rules #14) ---------- */
+  .budget-row { margin-bottom: 18px; }
+  .budget-row:last-child { margin-bottom: 0; }
+  .budget-row .amount-line {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; color: var(--spearmint-muted); margin-bottom: 4px;
+  }
+  .budget-row .cat-name { font-size: 14px; font-weight: 600; color: var(--spearmint-ink); }
+  .bar-track {
+    position: relative;
+    height: 22px;
+    background: var(--spearmint-border);
+    border-radius: 11px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    border-radius: 11px;
+    transition: width .2s;
+  }
+  .bar-fill.state-normal { background: var(--spearmint-primary); }
+  .bar-fill.state-warning { background: var(--spearmint-warning); }
+  .bar-fill.state-over { background: var(--spearmint-danger); }
+  .bar-pct {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; font-weight: 700;
+  }
+  .bar-pct.on-fill-dark { color: var(--spearmint-ink); }
+  .bar-pct.on-track { color: var(--spearmint-muted); }
+  .rollover-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 8px; font-size: 12px; font-weight: 700;
+    background: rgba(255,255,255,0.16); padding: 4px 11px; border-radius: 999px;
+  }
+
+  /* ---------- shared: transactions ---------- */
+  .txn-day-heading {
+    font-size: 12px; font-weight: 700; color: var(--spearmint-muted);
+    text-transform: uppercase; letter-spacing: .04em;
+    padding: 14px 2px 6px;
+  }
+  .txn-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--spearmint-surface);
+    padding: 12px;
+    border-bottom: 1px solid var(--spearmint-border);
+  }
+  .txn-row:first-child { border-top-left-radius: var(--spearmint-radius); border-top-right-radius: var(--spearmint-radius); }
+  .txn-row:last-child { border-bottom-left-radius: var(--spearmint-radius); border-bottom-right-radius: var(--spearmint-radius); border-bottom: none; }
+  .txn-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--spearmint-bg); border: 1px solid var(--spearmint-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .txn-mid { flex: 1; min-width: 0; }
+  .txn-desc { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txn-cat { font-size: 12px; color: var(--spearmint-muted); }
+  .txn-amt { font-size: 14px; font-weight: 700; text-align: right; flex-shrink: 0; }
+  .txn-amt.positive { color: var(--spearmint-success); }
+  .txn-pending-badge {
+    font-size: 10px; font-weight: 700; color: var(--spearmint-accent);
+    border: 1px solid var(--spearmint-accent); border-radius: 6px;
+    padding: 1px 5px; margin-left: 6px; vertical-align: middle;
+  }
+
+  /* ---------- shared: settings ---------- */
+  .settings-section-label {
+    font-size: 12px; font-weight: 700; color: var(--spearmint-muted);
+    text-transform: uppercase; letter-spacing: .04em;
+    margin: 18px 4px 8px;
+  }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--spearmint-surface);
+    padding: 14px 14px;
+    border-bottom: 1px solid var(--spearmint-border);
+    font-size: 14px; font-weight: 600;
+  }
+  .settings-row:first-child { border-top-left-radius: var(--spearmint-radius); border-top-right-radius: var(--spearmint-radius); }
+  .settings-row:last-child { border-bottom-left-radius: var(--spearmint-radius); border-bottom-right-radius: var(--spearmint-radius); border-bottom: none; }
+  .settings-row .sub { font-size: 12px; font-weight: 400; color: var(--spearmint-muted); }
+  .reconnect-flag { color: var(--spearmint-danger); font-size: 12px; font-weight: 700; }
+
+  #proto-note {
+    position: fixed; top: 10px; left: 10px;
+    background: #15251B; color: #fff; opacity: 0.55;
+    font-size: 10px; font-family: system-ui, sans-serif;
+    padding: 4px 8px; border-radius: 6px; z-index: 999;
+  }
+</style>
+</head>
+<body>
+<div id="proto-note">PROTOTYPE — ticket #18, iteration 2</div>
+
+<div id="device">
+  <main id="screen-content"></main>
+  <nav id="bottomnav">
+    <button class="nav-tab" data-tab="overview"><span class="icon-wrap"><span class="icon">⌂</span></span><span class="label">Overview</span></button>
+    <button class="nav-tab" data-tab="budgets"><span class="icon-wrap"><span class="icon">◔</span></span><span class="label">Budgets</span></button>
+    <button class="nav-tab" data-tab="transactions"><span class="icon-wrap"><span class="icon">≡</span></span><span class="label">Transactions</span></button>
+    <button class="nav-tab" data-tab="settings"><span class="icon-wrap"><span class="icon">⚙</span></span><span class="label">Settings</span></button>
+  </nav>
+</div>
+
+<script>
+/* ---------------- fixture data (reflects #16 domain model, #13 categories) ---------------- */
+const accounts = [
+  { id: 'a1', name: 'Everyday Checking', type: 'bank', balance: 3421.09, needsReconnect: false },
+  { id: 'a2', name: 'High-Yield Savings', type: 'bank', balance: 12894.50, needsReconnect: false },
+  { id: 'a3', name: 'Rewards Visa', type: 'creditCard', balance: -812.44, needsReconnect: false },
+  { id: 'a4', name: 'Old Credit Union Checking', type: 'bank', balance: 128.10, needsReconnect: true },
+];
+const balanceDeltaThisMonth = 421.30; // fixture — real value comes from a prior-period balance snapshot, not modeled here
+
+// percent = spent / (amount + rolloverAmount); income inverts (target-vs-actual)
+const budgets = [
+  { id: 'b1', category: 'Food & Dining', type: 'expense', amount: 500, rolloverAmount: 40, spent: 410 },   // 82% -> normal
+  { id: 'b2', category: 'Shopping',      type: 'expense', amount: 250, rolloverAmount: 0,  spent: 233 },   // 93% -> warning
+  { id: 'b3', category: 'Entertainment', type: 'expense', amount: 100, rolloverAmount: 0,  spent: 138 },   // 138% -> over
+  { id: 'b4', category: 'Transportation',type: 'expense', amount: 300, rolloverAmount: 15, spent: 90  },   // 29% -> normal
+  { id: 'b5', category: 'Bills & Utilities', type: 'expense', amount: 420, rolloverAmount: 0, spent: 402 },// 96% -> warning
+  { id: 'b6', category: 'Paycheck',      type: 'income',  amount: 4200, rolloverAmount: 0, spent: 4200 }, // at target -> normal(green)
+];
+
+const transactions = [
+  { date: 'Today', rows: [
+    { desc: 'Trader Joe\'s', cat: 'Groceries', amount: -64.20, pending: true },
+    { desc: 'Shell Gas Station', cat: 'Gas & Fuel', amount: -41.02, pending: true },
+  ]},
+  { date: 'Yesterday', rows: [
+    { desc: 'Netflix', cat: 'Subscriptions', amount: -15.49, pending: false },
+    { desc: 'Employer Direct Deposit', cat: 'Paycheck', amount: 2104.55, pending: false },
+    { desc: 'Blue Bottle Coffee', cat: 'Coffee Shops', amount: -6.75, pending: false },
+  ]},
+  { date: 'Aug 11', rows: [
+    { desc: 'Amazon', cat: 'General Merchandise', amount: -58.13, pending: false },
+    { desc: 'Chase Credit Card Pmt', cat: 'Credit Card Payment', amount: -400.00, pending: false },
+    { desc: 'Planet Fitness', cat: 'Gym & Fitness', amount: -24.99, pending: false },
+  ]},
+];
+
+const icons = { 'Groceries':'🛒','Gas & Fuel':'⛽','Subscriptions':'📺','Paycheck':'💰','Coffee Shops':'☕','General Merchandise':'📦','Credit Card Payment':'💳','Gym & Fitness':'🏋' };
+
+/* ---------------- budget bar state logic (#14) ---------------- */
+function budgetState(b) {
+  const pct = b.spent / (b.amount + b.rolloverAmount);
+  const pctRounded = Math.round(pct * 100);
+  let state;
+  if (b.type === 'income') {
+    if (pct >= 1) state = 'normal';
+    else if (pct >= 0.7) state = 'warning';
+    else state = 'over';
+  } else {
+    if (pct < 0.85) state = 'normal';
+    else if (pct < 1.0) state = 'warning';
+    else state = 'over';
+  }
+  return { pct: Math.min(pct, 1), pctRounded, state };
+}
+
+function renderBudgetBar(b) {
+  const { pct, pctRounded, state } = budgetState(b);
+  const onFillLabel = pct > 0.22;
+  const pctClass = onFillLabel ? 'on-fill-dark' : 'on-track';
+  const pctLeft = onFillLabel ? '' : `left:${Math.max(pct*100,0)+4}%;`;
+  return `
+    <div class="budget-row">
+      <div class="amount-line">
+        <span class="cat-name">${b.category}</span>
+        <span>$${b.spent.toFixed(0)} of $${(b.amount+b.rolloverAmount).toFixed(0)}</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill state-${state}" style="width:${pct*100}%"></div>
+        <span class="bar-pct ${pctClass}" style="${onFillLabel ? '' : pctLeft}">${pctRounded}%</span>
+      </div>
+    </div>`;
+}
+
+/* ---------------- screens ---------------- */
+function screenOverview() {
+  const total = accounts.reduce((s,a)=>s+a.balance,0);
+  const cashTotal = accounts.filter(a=>a.type==='bank').reduce((s,a)=>s+a.balance,0);
+  const creditTotal = accounts.filter(a=>a.type==='creditCard').reduce((s,a)=>s+a.balance,0);
+  const anyReconnect = accounts.some(a=>a.needsReconnect);
+  const filter = state.acctFilter;
+
+  const cards = [
+    { key: 'bank', label: 'Cash', value: cashTotal },
+    { key: 'creditCard', label: 'Credit cards', value: creditTotal },
+  ].filter(c => filter === 'all' || filter === c.key);
+
+  return `
+    <div class="hero">
+      <div class="hero-topline">
+        <div class="hero-label">Total balance</div>
+        <div class="hero-icons">
+          <button class="hero-icon-btn hero-bell-btn" aria-label="Notifications">🔔${anyReconnect ? '<span class="badge-dot"></span>' : ''}</button>
+          <button class="hero-icon-btn" aria-label="Add account">+</button>
+        </div>
+      </div>
+      <div class="hero-value">$${total.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="hero-delta">▲ $${balanceDeltaThisMonth.toFixed(0)} this month</div>
+      <div class="hero-pills">
+        <button class="pill ${filter==='all'?'active':''}" data-filter="all">All</button>
+        <button class="pill ${filter==='bank'?'active':''}" data-filter="bank">Cash</button>
+        <button class="pill ${filter==='creditCard'?'active':''}" data-filter="creditCard">Credit cards</button>
+      </div>
+    </div>
+    <div class="card-stack">
+      ${cards.map(c => `
+        <div class="total-card">
+          <span class="t-label">${c.label}</span>
+          <span class="t-value ${c.value<0?'negative':''}">${c.value<0?'-':''}$${Math.abs(c.value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+        </div>`).join('')}
+    </div>
+    <div class="section-card">
+      <div class="section-title">Budgets to watch</div>
+      ${budgets.slice(0,3).map(renderBudgetBar).join('')}
+    </div>`;
+}
+
+function screenBudgets() {
+  const expenseBudgets = budgets.filter(b => b.type !== 'income');
+  const totalBudget = expenseBudgets.reduce((s,b)=>s+b.amount+b.rolloverAmount,0);
+  const totalSpent = expenseBudgets.reduce((s,b)=>s+b.spent,0);
+  const remaining = totalBudget - totalSpent;
+  const pct = Math.min(totalSpent/totalBudget, 1);
+  const overallState = (totalSpent/totalBudget) < 0.85 ? 'normal' : (totalSpent/totalBudget) < 1 ? 'warning' : 'over';
+
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const todayPct = (now.getDate() / daysInMonth) * 100;
+  const monthName = now.toLocaleString('default', { month: 'long' });
+
+  const message = remaining >= 0
+    ? `Keep it up! You can save $${remaining.toFixed(0)} more this month`
+    : `You're $${Math.abs(remaining).toFixed(0)} over budget this month`;
+
+  const incomeBudget = budgets.find(b => b.type === 'income');
+  const earned = incomeBudget ? incomeBudget.spent : 0;
+  const spent = totalSpent;
+  const maxFlow = Math.max(earned, spent, 1);
+  const earnedBarPx = Math.max((earned/maxFlow)*70, 4);
+  const spentBarPx = Math.max((spent/maxFlow)*70, 4);
+
+  return `
+    <div class="hero" style="padding:32px 16px 62px;">
+      <div class="hero-topline">
+        <div class="hero-label" style="font-size:16px;font-weight:800;opacity:1;">${monthName} budget</div>
+        <div class="hero-icons">
+          <button class="hero-icon-btn hero-bell-btn" aria-label="Notifications">🔔</button>
+          <button class="hero-icon-btn" aria-label="More options">⋯</button>
+        </div>
+      </div>
+      <div class="hero-value" style="margin-top:22px;">$${totalSpent.toFixed(0)}<span class="hero-value-sub">of $${totalBudget.toFixed(0)}</span></div>
+      <div class="hero-note">${message}</div>
+    </div>
+    <div class="card-stack">
+      <div class="total-card" style="display:block;">
+        <div style="font-size:12px;font-weight:700;color:var(--spearmint-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:22px;">Progress this month</div>
+        <div style="position:relative;">
+          <div class="bar-track" style="height:10px;">
+            <div class="bar-fill state-${overallState}" style="width:${pct*100}%"></div>
+          </div>
+          <div style="position:absolute;left:${todayPct}%;top:-6px;width:2px;height:16px;background:var(--spearmint-ink);transform:translateX(-50%);"></div>
+          <div style="position:absolute;left:${todayPct}%;top:14px;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--spearmint-ink);white-space:nowrap;">▲ Today</div>
+        </div>
+      </div>
+      <div class="total-card" style="display:block;">
+        <div style="font-size:12px;font-weight:700;color:var(--spearmint-muted);text-transform:uppercase;letter-spacing:.03em;">${monthName} cash flow</div>
+        <div style="font-size:22px;font-weight:800;margin-top:4px;">$${(earned-spent).toFixed(0)}</div>
+        <div style="display:flex;gap:28px;align-items:flex-end;height:110px;margin-top:14px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+            <div style="text-align:center;">
+              <div style="font-size:11px;color:var(--spearmint-muted);">Earned</div>
+              <div style="font-size:13px;font-weight:800;">$${earned.toFixed(0)}</div>
+            </div>
+            <div style="width:44px;height:${earnedBarPx}px;background:var(--spearmint-primary);border-radius:6px 6px 0 0;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;">
+            <div style="text-align:center;">
+              <div style="font-size:11px;color:var(--spearmint-muted);">Spent</div>
+              <div style="font-size:13px;font-weight:800;">$${spent.toFixed(0)}</div>
+            </div>
+            <div style="width:44px;height:${spentBarPx}px;background:var(--spearmint-accent);border-radius:6px 6px 0 0;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Spending by category</div>
+      ${budgets.map(b => `<div data-budget="${b.id}" style="cursor:pointer;">${renderBudgetBar(b)}</div>`).join('')}
+    </div>`;
+}
+
+function screenBudgetDetail(id) {
+  const b = budgets.find(x=>x.id===id) || budgets[0];
+  const { pct, pctRounded, state } = budgetState(b);
+  const rollover = b.rolloverAmount > 0
+    ? `<div class="rollover-pill">+ $${b.rolloverAmount.toFixed(0)} rolled over from last month</div>`
+    : '';
+
+  return `
+    <div class="detail-topbar">
+      <button class="back-btn" data-back="budgets">←</button>
+      <div class="detail-title">${b.category}</div>
+    </div>
+    <div class="hero">
+      <div class="hero-label">${b.type === 'income' ? 'Target vs. actual' : 'Spent this month'}</div>
+      <div class="hero-value">$${b.spent.toFixed(0)}<span class="hero-value-sub">of $${(b.amount+b.rolloverAmount).toFixed(0)}</span></div>
+      ${rollover}
+    </div>
+    <div class="card-stack">
+      <div class="total-card" style="display:block;">
+        <div class="bar-track" style="height:26px;">
+          <div class="bar-fill state-${state}" style="width:${pct*100}%"></div>
+          <span class="bar-pct ${pct>0.22?'on-fill-dark':'on-track'}" style="${pct>0.22?'':`left:${pct*100+4}%;`}">${pctRounded}%</span>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:var(--spearmint-muted);">
+          ${b.type === 'income'
+            ? 'Income budgets track a target to meet, not a ceiling — green once you hit it.'
+            : 'Green under 85% of budget, amber 85–100%, red at 100% and over.'}
+        </div>
+      </div>
+    </div>`;
+}
+
+function screenTransactions() {
+  const totalSpentThisMonth = transactions.reduce((s,g)=> s + g.rows.reduce((s2,r)=> s2 + (r.amount<0 ? Math.abs(r.amount) : 0), 0), 0);
+  const txnCount = transactions.reduce((s,g)=>s+g.rows.length,0);
+
+  const rows = transactions.map(group => `
+    <div class="txn-day-group">
+      <div class="txn-day-heading">${group.date}</div>
+      ${group.rows.map(r => `
+        <div class="txn-row">
+          <div class="txn-icon">${icons[r.cat] || '•'}</div>
+          <div class="txn-mid">
+            <div class="txn-desc">${r.desc}${r.pending ? '<span class="txn-pending-badge">PENDING</span>' : ''}</div>
+            <div class="txn-cat">${r.cat}</div>
+          </div>
+          <div class="txn-amt ${r.amount>0?'positive':''}">${r.amount<0?'-':'+'}$${Math.abs(r.amount).toFixed(2)}</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  return `
+    <div class="hero" style="padding:32px 16px 62px;">
+      <div class="hero-topline">
+        <div class="hero-label" style="font-size:16px;font-weight:800;opacity:1;">Transactions</div>
+        <div class="hero-icons">
+          <button class="hero-icon-btn hero-bell-btn" aria-label="Notifications">🔔</button>
+          <button class="hero-icon-btn" aria-label="Search">🔍</button>
+        </div>
+      </div>
+      <div class="hero-value" style="margin-top:22px;">$${totalSpentThisMonth.toFixed(0)}<span class="hero-value-sub">spent this month</span></div>
+      <div class="hero-note">Across ${txnCount} transactions</div>
+    </div>
+    <div class="card-stack">
+      <div class="section-card" style="margin-top:0;">
+        ${rows}
+      </div>
+    </div>`;
+}
+
+function screenSettings() {
+  const rows = `
+    <div class="settings-section-label" style="margin-top:0;">Accounts</div>
+    ${accounts.map(a=>`
+      <div class="settings-row">
+        <span>${a.name}</span>
+        <span class="sub">${a.needsReconnect ? '<span class="reconnect-flag">Reconnect</span>' : (a.type==='bank'?'Bank':'Credit card')}</span>
+      </div>`).join('')}
+    <div class="settings-section-label">Backup & sync</div>
+    <div class="settings-row"><span>Export data</span><span class="sub">›</span></div>
+    <div class="settings-row"><span>Import data</span><span class="sub">›</span></div>
+    <div class="settings-row"><span>Encrypt exports</span><span class="sub">On</span></div>
+    <div class="settings-section-label">Security</div>
+    <div class="settings-row"><span>Face ID lock</span><span class="sub">On</span></div>`;
+
+  return `
+    <div class="hero" style="padding:32px 16px 62px;">
+      <div class="hero-topline">
+        <div class="hero-label" style="font-size:16px;font-weight:800;opacity:1;">Settings</div>
+        <div class="hero-icons">
+          <button class="hero-icon-btn hero-bell-btn" aria-label="Notifications">🔔</button>
+        </div>
+      </div>
+      <div class="hero-value" style="margin-top:22px;font-size:26px;">Your account</div>
+      <div class="hero-note">Accounts, backup, and security preferences</div>
+    </div>
+    <div class="card-stack">
+      ${rows}
+    </div>`;
+}
+
+/* ---------------- router / state ---------------- */
+const params = new URLSearchParams(location.search);
+let state = {
+  tab: params.get('screen') || 'overview',
+  budgetId: budgets[0].id,
+  acctFilter: 'all',
+};
+
+const scrollEl = document.getElementById('screen-content');
+const navEl = document.getElementById('bottomnav');
+let lastScrollTop = 0;
+
+function render() {
+  const el = document.getElementById('screen-content');
+  if (state.tab === 'overview') el.innerHTML = screenOverview();
+  else if (state.tab === 'budgets') el.innerHTML = screenBudgets();
+  else if (state.tab === 'budgetDetail') el.innerHTML = screenBudgetDetail(state.budgetId);
+  else if (state.tab === 'transactions') el.innerHTML = screenTransactions();
+  else if (state.tab === 'settings') el.innerHTML = screenSettings();
+
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    const tabForNav = state.tab === 'budgetDetail' ? 'budgets' : state.tab;
+    btn.classList.toggle('active', btn.dataset.tab === tabForNav);
+  });
+
+  el.querySelectorAll('[data-budget]').forEach(row => {
+    row.addEventListener('click', () => { state.budgetId = row.dataset.budget; state.tab = 'budgetDetail'; render(); });
+  });
+  el.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => { state.tab = btn.dataset.back; render(); });
+  });
+  el.querySelectorAll('[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => { state.acctFilter = btn.dataset.filter; render(); });
+  });
+  el.querySelectorAll('.hero-bell-btn').forEach(btn => {
+    btn.addEventListener('click', () => { state.tab = 'settings'; render(); });
+  });
+
+  // new screen -> reset scroll position and make sure the nav is visible
+  scrollEl.scrollTop = 0;
+  lastScrollTop = 0;
+  navEl.classList.remove('nav-hidden');
+
+  const url = new URL(location.href);
+  url.searchParams.set('screen', state.tab);
+  history.replaceState(null, '', url);
+}
+
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => { state.tab = btn.dataset.tab; render(); });
+});
+
+// slide the bottom nav out of the way when scrolling down, reveal it again on scroll-up
+let navTicking = false;
+scrollEl.addEventListener('scroll', () => {
+  if (navTicking) return;
+  navTicking = true;
+  requestAnimationFrame(() => {
+    const st = scrollEl.scrollTop;
+    if (st < 10) navEl.classList.remove('nav-hidden');
+    else if (st > lastScrollTop) navEl.classList.add('nav-hidden');
+    else if (st < lastScrollTop) navEl.classList.remove('nav-hidden');
+    lastScrollTop = Math.max(st, 0);
+    navTicking = false;
+  });
+});
+
+render();
+</script>
+</body>
+</html>
