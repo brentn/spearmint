@@ -2,17 +2,15 @@
   <header class="accounts__header">
     <a class="accounts__back" routerLink="/settings">&larr; Settings</a>
     <h1 class="accounts__title">Accounts</h1>
-    @if (store.accounts().length > 0) {
-      <button
-        class="accounts__sync-button"
-        type="button"
-        [disabled]="syncService.syncing()"
-        (click)="store.syncNow()"
-      >
-        <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
-        {{ syncService.syncing() ? 'Syncing…' : 'Sync now' }}
-      </button>
-    }
+    <button
+      class="accounts__sync-button"
+      type="button"
+      [disabled]="syncService.syncing()"
+      (click)="store.syncNow()"
+    >
+      <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
+      {{ syncService.syncing() ? 'Syncing…' : 'Sync now' }}
+    </button>
     <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
       <fa-icon [icon]="icons.add"></fa-icon>
     </button>
