@@ -1,8 +1,5 @@
 <div class="export-import">
-  <header class="export-import__header">
-    <a class="export-import__back" routerLink="/settings">&larr; Settings</a>
-    <h1 class="export-import__title">Export / Import backup</h1>
-  </header>
+  <app-settings-header title="Export / Import backup" backLink="/settings" />
 
   <div class="export-import__content">
     <section class="export-import__card">
@@ -76,11 +73,15 @@
       </p>
 
       <input
+        #fileInput
         class="export-import__file-input"
         type="file"
         accept="application/json,.json"
         (change)="onFileSelected($event)"
       />
+      <button class="export-import__secondary-button" type="button" (click)="fileInput.click()">
+        {{ importFile()?.name ?? 'Choose backup file' }}
+      </button>
 
       @if (importFile()) {
         <label class="export-import__label">

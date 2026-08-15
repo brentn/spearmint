@@ -1,0 +1,96 @@
+.category-picker {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.3rem;
+}
+
+.category-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--spearmint-border);
+  border-radius: 999px;
+  background: var(--spearmint-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236B7A70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.55rem center;
+  background-size: 0.6rem;
+  padding: 0.15rem 1.6rem 0.15rem 0.65rem;
+  // 16px minimum: matches the iOS Safari auto-zoom threshold this control replaced.
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--spearmint-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:disabled {
+    background-image: none;
+    padding-right: 0.65rem;
+    opacity: 0.7;
+    cursor: default;
+  }
+}
+
+.category-picker__panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  width: max(14rem, 100%);
+  max-height: 16rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--spearmint-surface);
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow-strong);
+}
+
+.category-picker__filter {
+  margin: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--spearmint-border);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--spearmint-ink);
+}
+
+.category-picker__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.4rem 0.4rem;
+  overflow-y: auto;
+}
+
+.category-picker__group-label {
+  padding: 0.4rem 0.5rem 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--spearmint-muted);
+}
+
+.category-picker__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  background: transparent;
+  color: var(--spearmint-ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--spearmint-bg);
+  }
+}
+
+.category-picker__option--selected {
+  font-weight: 700;
+  color: var(--spearmint-primary);
+}

@@ -117,10 +117,23 @@
   background: var(--spearmint-surface);
   border-radius: var(--spearmint-radius);
   box-shadow: var(--spearmint-shadow);
+  overflow: hidden;
+}
+
+.overview__total-card-toggle {
+  width: 100%;
+  border: none;
+  background: none;
   padding: 0.9rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
 }
 
 .overview__total-label {
@@ -130,6 +143,8 @@
 }
 
 .overview__total-value {
+  flex: 1;
+  text-align: right;
   font-weight: 800;
   font-size: 1rem;
   color: var(--spearmint-ink);
@@ -137,6 +152,36 @@
 
 .overview__total-value--negative {
   color: var(--spearmint-danger);
+}
+
+.overview__total-card-chevron {
+  color: var(--spearmint-muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.overview__total-card-chevron--open {
+  transform: rotate(180deg);
+}
+
+.overview__account-breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0 1rem 0.75rem;
+}
+
+.overview__account-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  color: var(--spearmint-ink);
+  border-top: 1px solid var(--spearmint-border);
+
+  &:first-child {
+    border-top: none;
+  }
 }
 
 .overview__card {
@@ -182,3 +227,37 @@
 }
 
 // Per-row styling lives in the shared BudgetRow component (../../budgets/budget-row).
+
+// ---------- uncategorized preview ----------
+.overview__uncategorized-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.overview__uncategorized-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  border-top: 1px solid var(--spearmint-border);
+
+  &:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+.overview__uncategorized-desc {
+  color: var(--spearmint-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview__uncategorized-amt {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}

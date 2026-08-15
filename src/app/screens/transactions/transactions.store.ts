@@ -1,7 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { CategoriesService } from '../../categories/categories.service';
 import { DatabaseService } from '../../data/database.service';
-import type { Category, Transaction } from '../../data/models';
+import type { Account, Category, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
 
 /**
@@ -20,6 +20,7 @@ export class TransactionsStore {
   readonly loading = signal(true);
   readonly transactions = signal<Transaction[]>([]);
   readonly categories = signal<Category[]>([]);
+  readonly accounts = signal<Account[]>([]);
 
   constructor() {
     effect(() => {
@@ -31,12 +32,14 @@ export class TransactionsStore {
 
   async refresh(): Promise<void> {
     const db = await this.databaseService.getDatabase();
-    const [transactionDocs, categories] = await Promise.all([
+    const [transactionDocs, categories, accountDocs] = await Promise.all([
       db.transactions.find().exec(),
       this.categoriesService.list(),
+      db.accounts.find().exec(),
     ]);
     this.transactions.set(transactionDocs.map((doc) => doc.toJSON()));
     this.categories.set(categories);
+    this.accounts.set(accountDocs.map((doc) => doc.toJSON()));
     this.loading.set(false);
   }
 
@@ -45,6 +48,10 @@ export class TransactionsStore {
       return 'Uncategorized';
     }
     return this.categories().find((c) => c.id === categoryId)?.name ?? 'Uncategorized';
+  }
+
+  accountName(accountId: string): string {
+    return this.accounts().find((a) => a.id === accountId)?.name ?? '';
   }
 
   /** Pending transactions are wiped and replaced every sync (spec §1/§3) — locked from manual editing. */

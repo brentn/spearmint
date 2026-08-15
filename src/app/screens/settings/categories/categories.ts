@@ -1,13 +1,13 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import type { CategoryType } from '../../../data/models';
 import { CategoriesStore } from './categories.store';
+import { SettingsHeader } from '../settings-header/settings-header';
 
 @Component({
   selector: 'app-categories',
-  imports: [RouterLink, FaIconComponent],
+  imports: [FaIconComponent, SettingsHeader],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
   providers: [CategoriesStore],

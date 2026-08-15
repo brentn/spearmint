@@ -1,0 +1,13 @@
+<header class="settings-header">
+  <div class="settings-header__start">
+    @if (backLink()) {
+      <a class="settings-header__back" [routerLink]="backLink()" aria-label="Back">
+        <fa-icon [icon]="icons.back"></fa-icon>
+      </a>
+    }
+  </div>
+  <h1 class="settings-header__title">{{ title() }}</h1>
+  <div class="settings-header__end">
+    <ng-content></ng-content>
+  </div>
+</header>

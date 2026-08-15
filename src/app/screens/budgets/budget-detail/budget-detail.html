@@ -47,6 +47,24 @@
         </p>
       </div>
 
+      <div class="budget-detail__card">
+        <h2 class="budget-detail__section-title">Transactions</h2>
+        @if (categoryTransactions().length === 0) {
+          <p class="budget-detail__empty-note">No transactions in this category this month.</p>
+        } @else {
+          <ul class="budget-detail__txn-list">
+            @for (t of categoryTransactions(); track t.id) {
+              <li class="budget-detail__txn-row">
+                <span class="budget-detail__txn-desc">{{ t.description }}</span>
+                <span class="budget-detail__txn-amt">
+                  ${{ (t.amount < 0 ? -t.amount : t.amount) | number: '1.2-2' }}
+                </span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
       @if (store.error()) {
         <p class="budget-detail__banner budget-detail__banner--error">{{ store.error() }}</p>
       }

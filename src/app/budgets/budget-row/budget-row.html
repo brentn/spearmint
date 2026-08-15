@@ -1,4 +1,4 @@
-<li class="budget-row">
+<li class="budget-row" [class.budget-row--child]="indent()">
   <a class="budget-row__link" [routerLink]="['/budgets', row().id]">
     <div class="budget-row__amount-line">
       <span class="budget-row__cat-name">{{ row().categoryName }}</span>

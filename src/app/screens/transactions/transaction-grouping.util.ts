@@ -52,3 +52,7 @@ export function countInMonth(transactions: Transaction[], yearMonth: YearMonth):
 export function netChangeInMonth(transactions: Transaction[], yearMonth: YearMonth): number {
   return transactions.filter((t) => t.date.startsWith(yearMonth)).reduce((sum, t) => sum + t.amount, 0);
 }
+
+export function filterUncategorized(transactions: Transaction[]): Transaction[] {
+  return transactions.filter((t) => t.categoryId === null);
+}

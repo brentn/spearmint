@@ -2,7 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { DatabaseService } from '../../data/database.service';
 import type { Account, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
-import { netChangeInMonth } from '../transactions/transaction-grouping.util';
+import { filterUncategorized, netChangeInMonth } from '../transactions/transaction-grouping.util';
 import { currentYearMonth } from '../../budgets/period.util';
 
 /**
@@ -20,16 +20,12 @@ export class OverviewStore {
   readonly transactions = signal<Transaction[]>([]);
 
   readonly totalBalance = computed(() => this.accounts().reduce((sum, a) => sum + a.balance, 0));
-  readonly cashTotal = computed(() =>
-    this.accounts()
-      .filter((a) => a.type === 'bank')
-      .reduce((sum, a) => sum + a.balance, 0),
-  );
-  readonly creditTotal = computed(() =>
-    this.accounts()
-      .filter((a) => a.type === 'creditCard')
-      .reduce((sum, a) => sum + a.balance, 0),
-  );
+
+  readonly cashAccounts = computed(() => this.accounts().filter((a) => a.type === 'bank'));
+  readonly creditAccounts = computed(() => this.accounts().filter((a) => a.type === 'creditCard'));
+
+  readonly cashTotal = computed(() => this.cashAccounts().reduce((sum, a) => sum + a.balance, 0));
+  readonly creditTotal = computed(() => this.creditAccounts().reduce((sum, a) => sum + a.balance, 0));
 
   /** Sourced from the access layer (spec §3) — surfaces as the Overview bell-icon badge. */
   readonly anyAccountNeedsAttention = computed(() =>
@@ -37,6 +33,8 @@ export class OverviewStore {
   );
 
   readonly balanceDeltaThisMonth = computed(() => netChangeInMonth(this.transactions(), currentYearMonth()));
+
+  readonly uncategorizedTransactions = computed(() => filterUncategorized(this.transactions()));
 
   constructor() {
     effect(() => {

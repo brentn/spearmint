@@ -99,6 +99,23 @@
   color: var(--spearmint-ink);
 }
 
+.budgets__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.budgets__toggle-children {
+  margin-bottom: 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 // ---------- add-budget form ----------
 .budgets__add-form {
   display: flex;

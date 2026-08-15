@@ -90,6 +90,33 @@ describe('BudgetsStore', () => {
     expect(row.state).toBe('warning'); // 85%
   });
 
+  it('carries a row\'s parentCategoryId from its category, null for top-level categories', async () => {
+    await fakeDb['categories'].bulkInsert([
+      seedCategory({ id: 'housing', name: 'Housing' }),
+      seedCategory({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
+    ]);
+    await fakeDb['budgets'].bulkInsert([
+      seedBudget({ id: 'b-housing', categoryId: 'housing', amount: 2000 }),
+      seedBudget({ id: 'b-rent', categoryId: 'rent', amount: 1500 }),
+    ]);
+
+    await store.refresh();
+
+    const housingRow = store.rows().find((r) => r.categoryId === 'housing');
+    const rentRow = store.rows().find((r) => r.categoryId === 'rent');
+    expect(housingRow?.parentCategoryId).toBeNull();
+    expect(rentRow?.parentCategoryId).toBe('housing');
+  });
+
+  it('exposes the transactions it loaded for the current period', async () => {
+    await fakeDb['categories'].insert(seedCategory());
+    await fakeDb['transactions'].insert(seedTransaction());
+
+    await store.refresh();
+
+    expect(store.transactions().map((t) => t.id)).toEqual(['txn-1']);
+  });
+
   it('rolls an unbudgeted child\'s spend up into a budgeted parent row', async () => {
     await fakeDb['categories'].bulkInsert([
       seedCategory({ id: 'housing', name: 'Housing' }),

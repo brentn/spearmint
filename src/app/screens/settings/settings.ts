@@ -1,10 +1,11 @@
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DatabaseService } from '../../data/database.service';
+import { SettingsHeader } from './settings-header/settings-header';
 
 @Component({
   selector: 'app-settings',
-  imports: [RouterLink],
+  imports: [RouterLink, SettingsHeader],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })

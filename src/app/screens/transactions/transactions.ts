@@ -1,50 +1,48 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import type { Category } from '../../data/models';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { todayDateOnlyUtc } from '../../simplefin/date-only.util';
-import { countInMonth, groupTransactionsByDay, totalSpentInMonth } from './transaction-grouping.util';
+import { countInMonth, filterUncategorized, groupTransactionsByDay, totalSpentInMonth } from './transaction-grouping.util';
 import { TransactionsStore } from './transactions.store';
-
-interface CategoryOptionGroup {
-  label: string;
-  options: Category[];
-}
+import { CategoryPicker } from '../../categories/category-picker/category-picker';
 
 @Component({
   selector: 'app-transactions',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, CategoryPicker, RouterLink],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
   providers: [TransactionsStore],
 })
 export class Transactions {
   protected readonly store = inject(TransactionsStore);
+  private readonly route = inject(ActivatedRoute);
 
   private readonly today = todayDateOnlyUtc();
   private readonly currentYearMonth = this.today.slice(0, 7);
 
+  /** ActivatedRoute's observables are router-lifecycle-managed — no manual unsubscribe needed. */
+  protected readonly filteredToUncategorized = signal(false);
+
+  constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      this.filteredToUncategorized.set(params.get('filter') === 'uncategorized');
+    });
+  }
+
+  /** Respects the uncategorized filter so the hero stats match the list below it. */
+  private readonly visibleTransactions = computed(() =>
+    this.filteredToUncategorized() ? filterUncategorized(this.store.transactions()) : this.store.transactions(),
+  );
+
   protected readonly totalSpentThisMonth = computed(() =>
-    totalSpentInMonth(this.store.transactions(), this.currentYearMonth),
+    totalSpentInMonth(this.visibleTransactions(), this.currentYearMonth),
   );
   protected readonly transactionCountThisMonth = computed(() =>
-    countInMonth(this.store.transactions(), this.currentYearMonth),
+    countInMonth(this.visibleTransactions(), this.currentYearMonth),
   );
-  protected readonly dayGroups = computed(() => groupTransactionsByDay(this.store.transactions(), this.today));
+  protected readonly dayGroups = computed(() => groupTransactionsByDay(this.visibleTransactions(), this.today));
 
-  protected readonly categoryGroups = computed<CategoryOptionGroup[]>(() => {
-    const categories = this.store.categories();
-    const topLevels = categories.filter((c) => c.parentCategoryId === null);
-    return topLevels.map((top) => {
-      const children = categories.filter((c) => c.parentCategoryId === top.id);
-      return { label: top.name, options: children.length > 0 ? children : [top] };
-    });
-  });
-
-  async assignCategory(transactionId: string, input: EventTarget | null): Promise<void> {
-    const value = (input as HTMLSelectElement | null)?.value;
-    if (value === undefined) {
-      return;
-    }
-    await this.store.assignCategory(transactionId, value === '' ? null : value);
+  async assignCategory(transactionId: string, categoryId: string | null): Promise<void> {
+    await this.store.assignCategory(transactionId, categoryId);
   }
 }

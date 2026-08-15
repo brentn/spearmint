@@ -1,6 +1,11 @@
 <div class="transactions">
   <header class="transactions__hero">
-    <h1 class="transactions__hero-label">Transactions</h1>
+    <div class="transactions__hero-topline">
+      <h1 class="transactions__hero-label">Transactions</h1>
+      @if (filteredToUncategorized()) {
+        <a class="transactions__filter-badge" routerLink="/transactions">Uncategorized &times;</a>
+      }
+    </div>
     <div class="transactions__hero-value">
       ${{ totalSpentThisMonth() | number: '1.0-0' }}
       <span class="transactions__hero-sub">spent this month</span>
@@ -30,25 +35,16 @@
                     <span class="transactions__pending-badge">PENDING</span>
                   }
                 </div>
-                <select
-                  class="transactions__category"
+                <div class="transactions__account">{{ store.accountName(transaction.accountId) }}</div>
+                <app-category-picker
+                  [categories]="store.categories()"
+                  [selectedId]="transaction.categoryId"
                   [disabled]="transaction.pending"
-                  (change)="assignCategory(transaction.id, $event.target)"
-                >
-                  <option value="" [selected]="!transaction.categoryId">Uncategorized</option>
-                  @for (catGroup of categoryGroups(); track catGroup.label) {
-                    <optgroup [label]="catGroup.label">
-                      @for (option of catGroup.options; track option.id) {
-                        <option [value]="option.id" [selected]="option.id === transaction.categoryId">
-                          {{ option.name }}
-                        </option>
-                      }
-                    </optgroup>
-                  }
-                </select>
+                  (categoryChange)="assignCategory(transaction.id, $event)"
+                />
               </div>
               <span class="transactions__amt" [class.transactions__amt--positive]="transaction.amount > 0">
-                {{ transaction.amount < 0 ? '-' : '+' }}${{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2' }}
+                {{ transaction.amount < 0 ? '-' : '' }}${{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2' }}
               </span>
             </li>
           }

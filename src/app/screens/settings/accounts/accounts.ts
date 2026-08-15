@@ -1,6 +1,5 @@
 import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import {
   faArrowUpRightFromSquare,
@@ -13,6 +12,7 @@ import type { AccountType } from '../../../data/models';
 import type { DiscoveredSimplefinAccount } from '../../../simplefin/simplefin-ingest-plan.util';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
 import { AccountsStore } from './accounts.store';
+import { SettingsHeader } from '../settings-header/settings-header';
 
 /** No documented hosted reauth URL exists for SimpleFIN Bridge specifically — the Bridge
  * host itself (parsed from the access URL at claim time isn't stored per-account, so this
@@ -22,7 +22,7 @@ const SIMPLEFIN_BRIDGE_URL = 'https://bridge.simplefin.org';
 
 @Component({
   selector: 'app-accounts',
-  imports: [RouterLink, FaIconComponent, DecimalPipe],
+  imports: [FaIconComponent, DecimalPipe, SettingsHeader],
   templateUrl: './accounts.html',
   styleUrl: './accounts.scss',
   providers: [AccountsStore],

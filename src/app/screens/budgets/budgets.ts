@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
@@ -21,6 +21,14 @@ export class Budgets {
   protected readonly newCategoryId = signal('');
   protected readonly newAmount = signal<number | null>(null);
   protected readonly newRollOver = signal(false);
+  protected readonly showChildBudgets = signal(false);
+
+  protected readonly incomeRows = computed(() => this.store.rows().filter((r) => r.categoryType === 'income'));
+  protected readonly expenseRows = computed(() => this.store.rows().filter((r) => r.categoryType !== 'income'));
+  protected readonly visibleExpenseRows = computed(() =>
+    this.expenseRows().filter((r) => this.showChildBudgets() || !r.parentCategoryId),
+  );
+  protected readonly hasChildExpenseBudgets = computed(() => this.expenseRows().some((r) => r.parentCategoryId));
 
   protected selectedCategoryType(): CategoryType | null {
     const categoryId = this.newCategoryId();

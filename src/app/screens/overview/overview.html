@@ -54,13 +54,60 @@
       <div class="overview__card-stack">
         @for (card of accountCards(); track card.key) {
           <div class="overview__total-card">
-            <span class="overview__total-label">{{ card.label }}</span>
-            <span class="overview__total-value" [class.overview__total-value--negative]="card.value < 0">
-              {{ card.value < 0 ? '-' : '' }}${{ (card.value < 0 ? -card.value : card.value) | number: '1.2-2' }}
-            </span>
+            <button
+              type="button"
+              class="overview__total-card-toggle"
+              [disabled]="card.accounts.length === 0"
+              (click)="toggleExpanded(card.key)"
+            >
+              <span class="overview__total-label">{{ card.label }}</span>
+              <span class="overview__total-value" [class.overview__total-value--negative]="card.value < 0">
+                {{ card.value < 0 ? '-' : '' }}${{ (card.value < 0 ? -card.value : card.value) | number: '1.2-2' }}
+              </span>
+              @if (card.accounts.length > 0) {
+                <fa-icon
+                  class="overview__total-card-chevron"
+                  [class.overview__total-card-chevron--open]="expandedCard() === card.key"
+                  [icon]="icons.chevron"
+                ></fa-icon>
+              }
+            </button>
+            @if (expandedCard() === card.key) {
+              <ul class="overview__account-breakdown">
+                @for (account of card.accounts; track account.id) {
+                  <li class="overview__account-row">
+                    <span>{{ account.name }}</span>
+                    <span>${{ account.balance | number: '1.2-2' }}</span>
+                  </li>
+                }
+              </ul>
+            }
           </div>
         }
       </div>
+
+      @if (uncategorizedPreview().length > 0) {
+        <div class="overview__card">
+          <div class="overview__section-header">
+            <h2 class="overview__section-title">Uncategorized</h2>
+            <a class="overview__section-link" routerLink="/transactions" [queryParams]="{ filter: 'uncategorized' }">
+              See all
+            </a>
+          </div>
+          <ul class="overview__uncategorized-rows">
+            @for (transaction of uncategorizedPreview(); track transaction.id) {
+              <li class="overview__uncategorized-row">
+                <span class="overview__uncategorized-desc">{{ transaction.description }}</span>
+                <span class="overview__uncategorized-amt">
+                  {{ transaction.amount < 0 ? '-' : '' }}${{
+                    (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2'
+                  }}
+                </span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
 
       <div class="overview__card">
         <div class="overview__section-header">

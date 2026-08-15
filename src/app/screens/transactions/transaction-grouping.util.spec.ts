@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Transaction } from '../../data/models';
-import { countInMonth, groupTransactionsByDay, netChangeInMonth, totalSpentInMonth } from './transaction-grouping.util';
+import {
+  countInMonth,
+  filterUncategorized,
+  groupTransactionsByDay,
+  netChangeInMonth,
+  totalSpentInMonth,
+} from './transaction-grouping.util';
 
 function transaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
@@ -92,6 +98,22 @@ describe('countInMonth', () => {
     ];
 
     expect(countInMonth(transactions, '2026-08')).toBe(2);
+  });
+});
+
+describe('filterUncategorized', () => {
+  it('keeps only transactions with no categoryId', () => {
+    const transactions = [
+      transaction({ id: 't1', categoryId: 'cat-1' }),
+      transaction({ id: 't2', categoryId: null }),
+      transaction({ id: 't3', categoryId: null }),
+    ];
+
+    expect(filterUncategorized(transactions).map((t) => t.id)).toEqual(['t2', 't3']);
+  });
+
+  it('is empty when nothing is uncategorized', () => {
+    expect(filterUncategorized([transaction({ categoryId: 'cat-1' })])).toEqual([]);
   });
 });
 

@@ -1,8 +1,5 @@
 <div class="categories">
-  <header class="categories__header">
-    <a class="categories__back" routerLink="/settings">&larr; Settings</a>
-    <h1 class="categories__title">Categories</h1>
-  </header>
+  <app-settings-header title="Categories" backLink="/settings" />
 
   <div class="categories__content">
   @if (store.error()) {

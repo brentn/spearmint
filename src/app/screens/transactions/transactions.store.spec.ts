@@ -3,9 +3,9 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { categorySchema, transactionSchema } from '../../data/schemas';
+import { accountSchema, categorySchema, transactionSchema } from '../../data/schemas';
 import { DatabaseService } from '../../data/database.service';
-import type { Category, Transaction } from '../../data/models';
+import type { Account, Category, Transaction } from '../../data/models';
 import { TransactionsStore } from './transactions.store';
 
 function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
@@ -33,6 +33,25 @@ function seedCategory(overrides: Partial<Category> = {}): Category {
   };
 }
 
+function seedAccount(overrides: Partial<Account> = {}): Account {
+  return {
+    id: 'acc-1',
+    institutionId: 'org-1',
+    connId: 'CON-1',
+    externalAccountId: 'ext-1',
+    originalAccountName: 'Checking',
+    name: 'Checking',
+    type: 'bank',
+    currencyCode: 'USD',
+    balance: 100,
+    balanceDate: '2026-08-01',
+    needsReconnect: false,
+    syncIssue: null,
+    missing: false,
+    ...overrides,
+  };
+}
+
 describe('TransactionsStore', () => {
   let fakeDb: RxDatabase;
   let store: TransactionsStore;
@@ -45,6 +64,7 @@ describe('TransactionsStore', () => {
     await fakeDb.addCollections({
       transactions: { schema: transactionSchema },
       categories: { schema: categorySchema },
+      accounts: { schema: accountSchema },
     });
 
     TestBed.configureTestingModule({
@@ -73,6 +93,14 @@ describe('TransactionsStore', () => {
     expect(store.categoryName('cat-1')).toBe('Groceries');
     expect(store.categoryName(null)).toBe('Uncategorized');
     expect(store.categoryName('missing')).toBe('Uncategorized');
+  });
+
+  it('accountName resolves a known account and falls back to an empty string', async () => {
+    await fakeDb['accounts'].insert(seedAccount({ name: 'Checking' }));
+    await store.refresh();
+
+    expect(store.accountName('acc-1')).toBe('Checking');
+    expect(store.accountName('missing')).toBe('');
   });
 
   it('assignCategory patches a posted transaction and refreshes', async () => {

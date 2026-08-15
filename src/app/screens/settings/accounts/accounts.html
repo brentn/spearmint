@@ -1,7 +1,5 @@
 <div class="accounts">
-  <header class="accounts__header">
-    <a class="accounts__back" routerLink="/settings">&larr; Settings</a>
-    <h1 class="accounts__title">Accounts</h1>
+  <app-settings-header title="Accounts" backLink="/settings">
     <button
       class="accounts__sync-button"
       type="button"
@@ -14,7 +12,7 @@
     <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
       <fa-icon [icon]="icons.add"></fa-icon>
     </button>
-  </header>
+  </app-settings-header>
 
   <div class="accounts__content">
   @if (syncService.lastSyncError()) {
@@ -57,7 +55,7 @@
                     [value]="account.name"
                     (change)="renameAccount(account.id, $event.target)"
                   />
-                  <span class="account-card__balance">{{ account.balance | number: '1.2-2' }} {{ account.currencyCode }}</span>
+                  <span class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
                 </div>
                 <p class="account-card__institution">{{ store.institutionName(account.institutionId) }}</p>
                 <div class="account-card__row">
@@ -153,7 +151,7 @@
         <li class="account-card">
           <div class="account-card__top">
             <span class="account-card__name">{{ discovered.name }}</span>
-            <span class="account-card__balance">{{ discovered.balance | number: '1.2-2' }} {{ discovered.currencyCode }}</span>
+            <span class="account-card__balance">${{ discovered.balance | number: '1.2-2' }}</span>
           </div>
           <p class="account-card__institution">{{ discovered.orgName }}</p>
           <div class="account-card__row account-card__row--end">

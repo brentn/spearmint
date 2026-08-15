@@ -18,6 +18,7 @@ export interface BudgetRowViewModel {
   categoryId: string;
   categoryName: string;
   categoryType: CategoryType;
+  parentCategoryId: string | null;
   amount: number;
   rollOver: boolean;
   rolloverAmount: number;
@@ -64,6 +65,7 @@ export class BudgetsStore {
   readonly error = signal<string | null>(null);
   readonly categories = signal<Category[]>([]);
   readonly rows = signal<BudgetRowViewModel[]>([]);
+  readonly transactions = signal<Transaction[]>([]);
 
   readonly aggregate = computed<BudgetsAggregate>(() => this.buildAggregate(this.rows()));
 
@@ -89,6 +91,7 @@ export class BudgetsStore {
     ]);
     const transactions = transactionDocs.map((doc) => doc.toJSON());
     this.categories.set(categories);
+    this.transactions.set(transactions);
     this.rows.set(this.buildRows(budgets, categories, transactions));
     this.loading.set(false);
   }
@@ -137,6 +140,7 @@ export class BudgetsStore {
         categoryId: category.id,
         categoryName: category.name,
         categoryType: category.type,
+        parentCategoryId: category.parentCategoryId,
         amount: effectiveBudget.amount,
         rollOver: effectiveBudget.rollOver,
         rolloverAmount,

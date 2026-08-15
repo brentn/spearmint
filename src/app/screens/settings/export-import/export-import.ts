@@ -1,11 +1,11 @@
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { MINIMUM_PASSWORD_LENGTH } from 'rxdb/plugins/encryption-crypto-js';
 import { BackupService } from '../../../data/backup.service';
+import { SettingsHeader } from '../settings-header/settings-header';
 
 @Component({
   selector: 'app-export-import',
-  imports: [RouterLink],
+  imports: [SettingsHeader],
   templateUrl: './export-import.html',
   styleUrl: './export-import.scss',
 })

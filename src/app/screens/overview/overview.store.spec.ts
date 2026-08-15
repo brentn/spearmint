@@ -104,6 +104,19 @@ describe('OverviewStore', () => {
     expect(store.creditTotal()).toBeCloseTo(-812.44);
   });
 
+  it('groups accounts by type, mirroring cashTotal/creditTotal', async () => {
+    await fakeDb['accounts'].bulkInsert([
+      seedAccount({ id: 'a1', type: 'bank', name: 'Checking' }),
+      seedAccount({ id: 'a2', type: 'bank', name: 'Savings' }),
+      seedAccount({ id: 'a3', type: 'creditCard', name: 'Visa' }),
+    ]);
+
+    await store.refresh();
+
+    expect(store.cashAccounts().map((a) => a.id)).toEqual(['a1', 'a2']);
+    expect(store.creditAccounts().map((a) => a.id)).toEqual(['a3']);
+  });
+
   it('flags attention-needed when an account needsReconnect', async () => {
     await fakeDb['accounts'].insert(seedAccount({ needsReconnect: true }));
 
@@ -134,6 +147,18 @@ describe('OverviewStore', () => {
     await store.refresh();
 
     expect(store.anyAccountNeedsAttention()).toBe(false);
+  });
+
+  it('exposes uncategorized transactions', async () => {
+    await fakeDb['transactions'].bulkInsert([
+      seedTransaction({ id: 't1', categoryId: null }),
+      seedTransaction({ id: 't2', categoryId: 'cat-1' }),
+      seedTransaction({ id: 't3', categoryId: null }),
+    ]);
+
+    await store.refresh();
+
+    expect(store.uncategorizedTransactions().map((t) => t.id)).toEqual(['t1', 't3']);
   });
 
   it('computes the net balance change from this month\'s transactions only', async () => {

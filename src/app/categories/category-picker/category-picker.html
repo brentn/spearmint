@@ -1,0 +1,37 @@
+<div class="category-picker">
+  <button type="button" class="category-picker__trigger" [disabled]="disabled()" (click)="toggle()">
+    {{ selectedName() }}
+  </button>
+  @if (open()) {
+    <div class="category-picker__panel">
+      <input
+        class="category-picker__filter"
+        type="text"
+        placeholder="Filter categories"
+        [value]="filterText()"
+        (input)="filterText.set($any($event.target).value)"
+        autofocus
+      />
+      <ul class="category-picker__list">
+        <li>
+          <button type="button" class="category-picker__option" (click)="select(null)">Uncategorized</button>
+        </li>
+        @for (group of filteredGroups(); track group.label) {
+          <li class="category-picker__group-label">{{ group.label }}</li>
+          @for (option of group.options; track option.id) {
+            <li>
+              <button
+                type="button"
+                class="category-picker__option"
+                [class.category-picker__option--selected]="option.id === selectedId()"
+                (click)="select(option.id)"
+              >
+                {{ option.name }}
+              </button>
+            </li>
+          }
+        }
+      </ul>
+    </div>
+  }
+</div>

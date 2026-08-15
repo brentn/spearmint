@@ -119,11 +119,29 @@
         </div>
       </div>
 
+      @if (incomeRows().length > 0) {
+        <div class="budgets__card">
+          <h2 class="budgets__section-title">Income</h2>
+          <ul class="budgets__rows">
+            @for (row of incomeRows(); track row.id) {
+              <app-budget-row [row]="row" />
+            }
+          </ul>
+        </div>
+      }
+
       <div class="budgets__card">
-        <h2 class="budgets__section-title">Spending by category</h2>
+        <div class="budgets__section-header">
+          <h2 class="budgets__section-title">Spending by category</h2>
+          @if (hasChildExpenseBudgets()) {
+            <button type="button" class="budgets__toggle-children" (click)="showChildBudgets.set(!showChildBudgets())">
+              {{ showChildBudgets() ? 'Hide subcategories' : 'Show subcategories' }}
+            </button>
+          }
+        </div>
         <ul class="budgets__rows">
-          @for (row of store.rows(); track row.id) {
-            <app-budget-row [row]="row" />
+          @for (row of visibleExpenseRows(); track row.id) {
+            <app-budget-row [row]="row" [indent]="!!row.parentCategoryId" />
           }
         </ul>
       </div>

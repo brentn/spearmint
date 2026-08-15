@@ -12,10 +12,29 @@
   background: var(--spearmint-hero-gradient);
 }
 
+.transactions__hero-topline {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .transactions__hero-label {
   margin: 0;
   font-size: 1rem;
   font-weight: 800;
+}
+
+.transactions__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  text-decoration: none;
 }
 
 .transactions__hero-value {
@@ -127,32 +146,9 @@
   vertical-align: middle;
 }
 
-.transactions__category {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 0.3rem;
-  border: 1px solid var(--spearmint-border);
-  border-radius: 999px;
-  background: var(--spearmint-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236B7A70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-    no-repeat right 0.55rem center;
-  background-size: 0.6rem;
-  padding: 0.15rem 1.6rem 0.15rem 0.65rem;
-  appearance: none;
-  -webkit-appearance: none;
-  // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
-  // computed font-size is below this.
-  font-size: 1rem;
-  font-weight: 600;
+.transactions__account {
+  font-size: 0.75rem;
   color: var(--spearmint-muted);
-  max-width: 100%;
-  cursor: pointer;
-
-  &:disabled {
-    background-image: none;
-    padding-right: 0.65rem;
-    opacity: 0.7;
-    cursor: default;
-  }
 }
 
 .transactions__amt {
@@ -163,5 +159,9 @@
 }
 
 .transactions__amt--positive {
-  color: var(--spearmint-success);
+  // --spearmint-primary reads too close to --spearmint-success at a glance and, per its
+  // own token comment, fails white-text contrast (1.97) — the same ratio it'd fail here
+  // as foreground text on this light surface. This is a darker, still-saturated green
+  // that clears WCAG AA (~5:1) while reading clearly greener than --spearmint-success.
+  color: #15803d;
 }
