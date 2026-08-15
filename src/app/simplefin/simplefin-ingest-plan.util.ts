@@ -68,11 +68,19 @@ export function toDiscoveredAccount(
   };
 }
 
+// Some bridges (e.g. MX-backed connections, confirmed empirically 2026-08-15) prefix conn_id
+// with an aggregator tag ("MX-...") everywhere except in errlist entries, so an errlist
+// con_id can be a bare suffix of the account/connection's real conn_id. A suffix match
+// tolerates that without over-matching, since ids are unique aggregator-issued UUIDs.
+function connIdsMatch(a: string, b: string): boolean {
+  return a === b || a.endsWith(b) || b.endsWith(a);
+}
+
 function errorMatchesAccount(error: SimplefinError, externalAccountId: string, connId: string): boolean {
   if (error.account_id) {
     return error.account_id === externalAccountId;
   }
-  return error.conn_id === connId;
+  return !!error.conn_id && connIdsMatch(error.conn_id, connId);
 }
 
 function buildMatchedOutcome(

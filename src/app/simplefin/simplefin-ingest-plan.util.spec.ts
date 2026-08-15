@@ -99,6 +99,22 @@ describe('planIngest', () => {
     expect(plan.outcomes.every((o) => o.needsReconnect)).toBe(true);
   });
 
+  it('flags needsReconnect when errlist conn_id is a bare suffix of the account/response conn_id (MX-backed bridge quirk)', () => {
+    const trackedMatched = account({ id: 'acc-1', connId: 'MX-MBR-1', externalAccountId: 'ext-1' });
+    const trackedUnmatched = account({ id: 'acc-2', connId: 'MX-MBR-1', externalAccountId: 'ext-2' });
+    const plan = planIngest(
+      [trackedMatched, trackedUnmatched],
+      set({
+        errlist: [{ code: 'con.auth', msg: 'Auth required', conn_id: 'MBR-1' }],
+        accounts: [simplefinAccount({ id: 'ext-1', conn_id: 'MX-MBR-1' })],
+      }),
+      []
+    );
+
+    expect(plan.outcomes.find((o) => o.accountId === 'acc-1')?.needsReconnect).toBe(true);
+    expect(plan.outcomes.find((o) => o.accountId === 'acc-2')?.needsReconnect).toBe(true);
+  });
+
   it('does not let a con.auth error on a different connection affect this account', () => {
     const tracked = account({ connId: 'CON-1', externalAccountId: 'ext-1' });
     const plan = planIngest(
