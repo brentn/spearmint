@@ -27,6 +27,22 @@
 
     <div class="budget-detail__content">
       <div class="budget-detail__card">
+        <div class="budget-detail__bar-header">
+          @if (row.implied) {
+            <button
+              type="button"
+              class="budget-detail__icon-btn"
+              aria-label="Add a budget for this category"
+              (click)="openAddDialog()"
+            >
+              <fa-icon [icon]="icons.add"></fa-icon>
+            </button>
+          } @else {
+            <button type="button" class="budget-detail__icon-btn" aria-label="Edit budget" (click)="openEditDialog()">
+              <fa-icon [icon]="icons.edit"></fa-icon>
+            </button>
+          }
+        </div>
         <div class="bar-track bar-track--large">
           <div
             class="bar-fill"
@@ -88,8 +104,8 @@
             @for (t of categoryTransactions(); track t.id) {
               <li class="budget-detail__txn-row">
                 <span class="budget-detail__txn-desc">{{ t.description }}</span>
-                <span class="budget-detail__txn-amt">
-                  ${{ (t.amount < 0 ? -t.amount : t.amount) | number: '1.2-2' }}
+                <span class="budget-detail__txn-amt" [class.budget-detail__txn-amt--positive]="t.amount > 0">
+                  {{ t.amount < 0 ? '-' : '' }}${{ (t.amount < 0 ? -t.amount : t.amount) | number: '1.2-2' }}
                 </span>
               </li>
             }
@@ -97,57 +113,52 @@
         }
       </div>
 
-      @if (store.error()) {
+      @if (store.error() && !formMode()) {
         <p class="budget-detail__banner budget-detail__banner--error">{{ store.error() }}</p>
       }
+    </div>
 
+    <dialog #formDialog class="budget-detail__dialog" (close)="onDialogClose()">
       @if (formMode(); as mode) {
-        <div class="budget-detail__card">
-          <h2 class="budget-detail__section-title">
-            {{ mode === 'edit' ? 'Edit budget' : 'Add a budget for ' + row.categoryName }}
-          </h2>
-          <div class="budget-detail__edit-form">
-            <label class="budget-detail__edit-label">
-              Amount
+        <h2 class="budget-detail__dialog-title">
+          {{ mode === 'edit' ? 'Edit budget' : 'Add a budget for ' + row.categoryName }}
+        </h2>
+        @if (store.error()) {
+          <p class="budget-detail__banner budget-detail__banner--error">{{ store.error() }}</p>
+        }
+        <div class="budget-detail__edit-form">
+          <label class="budget-detail__edit-label">
+            Amount
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              [value]="formAmount() ?? ''"
+              (input)="formAmount.set($any($event.target).valueAsNumber)"
+            />
+          </label>
+          @if (row.categoryType !== 'income') {
+            <label class="budget-detail__edit-checkbox">
               <input
-                type="number"
-                min="0"
-                step="0.01"
-                [value]="formAmount() ?? ''"
-                (input)="formAmount.set($any($event.target).valueAsNumber)"
+                type="checkbox"
+                [checked]="formRollOver()"
+                (change)="formRollOver.set($any($event.target).checked)"
               />
+              Roll over unused amount into next month
             </label>
-            @if (row.categoryType !== 'income') {
-              <label class="budget-detail__edit-checkbox">
-                <input
-                  type="checkbox"
-                  [checked]="formRollOver()"
-                  (change)="formRollOver.set($any($event.target).checked)"
-                />
-                Roll over unused amount into next month
-              </label>
-            }
-            <div class="budget-detail__edit-actions">
-              <button type="button" class="budget-detail__save" (click)="submitForm()">
-                {{ mode === 'edit' ? 'Save changes' : 'Add budget' }}
-              </button>
-              <button type="button" class="budget-detail__cancel" (click)="cancelForm()">Cancel</button>
-            </div>
+          }
+          <div class="budget-detail__edit-actions">
+            <button type="button" class="budget-detail__save" (click)="submitForm()">
+              {{ mode === 'edit' ? 'Save changes' : 'Add budget' }}
+            </button>
+            <button type="button" class="budget-detail__cancel" (click)="closeFormDialog()">Cancel</button>
           </div>
-        </div>
-      } @else if (row.implied) {
-        <div class="budget-detail__actions">
-          <button type="button" class="budget-detail__edit-button" (click)="startAddBudget()">
-            Add a budget for this category
-          </button>
-        </div>
-      } @else {
-        <div class="budget-detail__actions">
-          <button type="button" class="budget-detail__edit-button" (click)="startEdit()">Edit budget</button>
-          <button type="button" class="budget-detail__delete-button" (click)="deleteBudget()">Delete budget</button>
+          @if (mode === 'edit') {
+            <button type="button" class="budget-detail__delete-button" (click)="deleteBudget()">Delete budget</button>
+          }
         </div>
       }
-    </div>
+    </dialog>
   </div>
 } @else if (!store.loading()) {
   <div class="empty-state">

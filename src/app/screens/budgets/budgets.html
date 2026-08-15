@@ -2,7 +2,7 @@
   <header class="budgets__hero">
     <div class="budgets__hero-topline">
       <h1 class="budgets__hero-label">{{ store.aggregate().monthName }} budget</h1>
-      <button class="budgets__hero-icon-btn" type="button" (click)="toggleAddForm()" aria-label="Add a budget">
+      <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()" aria-label="Add a budget">
         <fa-icon [icon]="icons.add"></fa-icon>
       </button>
     </div>
@@ -14,58 +14,6 @@
   </header>
 
   <div class="budgets__content">
-    @if (store.error()) {
-      <p class="budgets__banner budgets__banner--error">{{ store.error() }}</p>
-    }
-
-    @if (showAddForm()) {
-      <div class="budgets__card">
-        <h2 class="budgets__section-title">Add a budget</h2>
-        <div class="budgets__add-form">
-          <select
-            class="budgets__add-select"
-            [value]="newCategoryId()"
-            (change)="newCategoryId.set($any($event.target).value)"
-          >
-            <option value="" disabled>Select a category</option>
-            @for (category of store.categoriesWithoutCurrentBudget(); track category.id) {
-              <option [value]="category.id">{{ category.name }}</option>
-            }
-          </select>
-          <input
-            class="budgets__add-input"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Amount"
-            [value]="newAmount() ?? ''"
-            (input)="newAmount.set($any($event.target).valueAsNumber)"
-          />
-          @if (newCategoryId() && selectedCategoryType() !== 'income') {
-            <label class="budgets__add-checkbox">
-              <input
-                type="checkbox"
-                [checked]="newRollOver()"
-                (change)="newRollOver.set($any($event.target).checked)"
-              />
-              Roll over unused amount into next month
-            </label>
-          }
-          <div class="budgets__add-actions">
-            <button
-              type="button"
-              class="budgets__add-button"
-              [disabled]="!newCategoryId() || newAmount() === null"
-              (click)="submitAdd()"
-            >
-              Add budget
-            </button>
-            <button type="button" class="budgets__add-cancel" (click)="toggleAddForm()">Cancel</button>
-          </div>
-        </div>
-      </div>
-    }
-
     @if (store.loading()) {
       <p class="budgets__loading">Loading&hellip;</p>
     } @else if (store.rows().length === 0) {
@@ -147,4 +95,49 @@
       </div>
     }
   </div>
+
+  <dialog #addDialog class="budgets__dialog" (close)="onAddDialogClose()">
+    <h2 class="budgets__dialog-title">Add a budget</h2>
+    @if (store.error()) {
+      <p class="budgets__banner budgets__banner--error">{{ store.error() }}</p>
+    }
+    <div class="budgets__add-form">
+      <select
+        class="budgets__add-select"
+        [value]="newCategoryId()"
+        (change)="newCategoryId.set($any($event.target).value)"
+      >
+        <option value="" disabled>Select a category</option>
+        @for (category of store.categoriesWithoutCurrentBudget(); track category.id) {
+          <option [value]="category.id">{{ category.name }}</option>
+        }
+      </select>
+      <input
+        class="budgets__add-input"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Amount"
+        [value]="newAmount() ?? ''"
+        (input)="newAmount.set($any($event.target).valueAsNumber)"
+      />
+      @if (newCategoryId() && selectedCategoryType() !== 'income') {
+        <label class="budgets__add-checkbox">
+          <input type="checkbox" [checked]="newRollOver()" (change)="newRollOver.set($any($event.target).checked)" />
+          Roll over unused amount into next month
+        </label>
+      }
+      <div class="budgets__add-actions">
+        <button
+          type="button"
+          class="budgets__add-button"
+          [disabled]="!newCategoryId() || newAmount() === null"
+          (click)="submitAdd()"
+        >
+          Add budget
+        </button>
+        <button type="button" class="budgets__add-cancel" (click)="closeAddDialog()">Cancel</button>
+      </div>
+    </div>
+  </dialog>
 </div>

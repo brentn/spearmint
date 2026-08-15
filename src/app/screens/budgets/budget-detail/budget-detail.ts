@@ -1,12 +1,14 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
 import type { Transaction } from '../../../data/models';
 
 @Component({
   selector: 'app-budget-detail',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, FaIconComponent],
   templateUrl: './budget-detail.html',
   styleUrl: './budget-detail.scss',
   providers: [BudgetsStore],
@@ -16,6 +18,7 @@ export class BudgetDetail {
 
   protected readonly store = inject(BudgetsStore);
   private readonly router = inject(Router);
+  protected readonly icons = { edit: faPencil, add: faPlus };
 
   protected readonly row = computed<BudgetRowViewModel | undefined>(() =>
     this.store.rows().find((row) => row.id === this.id()),
@@ -46,11 +49,13 @@ export class BudgetDetail {
    * for this category" (an implied row) — they differ only in prefill and in which store call
    * `submitForm` makes, not in shape (issue #15 turned this from one flow into a near-duplicate
    * pair, so it's collapsed back into one here). */
+  private readonly formDialog = viewChild<ElementRef<HTMLDialogElement>>('formDialog');
+
   protected readonly formMode = signal<'edit' | 'add' | null>(null);
   protected readonly formAmount = signal<number | null>(null);
   protected readonly formRollOver = signal(false);
 
-  protected startEdit(): void {
+  protected openEditDialog(): void {
     const row = this.row();
     if (!row) {
       return;
@@ -61,15 +66,23 @@ export class BudgetDetail {
     this.formAmount.set(row.ownAmount);
     this.formRollOver.set(row.rollOver);
     this.formMode.set('edit');
+    this.formDialog()?.nativeElement.showModal();
   }
 
-  protected startAddBudget(): void {
+  protected openAddDialog(): void {
     this.formAmount.set(null);
     this.formRollOver.set(false);
     this.formMode.set('add');
+    this.formDialog()?.nativeElement.showModal();
   }
 
-  protected cancelForm(): void {
+  protected closeFormDialog(): void {
+    this.formDialog()?.nativeElement.close();
+  }
+
+  /** Fires on any dialog close — Cancel, Esc, or the imperative close() below — so form state
+   * resets however the dialog was dismissed, not just the one path closeFormDialog() covers. */
+  protected onDialogClose(): void {
     this.formMode.set(null);
   }
 
@@ -85,7 +98,7 @@ export class BudgetDetail {
     if (mode === 'edit') {
       await this.store.updateBudget(row.id, amount, rollOver);
       if (!this.store.error()) {
-        this.formMode.set(null);
+        this.closeFormDialog();
       }
       return;
     }

@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
@@ -17,7 +17,7 @@ export class Budgets {
   protected readonly store = inject(BudgetsStore);
   protected readonly icons = { add: faPlus };
 
-  protected readonly showAddForm = signal(false);
+  private readonly addDialog = viewChild<ElementRef<HTMLDialogElement>>('addDialog');
   protected readonly newCategoryId = signal('');
   protected readonly newAmount = signal<number | null>(null);
   protected readonly newRollOver = signal(false);
@@ -38,11 +38,18 @@ export class Budgets {
     return this.store.categoriesWithoutCurrentBudget().find((c) => c.id === categoryId)?.type ?? null;
   }
 
-  protected toggleAddForm(): void {
-    this.showAddForm.update((visible) => !visible);
-    if (!this.showAddForm()) {
-      this.resetAddForm();
-    }
+  protected openAddDialog(): void {
+    this.addDialog()?.nativeElement.showModal();
+  }
+
+  protected closeAddDialog(): void {
+    this.addDialog()?.nativeElement.close();
+  }
+
+  /** Fires on any dialog close — Cancel or the imperative close() above — so the form resets
+   * however the dialog was dismissed. */
+  protected onAddDialogClose(): void {
+    this.resetAddForm();
   }
 
   protected async submitAdd(): Promise<void> {
@@ -54,8 +61,7 @@ export class Budgets {
     const rollOver = this.selectedCategoryType() === 'income' ? false : this.newRollOver();
     await this.store.addBudget(categoryId, amount, rollOver);
     if (!this.store.error()) {
-      this.resetAddForm();
-      this.showAddForm.set(false);
+      this.closeAddDialog();
     }
   }
 

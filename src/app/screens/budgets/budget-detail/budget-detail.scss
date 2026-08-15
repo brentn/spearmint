@@ -176,6 +176,12 @@
   color: var(--spearmint-ink);
 }
 
+.budget-detail__txn-amt--positive {
+  // Same treatment (and same rationale — see transactions.scss's .transactions__amt--positive)
+  // as the Transactions screen, so deposits read consistently everywhere they appear.
+  color: #15803d;
+}
+
 .budget-detail__banner {
   border-radius: var(--spearmint-radius);
   padding: 0.6rem 0.9rem;
@@ -187,7 +193,46 @@
   color: var(--spearmint-danger);
 }
 
-// ---------- edit form ----------
+.budget-detail__bar-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.6rem;
+}
+
+.budget-detail__icon-btn {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--spearmint-border);
+  border-radius: 50%;
+  background: var(--spearmint-surface);
+  color: var(--spearmint-ink);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+// ---------- edit dialog ----------
+.budget-detail__dialog {
+  border: none;
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow-strong);
+  padding: 1.25rem;
+  width: min(24rem, calc(100vw - 2.5rem));
+
+  &::backdrop {
+    background: var(--spearmint-overlay);
+  }
+}
+
+.budget-detail__dialog-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
 .budget-detail__edit-form {
   display: flex;
   flex-direction: column;
@@ -249,26 +294,10 @@
   cursor: pointer;
 }
 
-// ---------- view actions ----------
-.budget-detail__actions {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.budget-detail__edit-button {
-  flex: 1;
-  border: 1px solid var(--spearmint-border);
-  border-radius: 999px;
-  padding: 0.6rem 1rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  background: var(--spearmint-surface);
-  color: var(--spearmint-ink);
-  cursor: pointer;
-}
-
 .budget-detail__delete-button {
-  flex: 1;
+  display: block;
+  width: 100%;
+  margin-top: 0.6rem;
   border: 1px solid var(--spearmint-danger);
   border-radius: 999px;
   padding: 0.6rem 1rem;

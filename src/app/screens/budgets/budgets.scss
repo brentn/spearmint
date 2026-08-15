@@ -68,7 +68,7 @@
 .budgets__banner {
   border-radius: var(--spearmint-radius);
   padding: 0.6rem 0.9rem;
-  margin: 0 1rem 1rem;
+  margin: 0 0 0.75rem;
 }
 
 .budgets__banner--error {
@@ -116,7 +116,26 @@
   cursor: pointer;
 }
 
-// ---------- add-budget form ----------
+// ---------- add-budget dialog ----------
+.budgets__dialog {
+  border: none;
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow-strong);
+  padding: 1.25rem;
+  width: min(24rem, calc(100vw - 2.5rem));
+
+  &::backdrop {
+    background: var(--spearmint-overlay);
+  }
+}
+
+.budgets__dialog-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
 .budgets__add-form {
   display: flex;
   flex-direction: column;

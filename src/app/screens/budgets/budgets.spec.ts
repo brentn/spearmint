@@ -1,9 +1,10 @@
 import { Component, signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Category } from '../../data/models';
 import { type BudgetRowViewModel, type BudgetsAggregate, BudgetsStore } from '../../budgets/budgets.store';
+import { stubDialogMethods } from '../../testing/stub-dialog-methods';
 import { Budgets } from './budgets';
 
 function row(overrides: Partial<BudgetRowViewModel> = {}): BudgetRowViewModel {
@@ -51,16 +52,21 @@ class FakeBudgetsStore {
   readonly error = signal<string | null>(null);
   readonly rows = signal<BudgetRowViewModel[]>([]);
   readonly aggregate = signal<BudgetsAggregate>(emptyAggregate);
+  categoriesForAdd: Category[] = [];
 
   categoriesWithoutCurrentBudget(): Category[] {
-    return [];
+    return this.categoriesForAdd;
   }
+
+  readonly addBudget = vi.fn(async (_categoryId: string, _amount: number, _rollOver: boolean) => {});
 }
 
 @Component({ selector: 'app-stub-budget-detail', template: '' })
 class StubBudgetDetail {}
 
 describe('Budgets', () => {
+  beforeAll(stubDialogMethods);
+
   function createFixture() {
     TestBed.configureTestingModule({
       imports: [Budgets],
@@ -100,5 +106,45 @@ describe('Budgets', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('.budgets__toggle-children')).toBeNull();
+  });
+
+  it('opens the add-budget dialog from the hero "+" button, closed by default', () => {
+    const { fixture } = createFixture();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const dialog = root.querySelector<HTMLDialogElement>('.budgets__dialog');
+    expect(dialog?.hasAttribute('open')).toBe(false);
+
+    root.querySelector<HTMLButtonElement>('.budgets__hero-icon-btn')?.click();
+    fixture.detectChanges();
+
+    expect(dialog?.hasAttribute('open')).toBe(true);
+  });
+
+  it('submitting the add-budget dialog calls addBudget with the selected category and amount, then closes the dialog', async () => {
+    const { fixture, fakeStore } = createFixture();
+    fakeStore.categoriesForAdd = [{ id: 'cat-groceries', name: 'Groceries', parentCategoryId: null, type: 'expense' }];
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('.budgets__hero-icon-btn')?.click();
+    fixture.detectChanges();
+
+    const select = root.querySelector<HTMLSelectElement>('.budgets__add-select');
+    select!.value = 'cat-groceries';
+    select!.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    const amountInput = root.querySelector<HTMLInputElement>('.budgets__add-input');
+    amountInput!.value = '300';
+    amountInput!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    root.querySelector<HTMLButtonElement>('.budgets__add-button')?.click();
+    await vi.waitFor(() => expect(fakeStore.addBudget).toHaveBeenCalledWith('cat-groceries', 300, false));
+
+    const dialog = root.querySelector<HTMLDialogElement>('.budgets__dialog');
+    await vi.waitFor(() => expect(dialog?.hasAttribute('open')).toBe(false));
   });
 });

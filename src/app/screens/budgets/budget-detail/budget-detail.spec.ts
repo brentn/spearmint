@@ -1,9 +1,10 @@
 import { Component, signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Transaction } from '../../../data/models';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
+import { stubDialogMethods } from '../../../testing/stub-dialog-methods';
 import { BudgetDetail } from './budget-detail';
 
 function row(overrides: Partial<BudgetRowViewModel> = {}): BudgetRowViewModel {
@@ -75,6 +76,8 @@ class StubBudgetsList {}
 describe('BudgetDetail', () => {
   let fakeStore: FakeBudgetsStore;
 
+  beforeAll(stubDialogMethods);
+
   function createFixture(id: string) {
     TestBed.configureTestingModule({
       imports: [BudgetDetail],
@@ -94,7 +97,7 @@ describe('BudgetDetail', () => {
     TestBed.resetTestingModule();
   });
 
-  it('shows the combined subcategories breakdown, combined transactions and add-budget action for an implied parent', () => {
+  it('shows the combined subcategories breakdown, combined transactions and an add-budget icon for an implied parent', () => {
     const fixture = createFixture('implied:transportation');
     fakeStore.rows.set([
       row({
@@ -121,16 +124,17 @@ describe('BudgetDetail', () => {
     fakeStore.setTransactionTree('transportation', [txn({ description: 'Car payment' })]);
     fixture.detectChanges();
 
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const root = fixture.nativeElement as HTMLElement;
+    const text = root.textContent ?? '';
     expect(text).toContain('Transportation');
     expect(text).toContain('computed');
     expect(text).toContain('Auto Payment'); // subcategories breakdown lists the budgeted child
     expect(text).toContain('Car payment'); // combined transaction list
-    expect(text).toContain('Add a budget for this category');
-    expect(text).not.toContain('Edit budget');
+    expect(root.querySelector('button[aria-label="Add a budget for this category"]')).toBeTruthy();
+    expect(root.querySelector('button[aria-label="Edit budget"]')).toBeNull();
   });
 
-  it('submitting the implied-parent add-budget form calls addBudget and, once it succeeds, returns to the Budgets list', async () => {
+  it('submitting the implied-parent add-budget dialog calls addBudget and, once it succeeds, returns to the Budgets list', async () => {
     const fixture = createFixture('implied:transportation');
     fakeStore.rows.set([
       row({
@@ -145,8 +149,11 @@ describe('BudgetDetail', () => {
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
     const root = fixture.nativeElement as HTMLElement;
-    root.querySelector<HTMLButtonElement>('.budget-detail__edit-button')?.click();
+    root.querySelector<HTMLButtonElement>('button[aria-label="Add a budget for this category"]')?.click();
     fixture.detectChanges();
+
+    const dialog = root.querySelector<HTMLDialogElement>('.budget-detail__dialog');
+    expect(dialog?.hasAttribute('open')).toBe(true);
 
     const amountInput = root.querySelector<HTMLInputElement>('.budget-detail__edit-label input[type="number"]');
     expect(amountInput).toBeTruthy();
@@ -159,7 +166,7 @@ describe('BudgetDetail', () => {
     await vi.waitFor(() => expect(navigateSpy).toHaveBeenCalledWith(['/budgets']));
   });
 
-  it('for a real budget with a budgeted child, lists the child in Subcategories and shows the combined transaction list', () => {
+  it('for a real budget with a budgeted child, lists the child in Subcategories, shows the combined transaction list, and offers an edit icon (no add icon)', () => {
     const fixture = createFixture('b-housing');
     fakeStore.rows.set([
       row({
@@ -185,12 +192,13 @@ describe('BudgetDetail', () => {
     ]);
     fixture.detectChanges();
 
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const root = fixture.nativeElement as HTMLElement;
+    const text = root.textContent ?? '';
     expect(text).toContain('Rent'); // subcategories breakdown
     expect(text).toContain('Housing direct');
     expect(text).toContain('Rent payment');
-    expect(text).toContain('Edit budget');
-    expect(text).not.toContain('Add a budget for this category');
+    expect(root.querySelector('button[aria-label="Edit budget"]')).toBeTruthy();
+    expect(root.querySelector('button[aria-label="Add a budget for this category"]')).toBeNull();
   });
 
   it("editing a real budget with a budgeted child prefills and saves the category's own amount, not the combined total", async () => {
@@ -220,7 +228,7 @@ describe('BudgetDetail', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    root.querySelector<HTMLButtonElement>('.budget-detail__edit-button')?.click();
+    root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
     fixture.detectChanges();
 
     const amountInput = root.querySelector<HTMLInputElement>('.budget-detail__edit-label input[type="number"]');
@@ -243,6 +251,56 @@ describe('BudgetDetail', () => {
     expect(root.querySelector('.budget-detail__subcat-list')).toBeNull();
     const text = root.textContent ?? '';
     expect(text).toContain('Rent payment');
-    expect(text).toContain('Edit budget');
+    expect(root.querySelector('button[aria-label="Edit budget"]')).toBeTruthy();
+  });
+
+  it('the edit dialog offers a delete-budget action that deletes the budget and returns to the Budgets list', async () => {
+    const fixture = createFixture('b-housing');
+    fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+    fixture.detectChanges();
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
+    fixture.detectChanges();
+
+    root.querySelector<HTMLButtonElement>('.budget-detail__delete-button')?.click();
+    await vi.waitFor(() => expect(fakeStore.deleteBudget).toHaveBeenCalledWith('b-housing'));
+    await vi.waitFor(() => expect(navigateSpy).toHaveBeenCalledWith(['/budgets']));
+  });
+
+  it('the add-budget dialog does not offer a delete action (nothing exists yet to delete)', () => {
+    const fixture = createFixture('implied:transportation');
+    fakeStore.rows.set([
+      row({ id: 'implied:transportation', categoryId: 'transportation', categoryName: 'Transportation', implied: true }),
+    ]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('button[aria-label="Add a budget for this category"]')?.click();
+    fixture.detectChanges();
+
+    expect(root.querySelector('.budget-detail__delete-button')).toBeNull();
+  });
+
+  it('shows category transactions with a leading minus for spend and green for deposits, matching the Transactions screen', () => {
+    const fixture = createFixture('b-housing');
+    fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+    fakeStore.setTransactionTree('housing', [
+      txn({ id: 't-spend', description: 'Spend', amount: -75 }),
+      txn({ id: 't-deposit', description: 'Deposit', amount: 40 }),
+    ]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const rows = [...root.querySelectorAll('.budget-detail__txn-row')];
+    const spendAmt = rows.find((r) => r.textContent?.includes('Spend'))?.querySelector('.budget-detail__txn-amt');
+    const depositAmt = rows.find((r) => r.textContent?.includes('Deposit'))?.querySelector('.budget-detail__txn-amt');
+
+    expect(spendAmt?.textContent?.trim()).toBe('-$75.00');
+    expect(spendAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(false);
+    expect(depositAmt?.textContent?.trim()).toBe('$40.00');
+    expect(depositAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(true);
   });
 });
