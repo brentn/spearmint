@@ -167,18 +167,6 @@ describe('TransactionsStore', () => {
       expect(mutationService.assignCategory).toHaveBeenCalledWith('txn-1', 'cat-1');
     });
 
-    it('dismissSuggestion clears the suggestion without touching the transaction', async () => {
-      await fakeDb['transactions'].insert(seedTransaction());
-      await store.refresh();
-      const suggestions = TestBed.inject(CategorizationSuggestionsService);
-      suggestions.set('txn-1', 'cat-1');
-
-      store.dismissSuggestion('txn-1');
-
-      expect(suggestions.get('txn-1')).toBeNull();
-      expect(store.transactions()[0].categoryId).toBeNull();
-    });
-
     it('recomputes a suggestion on refresh for an uncategorized transaction that lost it (e.g. across a reload)', async () => {
       await fakeDb['categorizationRules'].insert({
         id: 'rule-1',

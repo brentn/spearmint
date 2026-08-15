@@ -101,9 +101,35 @@
   padding: 0.75rem;
   border-bottom: 1px solid var(--spearmint-border);
   cursor: pointer;
+  overflow: hidden;
 
   &:last-child {
     border-bottom: none;
+  }
+}
+
+// Removing a transaction from a filtered list (e.g. accepting a suggestion while filtered to
+// "Uncategorized") used to just vanish it instantly, which read as a glitch (issue #20). Collapsing
+// the row's own box height instead of yanking it out lets the rows below reflow into the gap in
+// step with the collapse, so the disappearance reads as deliberate rather than sudden.
+.transactions__row--leaving {
+  animation: transactions-row-leave 0.28s ease forwards;
+}
+
+@keyframes transactions-row-leave {
+  from {
+    opacity: 1;
+    // Generous ceiling above any real row's rendered height (icon + desc + account +
+    // category-picker + suggestion chip, worst case ~7rem) — too tight here clips the row at
+    // the very start of the animation instead of collapsing it smoothly.
+    max-height: 10rem;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom-width: 0;
   }
 }
 
@@ -152,8 +178,8 @@
   color: var(--spearmint-muted);
 }
 
-// The dismissible one-tap suggestion tier (spec §3.1) — deliberately not styled like an alert
-// (no red/amber), since it's a low-stakes hint the user can act on or ignore either way.
+// The one-tap suggestion tier (spec §3.1) — deliberately not styled like an alert (no
+// red/amber), since it's a low-stakes hint the user can act on or ignore either way.
 .transactions__suggestion {
   display: flex;
   align-items: center;
@@ -162,6 +188,10 @@
 }
 
 .transactions__suggestion-label {
+  // Fills the space the dismiss button used to occupy (issue #20) instead of shrinking to fit
+  // its own text, so the accept button reads as pinned to the row's trailing edge.
+  flex: 1;
+  min-width: 0;
   font-size: 0.75rem;
   color: var(--spearmint-muted);
   white-space: nowrap;
@@ -169,26 +199,16 @@
   text-overflow: ellipsis;
 }
 
-.transactions__suggestion-accept,
-.transactions__suggestion-dismiss {
+.transactions__suggestion-accept {
   flex-shrink: 0;
   border: none;
   border-radius: 999px;
-  padding: 0.1rem 0.55rem;
-  font-size: 0.7rem;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
-}
-
-.transactions__suggestion-accept {
   background: var(--spearmint-primary);
   color: var(--spearmint-on-primary);
-}
-
-.transactions__suggestion-dismiss {
-  background: transparent;
-  color: var(--spearmint-muted);
-  border: 1px solid var(--spearmint-border);
 }
 
 .transactions__amt {

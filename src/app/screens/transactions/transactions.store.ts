@@ -124,8 +124,4 @@ export class TransactionsStore {
     }
     await this.assignCategory(transactionId, categoryId);
   }
-
-  dismissSuggestion(transactionId: string): void {
-    this.suggestionsService.dismiss(transactionId);
-  }
 }

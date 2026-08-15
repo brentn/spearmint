@@ -26,7 +26,7 @@
         <h2 class="transactions__day-heading">{{ group.heading }}</h2>
         <ul class="transactions__group">
           @for (transaction of group.transactions; track transaction.id) {
-            <li class="transactions__row" (click)="openEditDialog(transaction)">
+            <li class="transactions__row" animate.leave="transactions__row--leaving" (click)="openEditDialog(transaction)">
               <span class="transactions__icon">{{ transaction.description.charAt(0).toUpperCase() }}</span>
               <div class="transactions__mid">
                 <div class="transactions__desc">
@@ -48,9 +48,6 @@
                     <span class="transactions__suggestion-label">Suggested: {{ suggestion.categoryName }}</span>
                     <button type="button" class="transactions__suggestion-accept" (click)="acceptSuggestion(transaction.id)">
                       Apply
-                    </button>
-                    <button type="button" class="transactions__suggestion-dismiss" (click)="dismissSuggestion(transaction.id)">
-                      Dismiss
                     </button>
                   </div>
                 }

@@ -80,10 +80,6 @@ export class Transactions {
     await this.store.acceptSuggestion(transactionId);
   }
 
-  dismissSuggestion(transactionId: string): void {
-    this.store.dismissSuggestion(transactionId);
-  }
-
   protected openEditDialog(transaction: Transaction): void {
     this.editingTransaction.set(transaction);
   }

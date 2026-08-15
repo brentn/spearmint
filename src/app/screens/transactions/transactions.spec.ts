@@ -76,7 +76,6 @@ class FakeTransactionsStore {
   readonly setNotes = vi.fn(async (_transactionId: string, _notes: string | null) => {});
   readonly setExcludeFromBudget = vi.fn(async (_transactionId: string, _excludeFromBudget: boolean) => {});
   readonly acceptSuggestion = vi.fn(async (_transactionId: string) => {});
-  readonly dismissSuggestion = vi.fn((_transactionId: string) => {});
 }
 
 describe('Transactions', () => {
@@ -131,7 +130,7 @@ describe('Transactions', () => {
     expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
   });
 
-  it('clicking a suggestion Apply/Dismiss button does not open the edit dialog', () => {
+  it('clicking a suggestion Apply button does not open the edit dialog', () => {
     const fixture = createFixture();
     fakeStore.accounts.set([account()]);
     fakeStore.categories.set([category()]);
@@ -140,11 +139,11 @@ describe('Transactions', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    root.querySelector<HTMLButtonElement>('.transactions__suggestion-dismiss')?.click();
+    root.querySelector<HTMLButtonElement>('.transactions__suggestion-accept')?.click();
     fixture.detectChanges();
 
     expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
-    expect(fakeStore.dismissSuggestion).toHaveBeenCalledWith('txn-1');
+    expect(fakeStore.acceptSuggestion).toHaveBeenCalledWith('txn-1');
   });
 
   it("the dialog's save output calls the store's mutation methods and closes the dialog", async () => {

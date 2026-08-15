@@ -11,11 +11,12 @@
   border-radius: 999px;
   background: var(--spearmint-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236B7A70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
     no-repeat right 0.45rem center;
-  background-size: 0.55rem;
-  padding: 0.1rem 1.35rem 0.1rem 0.55rem;
-  // Shrunk (issue #19) now that the row itself opens the full edit dialog on click — this
-  // trigger is a secondary, denser quick-recategorize path, not the row's primary affordance.
-  font-size: 0.8rem;
+  background-size: 0.5rem;
+  padding: 0.05rem 1.2rem 0.05rem 0.45rem;
+  // Shrunk (issue #19, further in #20) now that the row itself opens the full edit dialog on
+  // click — this trigger is a secondary, denser quick-recategorize path, not the row's primary
+  // affordance.
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--spearmint-muted);
   max-width: 100%;
