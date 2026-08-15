@@ -6,6 +6,12 @@
 // of the content.
 .nav-shell {
   flex-shrink: 0;
+  overflow: hidden;
+  // Concrete value (not `auto`/`none`) so the collapse transition below has a real number to
+  // animate from — a bit above the bar's actual rendered height (padding + tab content) as a
+  // buffer for cross-browser font-metric differences, without being so large that most of the
+  // transition duration passes before the bar visibly starts moving.
+  max-height: calc(4.5rem + env(safe-area-inset-bottom));
   z-index: 100;
   display: flex;
   justify-content: space-around;
@@ -13,10 +19,17 @@
   padding: 0.5rem 0.25rem calc(0.5rem + env(safe-area-inset-bottom));
   background: var(--spearmint-hero-gradient);
   box-shadow: var(--spearmint-shadow-strong);
-  transition: transform 0.25s ease;
+  transition: max-height 0.25s ease, padding-top 0.25s ease, padding-bottom 0.25s ease;
 
+  // Collapses the bar's own box height (not just a transform) so `.app-scroll` — its flex
+  // sibling — reflows to reclaim the freed space, giving more room to see the content behind
+  // it while it's hidden (issue #22 follow-up) rather than leaving a dead gap. Padding has to
+  // collapse too: padding never shrinks to satisfy a height/max-height constraint on its own
+  // box, so max-height:0 alone floors out at padding-top + padding-bottom instead of 0.
   &--hidden {
-    transform: translateY(100%);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }
 
