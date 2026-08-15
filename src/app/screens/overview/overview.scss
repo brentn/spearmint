@@ -1,8 +1,3 @@
-.overview {
-  min-height: 100vh;
-  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
-}
-
 // Full-bleed gradient hero, scrolls with the rest of the content (not pinned) per the
 // locked visual spec (§8) — matches transactions.scss/budgets.scss's own hero.
 .overview__hero {

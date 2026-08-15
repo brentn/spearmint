@@ -1,8 +1,11 @@
+// A plain flex item at the bottom of .app-shell's column (sibling of the scrollable
+// .app-scroll, not nested inside it) — not position:fixed/sticky. This is what makes it
+// immune to iOS Safari's chrome-animation compensation for fixed-position elements
+// (issue #22), and, unlike `position: sticky` nested inside the scroll container, it stays
+// visible at every scroll position instead of only pinning once you scroll near the end
+// of the content.
 .nav-shell {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  flex-shrink: 0;
   z-index: 100;
   display: flex;
   justify-content: space-around;

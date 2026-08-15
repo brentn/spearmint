@@ -1,4 +1,23 @@
+.app-shell {
+  height: 100vh; // fallback
+  height: 100dvh; // tracks iOS Safari's dynamic viewport as chrome animates
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-scroll {
+  flex: 1;
+  // Without this, flex's default min-height:auto lets this grow to its content's
+  // height instead of clipping to .app-shell, silently defeating overflow-y:auto.
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 .app-content {
-  min-height: 100vh;
-  padding-bottom: 4.5rem;
+  // Fills leftover vertical space so short screens still push the nav to the
+  // true bottom edge instead of it sitting mid-screen right under the content.
+  flex: 1 0 auto;
 }

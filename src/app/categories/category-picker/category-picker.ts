@@ -1,4 +1,16 @@
-import { Component, ElementRef, HostListener, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import type { Category } from '../../data/models';
 import { groupAndSortCategories } from '../category-grouping.util';
 
@@ -32,9 +44,14 @@ export interface CategoryPickerPanelPosition {
   templateUrl: './category-picker.html',
   styleUrl: './category-picker.scss',
 })
-export class CategoryPicker {
+export class CategoryPicker implements OnInit, OnDestroy {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
+  // `scroll` events don't bubble, so a plain `@HostListener('window:scroll')` only sees
+  // the document itself scrolling. The app scrolls an inner container now (issue #22),
+  // so this is a capture-phase listener instead — capturing listeners on `document` see
+  // scroll events from any nested scrollable ancestor, regardless of nesting depth.
+  private readonly onDocumentScroll = () => this.onViewportChange();
 
   readonly categories = input.required<Category[]>();
   readonly selectedId = input<string | null>(null);
@@ -118,6 +135,14 @@ export class CategoryPicker {
     };
   }
 
+  ngOnInit(): void {
+    document.addEventListener('scroll', this.onDocumentScroll, { capture: true, passive: true });
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.onDocumentScroll, { capture: true });
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (this.open() && !this.elementRef.nativeElement.contains(event.target as Node)) {
@@ -127,7 +152,6 @@ export class CategoryPicker {
 
   // The panel is fixed-positioned from the trigger's rect captured at open time — closing on
   // scroll/resize avoids it drifting away from the trigger it's anchored to (issue #16).
-  @HostListener('window:scroll')
   @HostListener('window:resize')
   onViewportChange(): void {
     if (this.open()) {

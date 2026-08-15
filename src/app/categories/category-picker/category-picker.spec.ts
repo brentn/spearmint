@@ -80,14 +80,17 @@ describe('CategoryPicker', () => {
     expect(panel.style.bottom).toBe('45px');
   });
 
-  it('closes the panel when the window scrolls, so it never drifts away from its trigger', () => {
+  it('closes the panel when an ancestor scrolls, so it never drifts away from its trigger', () => {
     const fixture = createFixture();
     stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
     fixture.nativeElement.querySelector('.category-picker__trigger').click();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeTruthy();
 
-    window.dispatchEvent(new Event('scroll'));
+    // Uses a capture-phase document listener (not `window:scroll`) so it still catches scroll
+    // events from a nested scroll container — e.g. the app's own `.app-scroll` (issue #22) —
+    // whose `scroll` events don't bubble to `window`/`document`.
+    document.dispatchEvent(new Event('scroll'));
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeFalsy();
