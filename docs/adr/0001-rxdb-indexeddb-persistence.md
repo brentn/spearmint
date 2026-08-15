@@ -1,0 +1,3 @@
+# RxDB/IndexedDB persistence, carried forward with a clean-slate rebuild cutover
+
+Spearmint persists locally via RxDB over IndexedDB, carried forward unchanged from the pre-rebuild app. The rebuild itself dropped the old database entirely with no migration path — starting fresh was simpler than reconciling a stale Plaid-era schema. That one-time cutover is not an ongoing policy, though: schema changes within the current app get real RxDB migration strategies (see `appSettingsMigrationStrategies` in `schemas.ts`, currently a v0→v1 migration) so local user data is never silently wiped by a later version bump.

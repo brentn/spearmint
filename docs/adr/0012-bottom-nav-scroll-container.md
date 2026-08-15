@@ -1,0 +1,3 @@
+# Bottom-nav auto-hide via an inner scroll container
+
+iOS Safari resizes the visual viewport as its dynamic toolbar collapses/expands on scroll; when the bottom nav's auto-hide behavior was driven by document-level scroll position, that viewport resize made the nav appear to translate upward "like a keyboard opening" instead of collapsing cleanly in place (GitHub issue #22). The fix moves scroll tracking off `document` and onto an inner `.app-scroll` container: `NavScrollContainerDirective` attaches `NavScrollService` to that container's own `scrollTop`, which drives the nav's hidden/visible signal independent of the browser's own viewport-resize behavior.

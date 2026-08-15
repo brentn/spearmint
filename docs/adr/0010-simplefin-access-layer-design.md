@@ -1,0 +1,5 @@
+# SimpleFIN access-layer design
+
+Each SimpleFIN connection's access URL is stored directly on `Account` as a flat `connId` (see `SimplefinLink` in `CONTEXT.md`) rather than through a dedicated `Connection` entity — accounts under the same connection are grouped by matching `connId`, with per-account `needsReconnect` flagging rather than a connection-level status. The access URL itself is stored in RxDB in plaintext; this is a deliberate trade-off for a local-only, single-device app with no server to broker secrets, not an oversight.
+
+Sync runs once a day automatically, gated on `lastSyncDate` (which only advances when every request in the run succeeds), plus on-demand via a manual "Sync now". Each run fetches a chunked date window from `[lastSyncDate − 7d, today]`, backfilling further back in additional chunks. Pending transactions are fully transient — wiped and recomputed every sync, locked from user editing — while posted transactions are upserted by id and categorized exactly once.
