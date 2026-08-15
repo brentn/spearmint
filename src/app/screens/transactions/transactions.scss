@@ -151,6 +151,45 @@
   color: var(--spearmint-muted);
 }
 
+// The dismissible one-tap suggestion tier (spec §3.1) — deliberately not styled like an alert
+// (no red/amber), since it's a low-stakes hint the user can act on or ignore either way.
+.transactions__suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.transactions__suggestion-label {
+  font-size: 0.75rem;
+  color: var(--spearmint-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transactions__suggestion-accept,
+.transactions__suggestion-dismiss {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.transactions__suggestion-accept {
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+}
+
+.transactions__suggestion-dismiss {
+  background: transparent;
+  color: var(--spearmint-muted);
+  border: 1px solid var(--spearmint-border);
+}
+
 .transactions__amt {
   flex-shrink: 0;
   font-size: 0.9rem;

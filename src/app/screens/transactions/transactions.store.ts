@@ -1,5 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { CategoriesService } from '../../categories/categories.service';
+import { CategorizationRulesService } from '../../categorization/categorization-rules.service';
+import { CategorizationSuggestionsService } from '../../categorization/categorization-suggestions.service';
 import { DatabaseService } from '../../data/database.service';
 import type { Account, Category, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
@@ -16,6 +18,8 @@ export class TransactionsStore {
   private readonly databaseService = inject(DatabaseService);
   private readonly categoriesService = inject(CategoriesService);
   private readonly syncService = inject(SimplefinSyncService);
+  private readonly categorizationRulesService = inject(CategorizationRulesService);
+  private readonly suggestionsService = inject(CategorizationSuggestionsService);
 
   readonly loading = signal(true);
   readonly transactions = signal<Transaction[]>([]);
@@ -41,6 +45,37 @@ export class TransactionsStore {
     this.categories.set(categories);
     this.accounts.set(accountDocs.map((doc) => doc.toJSON()));
     this.loading.set(false);
+    await this.refreshSuggestions();
+  }
+
+  /** Suggestions live only in CategorizationSuggestionsService's in-memory signal (spec §3.1's
+   * dismissible tier isn't part of the locked Transaction shape in data/models.ts), so a
+   * suggestion offered before a reload would otherwise vanish for good — the transaction is
+   * "already-known" by then, and a later sync never re-categorizes it (acceptance criterion:
+   * manual corrections are never clobbered). Recomputing here is read-only display state, not a
+   * re-categorization: it never writes `categoryId`, so that guarantee still holds. */
+  private async refreshSuggestions(): Promise<void> {
+    const candidates = this.transactions().filter(
+      (t) => !t.pending && !t.categoryId && this.suggestionsService.get(t.id) === null,
+    );
+    if (candidates.length === 0) {
+      return;
+    }
+    const byAccount = new Map<string, Transaction[]>();
+    for (const transaction of candidates) {
+      const list = byAccount.get(transaction.accountId) ?? [];
+      list.push(transaction);
+      byAccount.set(transaction.accountId, list);
+    }
+    for (const [accountId, transactions] of byAccount) {
+      const outcomes = await this.categorizationRulesService.classifyMany(accountId, transactions);
+      for (const transaction of transactions) {
+        const outcome = outcomes.get(transaction.id);
+        if (outcome?.tier === 'suggest' && outcome.categoryId) {
+          this.suggestionsService.set(transaction.id, outcome.categoryId);
+        }
+      }
+    }
   }
 
   categoryName(categoryId: string | null): string {
@@ -54,7 +89,9 @@ export class TransactionsStore {
     return this.accounts().find((a) => a.id === accountId)?.name ?? '';
   }
 
-  /** Pending transactions are wiped and replaced every sync (spec §1/§3) — locked from manual editing. */
+  /** Pending transactions are wiped and replaced every sync (spec §1/§3) — locked from manual
+   * editing. Assigning a real category also records/updates a CategorizationRule from this
+   * correction so future matching transactions benefit (spec §3.1). */
   async assignCategory(transactionId: string, categoryId: string | null): Promise<void> {
     const transaction = this.transactions().find((t) => t.id === transactionId);
     if (!transaction || transaction.pending) {
@@ -63,6 +100,34 @@ export class TransactionsStore {
     const db = await this.databaseService.getDatabase();
     const doc = await db.transactions.findOne(transactionId).exec();
     await doc?.incrementalPatch({ categoryId });
+    if (categoryId) {
+      await this.categorizationRulesService.recordCorrection(
+        { id: transaction.id, accountId: transaction.accountId, description: transaction.description, amount: transaction.amount, date: transaction.date },
+        categoryId,
+      );
+    }
+    this.suggestionsService.dismiss(transactionId);
     await this.refresh();
+  }
+
+  /** The dismissible one-tap suggestion tier (spec §3.1) for a transaction, or null if none. */
+  suggestionFor(transactionId: string): { categoryId: string; categoryName: string } | null {
+    const categoryId = this.suggestionsService.get(transactionId);
+    if (!categoryId) {
+      return null;
+    }
+    return { categoryId, categoryName: this.categoryName(categoryId) };
+  }
+
+  async acceptSuggestion(transactionId: string): Promise<void> {
+    const categoryId = this.suggestionsService.get(transactionId);
+    if (!categoryId) {
+      return;
+    }
+    await this.assignCategory(transactionId, categoryId);
+  }
+
+  dismissSuggestion(transactionId: string): void {
+    this.suggestionsService.dismiss(transactionId);
   }
 }

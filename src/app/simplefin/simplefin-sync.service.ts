@@ -1,7 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
-import type { AccountType } from '../data/models';
+import type { AccountType, Transaction } from '../data/models';
 import { DEFAULT_APP_SETTINGS, getAppSettingsDoc } from '../data/app-settings.util';
 import { DatabaseService, type SpearmintDatabase } from '../data/database.service';
+import { CategorizationRulesService } from '../categorization/categorization-rules.service';
+import { CategorizationSuggestionsService } from '../categorization/categorization-suggestions.service';
 import { epochSecondsToDateOnly, parseDecimalAmount } from './simplefin-mapping.util';
 import { SimplefinApiService } from './simplefin-api.service';
 import { SimplefinLinkService } from './simplefin-link.service';
@@ -26,7 +28,7 @@ function toDraftTransactions(
   accountId: string,
   transactions: SimplefinTransaction[],
   pending: boolean
-) {
+): Transaction[] {
   return transactions.map((t) => ({
     id: t.id,
     accountId,
@@ -52,6 +54,8 @@ export class SimplefinSyncService {
   private readonly databaseService = inject(DatabaseService);
   private readonly api = inject(SimplefinApiService);
   private readonly linkService = inject(SimplefinLinkService);
+  private readonly categorizationRules = inject(CategorizationRulesService);
+  private readonly categorizationSuggestions = inject(CategorizationSuggestionsService);
 
   readonly syncing = signal(false);
   readonly lastSyncError = signal<string | null>(null);
@@ -248,12 +252,14 @@ export class SimplefinSyncService {
     }
   }
 
-  /** Never re-categorizes an already-known id — only mutable fields are patched. */
+  /** Never re-categorizes an already-known id — only mutable fields are patched. New ids are
+   * run once through the auto-categorization heuristic before insert (spec §3.1/§3). */
   private async upsertPostedTransactions(
     db: SpearmintDatabase,
     accountId: string,
     transactions: SimplefinTransaction[]
   ): Promise<void> {
+    const newDrafts: Transaction[] = [];
     for (const draft of toDraftTransactions(accountId, transactions, false)) {
       const existing = await db.transactions.findOne(draft.id).exec();
       if (existing) {
@@ -264,12 +270,14 @@ export class SimplefinSyncService {
           pending: false,
         });
       } else {
-        await db.transactions.insert(draft);
+        newDrafts.push(draft);
       }
     }
+    await this.categorizeAndInsert(db, accountId, newDrafts);
   }
 
-  /** Pending rows are fully transient: wiped and replaced every sync, never upserted. */
+  /** Pending rows are fully transient: wiped and replaced every sync, never upserted — each
+   * fresh row is run through the auto-categorization heuristic again (spec §3.1/§3). */
   private async replacePendingTransactions(
     db: SpearmintDatabase,
     accountId: string,
@@ -281,8 +289,31 @@ export class SimplefinSyncService {
     await Promise.all(existingPending.map((doc) => doc.remove()));
 
     const drafts = toDraftTransactions(accountId, transactions, true);
-    if (drafts.length > 0) {
-      await db.transactions.bulkInsert(drafts);
+    await this.categorizeAndInsert(db, accountId, drafts);
+  }
+
+  /** Applies the three-tier outcome (spec §3.1) to a batch of not-yet-persisted drafts for one
+   * account, fetching that account's CategorizationRules once, then bulk-inserts the result:
+   * auto-apply tier sets categoryId directly; the suggestion tier is recorded separately
+   * (session-scoped, not part of the RxDB write) rather than mutating categoryId. */
+  private async categorizeAndInsert(db: SpearmintDatabase, accountId: string, drafts: Transaction[]): Promise<void> {
+    if (drafts.length === 0) {
+      return;
     }
+    const outcomes = await this.categorizationRules.classifyMany(accountId, drafts);
+    const finalDrafts = drafts.map((draft) => {
+      const outcome = outcomes.get(draft.id);
+      if (!outcome) {
+        return draft;
+      }
+      if (outcome.tier === 'auto') {
+        return { ...draft, categoryId: outcome.categoryId };
+      }
+      if (outcome.tier === 'suggest' && outcome.categoryId) {
+        this.categorizationSuggestions.set(draft.id, outcome.categoryId);
+      }
+      return draft;
+    });
+    await db.transactions.bulkInsert(finalDrafts);
   }
 }

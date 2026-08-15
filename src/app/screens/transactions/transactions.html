@@ -42,6 +42,17 @@
                   [disabled]="transaction.pending"
                   (categoryChange)="assignCategory(transaction.id, $event)"
                 />
+                @if (!transaction.pending && !transaction.categoryId && store.suggestionFor(transaction.id); as suggestion) {
+                  <div class="transactions__suggestion">
+                    <span class="transactions__suggestion-label">Suggested: {{ suggestion.categoryName }}</span>
+                    <button type="button" class="transactions__suggestion-accept" (click)="acceptSuggestion(transaction.id)">
+                      Apply
+                    </button>
+                    <button type="button" class="transactions__suggestion-dismiss" (click)="dismissSuggestion(transaction.id)">
+                      Dismiss
+                    </button>
+                  </div>
+                }
               </div>
               <span class="transactions__amt" [class.transactions__amt--positive]="transaction.amount > 0">
                 {{ transaction.amount < 0 ? '-' : '' }}${{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2' }}

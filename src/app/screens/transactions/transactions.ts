@@ -45,4 +45,12 @@ export class Transactions {
   async assignCategory(transactionId: string, categoryId: string | null): Promise<void> {
     await this.store.assignCategory(transactionId, categoryId);
   }
+
+  async acceptSuggestion(transactionId: string): Promise<void> {
+    await this.store.acceptSuggestion(transactionId);
+  }
+
+  dismissSuggestion(transactionId: string): void {
+    this.store.dismissSuggestion(transactionId);
+  }
 }

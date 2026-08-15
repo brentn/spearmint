@@ -7,11 +7,13 @@ import {
   accountSchema,
   appSettingsMigrationStrategies,
   appSettingsSchema,
+  categorizationRuleSchema,
   institutionSchema,
   transactionSchema,
 } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Account, IgnoredExternalAccount, Transaction } from '../data/models';
+import type { Account, CategorizationRule, IgnoredExternalAccount, Transaction } from '../data/models';
+import { CategorizationSuggestionsService } from '../categorization/categorization-suggestions.service';
 import { SimplefinApiService } from './simplefin-api.service';
 import { SimplefinLinkService } from './simplefin-link.service';
 import { SimplefinSyncService } from './simplefin-sync.service';
@@ -64,6 +66,7 @@ describe('SimplefinSyncService', () => {
       accounts: { schema: accountSchema },
       institutions: { schema: institutionSchema },
       transactions: { schema: transactionSchema },
+      categorizationRules: { schema: categorizationRuleSchema },
       appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
     });
 
@@ -182,6 +185,125 @@ describe('SimplefinSyncService', () => {
     expect(txn.categoryId).toBe('cat-coffee');
     expect(txn.amount).toBe(-10.5);
     expect(txn.description).toBe('Coffee settled');
+  });
+
+  it('auto-applies a category to a new posted transaction that confidently matches a stored rule', async () => {
+    await seedSettings({ lastSyncDate: RECENT_PAST });
+    await fakeDb['accounts'].insert(seedAccount());
+    await fakeDb['categorizationRules'].insert({
+      id: 'rule-1',
+      accountId: 'acc-1',
+      normalizedDescription: 'STARBUCKS',
+      amount: -5,
+      dayOfMonth: 12,
+      categoryId: 'cat-coffee',
+      createdAtUtc: '2026-01-01T00:00:00.000Z',
+      updatedAtUtc: '2026-01-01T00:00:00.000Z',
+    } satisfies CategorizationRule);
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [
+        {
+          id: 'ext-1',
+          name: 'Checking',
+          currency: 'USD',
+          balance: '100',
+          'balance-date': 1786608000,
+          conn_id: 'CON-1',
+          transactions: [
+            { id: 'txn-new', posted: 1786521600, amount: '-5.00', description: 'Starbucks', pending: false },
+          ],
+        },
+      ],
+    } satisfies SimplefinAccountSet);
+
+    await service.syncNow();
+
+    const txn = await fakeDb['transactions'].findOne('txn-new').exec();
+    expect(txn.categoryId).toBe('cat-coffee');
+  });
+
+  it('records a dismissible suggestion instead of auto-applying a mid-confidence match', async () => {
+    await seedSettings({ lastSyncDate: RECENT_PAST });
+    await fakeDb['accounts'].insert(seedAccount());
+    await fakeDb['categorizationRules'].insert({
+      id: 'rule-1',
+      accountId: 'acc-1',
+      normalizedDescription: 'TARGET STORE DOWNTOWN',
+      amount: -40,
+      dayOfMonth: 12,
+      categoryId: 'cat-shopping',
+      createdAtUtc: '2026-01-01T00:00:00.000Z',
+      updatedAtUtc: '2026-01-01T00:00:00.000Z',
+    } satisfies CategorizationRule);
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [
+        {
+          id: 'ext-1',
+          name: 'Checking',
+          currency: 'USD',
+          balance: '100',
+          'balance-date': 1786608000,
+          conn_id: 'CON-1',
+          transactions: [
+            {
+              id: 'txn-new',
+              posted: 1786521600,
+              amount: '-40.00',
+              description: 'Target Store Uptown Extra',
+              pending: false,
+            },
+          ],
+        },
+      ],
+    } satisfies SimplefinAccountSet);
+
+    await service.syncNow();
+
+    const txn = await fakeDb['transactions'].findOne('txn-new').exec();
+    expect(txn.categoryId).toBeNull();
+    const suggestions = TestBed.inject(CategorizationSuggestionsService);
+    expect(suggestions.get('txn-new')).toBe('cat-shopping');
+  });
+
+  it('re-categorizes pending transactions fresh every sync since they are always wiped and reinserted', async () => {
+    await seedSettings({ lastSyncDate: RECENT_PAST });
+    await fakeDb['accounts'].insert(seedAccount());
+    await fakeDb['categorizationRules'].insert({
+      id: 'rule-1',
+      accountId: 'acc-1',
+      normalizedDescription: 'STARBUCKS',
+      amount: -5,
+      dayOfMonth: 12,
+      categoryId: 'cat-coffee',
+      createdAtUtc: '2026-01-01T00:00:00.000Z',
+      updatedAtUtc: '2026-01-01T00:00:00.000Z',
+    } satisfies CategorizationRule);
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [
+        {
+          id: 'ext-1',
+          name: 'Checking',
+          currency: 'USD',
+          balance: '100',
+          'balance-date': 1786608000,
+          conn_id: 'CON-1',
+          transactions: [
+            { id: 'txn-pending', posted: 1786608000, amount: '-5.00', description: 'Starbucks', pending: true },
+          ],
+        },
+      ],
+    } satisfies SimplefinAccountSet);
+
+    await service.syncNow();
+
+    const txn = await fakeDb['transactions'].findOne('txn-pending').exec();
+    expect(txn.categoryId).toBe('cat-coffee');
   });
 
   it('wipes and replaces pending transactions every sync', async () => {
