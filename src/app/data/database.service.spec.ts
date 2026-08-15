@@ -14,18 +14,18 @@ import {
 } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { accountSchema } from './schemas';
-import { DatabaseService } from './database.service';
+import { DatabaseService, RX_STORAGE } from './database.service';
 
-// DatabaseService is hardcoded to the real Dexie/IndexedDB driver, which isn't
-// available under vitest. Swapping it for RxDB's memory storage lets these tests
-// exercise DatabaseService's actual startup/migration logic against real RxDB
-// behavior (not a hand-rolled mock of it) instead of skipping this class entirely.
+// DatabaseService defaults to the real Dexie/IndexedDB driver, which isn't
+// available under vitest. Overriding the RX_STORAGE token with RxDB's memory
+// storage (rather than vi.mock'ing the dexie module — unreliable here since
+// other spec files' static `import DatabaseService` can resolve that module
+// before this file's mock registers, under Vitest's shared-worker module
+// cache) lets these tests exercise DatabaseService's actual startup/migration
+// logic against real RxDB behavior instead of skipping this class entirely.
 let currentStorage: RxStorage<unknown, unknown>;
-vi.mock('rxdb/plugins/storage-dexie', () => ({
-  getRxStorageDexie: () => currentStorage,
-}));
 
 // The pre-#8 shape of the appSettings schema: same title, version 0, but
 // ignoredExternalAccounts held raw composite-key strings instead of
@@ -60,7 +60,7 @@ describe('DatabaseService', () => {
   beforeEach(() => {
     currentStorage = getRxStorageMemory();
     openDb = undefined;
-    TestBed.configureTestingModule({ providers: [DatabaseService] });
+    TestBed.configureTestingModule({ providers: [DatabaseService, { provide: RX_STORAGE, useValue: currentStorage }] });
   });
 
   afterEach(async () => {

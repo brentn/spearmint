@@ -1,4 +1,4 @@
-import { Injectable, Injector, inject } from '@angular/core';
+import { InjectionToken, Injectable, Injector, inject } from '@angular/core';
 import { RxCollection, RxDatabase, RxError, RxStorage, addRxPlugin, createRxDatabase, removeRxDatabase } from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { AngularSignalReactivityLambda, createReactivityFactory } from 'rxdb/plugins/reactivity-angular';
@@ -41,9 +41,18 @@ export type SpearmintDatabase = RxDatabase<SpearmintCollections, unknown, unknow
 
 const DATABASE_NAME = 'spearmint';
 
+// Overridable so tests can swap in RxDB's memory storage via a TestBed
+// provider instead of vi.mock()'ing this module (see database.service.spec.ts
+// for why the mock approach was unreliable).
+export const RX_STORAGE = new InjectionToken<RxStorage<unknown, unknown>>('RX_STORAGE', {
+  providedIn: 'root',
+  factory: () => getRxStorageDexie(),
+});
+
 @Injectable({ providedIn: 'root' })
 export class DatabaseService {
   private readonly injector = inject(Injector);
+  private readonly baseStorage = inject(RX_STORAGE);
   private databasePromise: Promise<SpearmintDatabase> | null = null;
 
   getDatabase(): Promise<SpearmintDatabase> {
@@ -87,7 +96,7 @@ export class DatabaseService {
   }
 
   private async buildStorage(): Promise<RxStorage<unknown, unknown>> {
-    let storage: RxStorage<unknown, unknown> = getRxStorageDexie();
+    let storage: RxStorage<unknown, unknown> = this.baseStorage;
 
     if (isDevMode()) {
       const [{ RxDBDevModePlugin }, { wrappedValidateAjvStorage }] = await Promise.all([
