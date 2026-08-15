@@ -130,6 +130,30 @@ describe('Transactions', () => {
     expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
   });
 
+  it('shows the quick-categorize picker for an uncategorized transaction', () => {
+    const fixture = createFixture();
+    fakeStore.accounts.set([account()]);
+    fakeStore.categories.set([category()]);
+    fakeStore.transactions.set([txn({ categoryId: null })]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.category-picker__trigger')).toBeTruthy();
+    expect(root.querySelector('.transactions__category')).toBeNull();
+  });
+
+  it('shows the category name as plain text, not the quick-categorize picker, for a categorized transaction (issue #24)', () => {
+    const fixture = createFixture();
+    fakeStore.accounts.set([account()]);
+    fakeStore.categories.set([category()]);
+    fakeStore.transactions.set([txn({ categoryId: 'cat-1' })]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.category-picker__trigger')).toBeNull();
+    expect(root.querySelector('.transactions__category')?.textContent?.trim()).toBe('Groceries');
+  });
+
   it('clicking a suggestion Apply button does not open the edit dialog', () => {
     const fixture = createFixture();
     fakeStore.accounts.set([account()]);

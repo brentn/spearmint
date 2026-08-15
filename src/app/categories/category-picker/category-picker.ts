@@ -51,11 +51,18 @@ export class CategoryPicker implements OnInit, OnDestroy {
   // the document itself scrolling. The app scrolls an inner container now (issue #22),
   // so this is a capture-phase listener instead — capturing listeners on `document` see
   // scroll events from any nested scrollable ancestor, regardless of nesting depth.
-  private readonly onDocumentScroll = () => this.onViewportChange();
+  // Scrolling *inside* the panel itself (the option list, the filter input) doesn't move the
+  // trigger the panel is anchored to, so it's exempted the same way onDocumentClick exempts
+  // clicks inside the panel — otherwise scrolling the option list closed the very panel the
+  // user was scrolling (issue #24).
+  private readonly onDocumentScroll = (event: Event) => this.closeIfOutside(event);
 
   readonly categories = input.required<Category[]>();
   readonly selectedId = input<string | null>(null);
   readonly disabled = input(false);
+  /** Solid-color trigger treatment for contexts that want the control to stand out — e.g. a
+   * quick-categorize affordance in a list (issue #24) — vs. the default muted/outlined look. */
+  readonly emphasize = input(false);
   readonly categoryChange = output<string | null>();
 
   protected readonly open = signal(false);
@@ -145,6 +152,12 @@ export class CategoryPicker implements OnInit, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
+    this.closeIfOutside(event);
+  }
+
+  /** Shared by the click-outside and scroll-outside listeners: closes the panel only when the
+   * event didn't originate from inside it, so interacting with the panel itself never closes it. */
+  private closeIfOutside(event: Event): void {
     if (this.open() && !this.elementRef.nativeElement.contains(event.target as Node)) {
       this.close();
     }

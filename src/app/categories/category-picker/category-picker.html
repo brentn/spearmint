@@ -1,5 +1,12 @@
 <div class="category-picker">
-  <button #trigger type="button" class="category-picker__trigger" [disabled]="disabled()" (click)="toggle()">
+  <button
+    #trigger
+    type="button"
+    class="category-picker__trigger"
+    [class.category-picker__trigger--emphasize]="emphasize()"
+    [disabled]="disabled()"
+    (click)="toggle()"
+  >
     {{ selectedName() }}
   </button>
   @if (open() && panelPosition(); as position) {
@@ -11,13 +18,16 @@
       [style.bottom.px]="position.bottom"
       [style.max-height.px]="position.maxHeight"
     >
+      <!-- No `autofocus`: on a scrollable ancestor (e.g. the transaction edit dialog's card),
+           autofocusing this on open can trigger the browser's own scroll-into-view, which the
+           document scroll listener above then reads as "the trigger moved" and closes the panel
+           that just opened (issue #24). -->
       <input
         class="category-picker__filter"
         type="text"
         placeholder="Filter categories"
         [value]="filterText()"
         (input)="filterText.set($any($event.target).value)"
-        autofocus
       />
       <ul class="category-picker__list">
         <li>

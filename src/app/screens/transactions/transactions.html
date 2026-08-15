@@ -36,13 +36,18 @@
                   }
                 </div>
                 <div class="transactions__account">{{ store.accountName(transaction.accountId) }}</div>
-                <app-category-picker
-                  [categories]="store.categories()"
-                  [selectedId]="transaction.categoryId"
-                  [disabled]="transaction.pending"
-                  (categoryChange)="assignCategory(transaction.id, $event)"
-                  (click)="$event.stopPropagation()"
-                />
+                @if (transaction.categoryId) {
+                  <span class="transactions__category">{{ store.categoryName(transaction.categoryId) }}</span>
+                } @else {
+                  <app-category-picker
+                    [categories]="store.categories()"
+                    [selectedId]="transaction.categoryId"
+                    [disabled]="transaction.pending"
+                    [emphasize]="true"
+                    (categoryChange)="assignCategory(transaction.id, $event)"
+                    (click)="$event.stopPropagation()"
+                  />
+                }
                 @if (!transaction.pending && !transaction.categoryId && store.suggestionFor(transaction.id); as suggestion) {
                   <div class="transactions__suggestion" (click)="$event.stopPropagation()">
                     <span class="transactions__suggestion-label">Suggested: {{ suggestion.categoryName }}</span>

@@ -96,6 +96,40 @@ describe('CategoryPicker', () => {
     expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeFalsy();
   });
 
+  it('does not close the panel when scrolling inside its own option list (issue #24)', () => {
+    const fixture = createFixture([category(), category({ id: 'cat-2', name: 'Rent' })]);
+    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
+    fixture.nativeElement.querySelector('.category-picker__trigger').click();
+    fixture.detectChanges();
+
+    const list: HTMLElement = fixture.nativeElement.querySelector('.category-picker__list');
+    // Capture-phase document listeners still see this even though `scroll` doesn't bubble,
+    // since capture runs on the way down to the target before the at-target phase.
+    list.dispatchEvent(new Event('scroll'));
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeTruthy();
+  });
+
+  it('applies the emphasize modifier class to the trigger when the emphasize input is set', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('emphasize', true);
+    fixture.detectChanges();
+
+    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.category-picker__trigger');
+    expect(trigger.classList.contains('category-picker__trigger--emphasize')).toBe(true);
+  });
+
+  it('does not autofocus the filter input, which can trigger an unwanted scroll-into-view that closes the panel', () => {
+    const fixture = createFixture();
+    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
+    fixture.nativeElement.querySelector('.category-picker__trigger').click();
+    fixture.detectChanges();
+
+    const filter: HTMLInputElement = fixture.nativeElement.querySelector('.category-picker__filter');
+    expect(filter.hasAttribute('autofocus')).toBe(false);
+  });
+
   it('closes the panel on window resize', () => {
     const fixture = createFixture();
     stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });

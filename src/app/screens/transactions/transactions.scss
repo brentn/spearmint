@@ -173,6 +173,17 @@
   color: var(--spearmint-muted);
 }
 
+// Plain-text category label for an already-categorized transaction — the quick-categorize
+// picker only renders for uncategorized rows now (issue #24), so a categorized row shows the
+// assigned name here instead; re-categorizing happens via the row's own edit dialog.
+.transactions__category {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--spearmint-muted);
+}
+
 // The one-tap suggestion tier (spec §3.1) — deliberately not styled like an alert (no
 // red/amber), since it's a low-stakes hint the user can act on or ignore either way.
 .transactions__suggestion {
