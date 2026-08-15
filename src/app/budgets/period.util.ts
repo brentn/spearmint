@@ -57,3 +57,23 @@ export function elapsedMonthFraction(period: YearMonth, today: Date = new Date()
   const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
   return Math.max(0, Math.min(1, dayOfMonth / daysInMonth));
 }
+
+/** True for the last 7 days of `period`'s UTC calendar month, as of `today` — a past period is
+ * always "final week" (it's fully over), a future period never is (issue #21's income-bar color:
+ * neutral blue until there's little enough month left for "behind target" to mean something). */
+export function isFinalWeekOfMonth(period: YearMonth, today: Date = new Date()): boolean {
+  assertYearMonth(period);
+  const todayIso = today.toISOString();
+  const currentPeriod = todayIso.slice(0, 7);
+  if (period < currentPeriod) {
+    return true;
+  }
+  if (period > currentPeriod) {
+    return false;
+  }
+  const year = Number(period.slice(0, 4));
+  const monthIndex = Number(period.slice(5, 7)) - 1;
+  const dayOfMonth = Number(todayIso.slice(8, 10));
+  const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  return dayOfMonth > daysInMonth - 7;
+}

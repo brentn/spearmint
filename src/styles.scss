@@ -69,6 +69,12 @@ body {
   background: var(--spearmint-danger);
 }
 
+// Neutral "too early to judge" color for an income budget before the month's final week
+// (issue #21) — informational, not a green/amber/red judgment on progress toward the target.
+.bar-fill--info {
+  background: var(--spearmint-accent);
+}
+
 .bar-pct {
   position: absolute;
   right: 0.5rem;

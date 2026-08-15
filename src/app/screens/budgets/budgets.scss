@@ -247,7 +247,7 @@
 
 .budgets__flow-bars {
   display: flex;
-  gap: 1.75rem;
+  gap: 1.25rem;
   align-items: flex-end;
   height: 7rem;
   margin-top: 0.9rem;
@@ -260,6 +260,18 @@
   gap: 0.5rem;
   height: 100%;
   justify-content: flex-end;
+}
+
+// Visually separates the Budgeted income/expenses pair from the Earned/Spent pair before it.
+.budgets__flow-bar-group--budgeted {
+  margin-left: 0.75rem;
+}
+
+.budgets__flow-bar-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 2.75rem;
 }
 
 .budgets__flow-bar-caption {
@@ -279,8 +291,9 @@
 }
 
 .budgets__flow-bar {
-  width: 2.75rem;
+  width: 100%;
   border-radius: 0.4rem 0.4rem 0 0;
+  box-sizing: border-box;
 }
 
 .budgets__flow-bar--earned {
@@ -289,6 +302,25 @@
 
 .budgets__flow-bar--spent {
   background: var(--spearmint-accent);
+}
+
+// A budgeted bar is dimmed (matching the implied-budget 50%-opacity treatment elsewhere on this
+// screen) so its own color still reads once the grey overage segment stacks on top of it.
+.budgets__flow-bar--budgeted-income {
+  background: var(--spearmint-primary);
+  opacity: 0.4;
+}
+
+.budgets__flow-bar--budgeted-expense {
+  background: var(--spearmint-accent);
+  opacity: 0.4;
+}
+
+// Unbudgeted actual — the portion of earned/spent that exceeds what was budgeted (issue #21),
+// stacked on top of the budgeted segment in plain grey rather than color-coding it.
+.budgets__flow-bar--income-overage,
+.budgets__flow-bar--expense-overage {
+  background: var(--spearmint-muted);
 }
 
 // ---------- budget rows ----------

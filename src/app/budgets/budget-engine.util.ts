@@ -12,7 +12,9 @@ import { nextYearMonth, previousYearMonth } from './period.util';
 const EXPENSE_WARNING_THRESHOLD = 0.85;
 const INCOME_WARNING_THRESHOLD = 0.7;
 
-export type BudgetState = 'normal' | 'warning' | 'over';
+/** 'info' is a presentation-only override applied above this engine (BudgetsStore) for income
+ * rows before the final week of the month (issue #21) — never produced by computeBudgetStatus. */
+export type BudgetState = 'normal' | 'warning' | 'over' | 'info';
 
 export interface BudgetStatus {
   /** spent / (amount + rolloverAmount) — uncapped, can exceed 1. */

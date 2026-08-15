@@ -45,24 +45,60 @@
         <div class="budgets__flow-net">${{ store.aggregate().cashFlowNet | number: '1.0-0' }}</div>
         <div class="budgets__flow-bars">
           <div class="budgets__flow-bar-group">
+            <div class="budgets__flow-bar-stack">
+              <div
+                class="budgets__flow-bar budgets__flow-bar--earned"
+                [style.height.px]="flowBarHeight(cashFlowData().earned)"
+              ></div>
+            </div>
             <div class="budgets__flow-bar-caption">
               <span>Earned</span>
-              <strong>${{ store.aggregate().earned | number: '1.0-0' }}</strong>
+              <strong>${{ cashFlowData().earned | number: '1.0-0' }}</strong>
             </div>
-            <div
-              class="budgets__flow-bar budgets__flow-bar--earned"
-              [style.height.px]="flowBarHeight(store.aggregate().earned)"
-            ></div>
           </div>
           <div class="budgets__flow-bar-group">
+            <div class="budgets__flow-bar-stack">
+              <div
+                class="budgets__flow-bar budgets__flow-bar--spent"
+                [style.height.px]="flowBarHeight(cashFlowData().spent)"
+              ></div>
+            </div>
             <div class="budgets__flow-bar-caption">
               <span>Spent</span>
-              <strong>${{ store.aggregate().spent | number: '1.0-0' }}</strong>
+              <strong>${{ cashFlowData().spent | number: '1.0-0' }}</strong>
             </div>
-            <div
-              class="budgets__flow-bar budgets__flow-bar--spent"
-              [style.height.px]="flowBarHeight(store.aggregate().spent)"
-            ></div>
+          </div>
+          <div class="budgets__flow-bar-group budgets__flow-bar-group--budgeted">
+            <div class="budgets__flow-bar-stack">
+              <div
+                class="budgets__flow-bar budgets__flow-bar--income-overage"
+                [style.height.px]="flowBarHeight(incomeOverage())"
+              ></div>
+              <div
+                class="budgets__flow-bar budgets__flow-bar--budgeted-income"
+                [style.height.px]="flowBarHeight(cashFlowData().budgetedIncome)"
+              ></div>
+            </div>
+            <div class="budgets__flow-bar-caption">
+              <span>Budgeted income</span>
+              <strong>${{ cashFlowData().budgetedIncome | number: '1.0-0' }}</strong>
+            </div>
+          </div>
+          <div class="budgets__flow-bar-group">
+            <div class="budgets__flow-bar-stack">
+              <div
+                class="budgets__flow-bar budgets__flow-bar--expense-overage"
+                [style.height.px]="flowBarHeight(expenseOverage())"
+              ></div>
+              <div
+                class="budgets__flow-bar budgets__flow-bar--budgeted-expense"
+                [style.height.px]="flowBarHeight(cashFlowData().budgetedExpenses)"
+              ></div>
+            </div>
+            <div class="budgets__flow-bar-caption">
+              <span>Budgeted expenses</span>
+              <strong>${{ cashFlowData().budgetedExpenses | number: '1.0-0' }}</strong>
+            </div>
           </div>
         </div>
       </div>

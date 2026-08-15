@@ -30,6 +30,27 @@ export class Budgets {
   );
   protected readonly hasChildExpenseBudgets = computed(() => this.expenseRows().some((r) => r.parentCategoryId));
 
+  /** Cash-flow box figures (issue #21) — budgeted totals come from top-level rows only,
+   * mirroring aggregate()'s own no-double-counting rule. */
+  protected readonly cashFlowData = computed(() => {
+    const topLevelIncome = this.incomeRows().filter((r) => r.parentCategoryId === null);
+    return {
+      earned: this.store.aggregate().earned,
+      spent: this.store.aggregate().spent,
+      budgetedIncome: topLevelIncome.reduce((sum, r) => sum + r.available, 0),
+      budgetedExpenses: this.store.aggregate().totalBudget,
+    };
+  });
+
+  /** How far actual earned/spent overshoots what was budgeted — rendered as a grey extension
+   * stacked on top of the budgeted bar (issue #21), zero whenever actual stays within budget. */
+  protected readonly incomeOverage = computed(() =>
+    Math.max(0, this.cashFlowData().earned - this.cashFlowData().budgetedIncome),
+  );
+  protected readonly expenseOverage = computed(() =>
+    Math.max(0, this.cashFlowData().spent - this.cashFlowData().budgetedExpenses),
+  );
+
   protected selectedCategoryType(): CategoryType | null {
     const categoryId = this.newCategoryId();
     if (!categoryId) {
@@ -65,10 +86,20 @@ export class Budgets {
     }
   }
 
-  /** Bar heights for the cash-flow comparison, scaled against whichever of earned/spent is larger. */
+  /** Bar heights for the cash-flow comparison, scaled against whichever of the four totals
+   * (earned, spent, budgeted-income-plus-overage, budgeted-expenses-plus-overage) is largest. */
   protected flowBarHeight(value: number): number {
-    const aggregate = this.store.aggregate();
-    const maxFlow = Math.max(aggregate.earned, aggregate.spent, 1);
+    if (value <= 0) {
+      return 0;
+    }
+    const d = this.cashFlowData();
+    const maxFlow = Math.max(
+      d.earned,
+      d.spent,
+      d.budgetedIncome + this.incomeOverage(),
+      d.budgetedExpenses + this.expenseOverage(),
+      1,
+    );
     return Math.max((value / maxFlow) * 70, 4);
   }
 
