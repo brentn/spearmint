@@ -179,6 +179,98 @@ describe('BudgetsStore', () => {
     expect(store.rows()).toHaveLength(0);
   });
 
+  describe('implied parent budgets (issue #15)', () => {
+    it('synthesizes a row for a parent with no explicit budget but a budgeted child', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'transportation', name: 'Transportation' }),
+        seedCategory({ id: 'auto-payment', name: 'Auto Payment', parentCategoryId: 'transportation' }),
+      ]);
+      await fakeDb['budgets'].insert(
+        seedBudget({ id: 'b-auto', categoryId: 'auto-payment', amount: 400, rolloverAmount: 0 }),
+      );
+      await fakeDb['transactions'].insert(
+        seedTransaction({ categoryId: 'auto-payment', amount: -350 }),
+      );
+
+      await store.refresh();
+
+      expect(store.rows()).toHaveLength(2);
+      const impliedRow = store.rows().find((r) => r.categoryId === 'transportation');
+      expect(impliedRow?.implied).toBe(true);
+      expect(impliedRow?.id).not.toBe('b-auto');
+      expect(impliedRow?.amount).toBe(400);
+      expect(impliedRow?.spent).toBe(350);
+      expect(impliedRow?.parentCategoryId).toBeNull();
+
+      const childRow = store.rows().find((r) => r.categoryId === 'auto-payment');
+      expect(childRow?.implied).toBe(false);
+      expect(childRow?.id).toBe('b-auto');
+    });
+
+    it('combines a parent\'s own budget/spend with a budgeted child\'s, instead of excluding it', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'housing', name: 'Housing' }),
+        seedCategory({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
+      ]);
+      await fakeDb['budgets'].bulkInsert([
+        seedBudget({ id: 'b-housing', categoryId: 'housing', amount: 300 }),
+        seedBudget({ id: 'b-rent', categoryId: 'rent', amount: 1500 }),
+      ]);
+      await fakeDb['transactions'].bulkInsert([
+        seedTransaction({ id: 't-housing', categoryId: 'housing', amount: -20 }),
+        seedTransaction({ id: 't-rent', categoryId: 'rent', amount: -1500 }),
+      ]);
+
+      await store.refresh();
+
+      const housingRow = store.rows().find((r) => r.categoryId === 'housing');
+      expect(housingRow?.implied).toBe(false);
+      expect(housingRow?.amount).toBe(1800);
+      expect(housingRow?.spent).toBe(1520);
+      // ownAmount stays Housing's own 300 — edit prefill must never use the combined 1800,
+      // or saving unchanged would silently inflate it by Rent's amount on every edit.
+      expect(housingRow?.ownAmount).toBe(300);
+    });
+
+    it('does not generate any row for an unbudgeted category tree', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'misc', name: 'Misc' }),
+        seedCategory({ id: 'misc-child', name: 'Misc child', parentCategoryId: 'misc' }),
+      ]);
+
+      await store.refresh();
+
+      expect(store.rows()).toHaveLength(0);
+    });
+
+    it('categoriesWithoutCurrentBudget keeps an implied-only category selectable', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'transportation', name: 'Transportation' }),
+        seedCategory({ id: 'auto-payment', name: 'Auto Payment', parentCategoryId: 'transportation' }),
+      ]);
+      await fakeDb['budgets'].insert(seedBudget({ id: 'b-auto', categoryId: 'auto-payment', amount: 400 }));
+
+      await store.refresh();
+
+      expect(store.categoriesWithoutCurrentBudget().map((c) => c.id)).toEqual(['transportation']);
+    });
+
+    it('transactionsForCategoryTree spans a category and all of its descendants', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'housing', name: 'Housing' }),
+        seedCategory({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
+      ]);
+      await fakeDb['transactions'].bulkInsert([
+        seedTransaction({ id: 't-housing', categoryId: 'housing', amount: -20 }),
+        seedTransaction({ id: 't-rent', categoryId: 'rent', amount: -1500 }),
+      ]);
+
+      await store.refresh();
+
+      expect(store.transactionsForCategoryTree('housing').map((t) => t.id).sort()).toEqual(['t-housing', 't-rent']);
+    });
+  });
+
   describe('aggregate', () => {
     it('sums expense budgets only, excluding income from the spent-of-budgeted total', async () => {
       await fakeDb['categories'].bulkInsert([
@@ -202,6 +294,26 @@ describe('BudgetsStore', () => {
       expect(aggregate.remaining).toBe(200);
       expect(aggregate.earned).toBe(3800);
       expect(aggregate.cashFlowNet).toBe(3500);
+    });
+
+    it('scopes the overall total to top-level rows, not double-counting a budgeted child\'s own row', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'housing', name: 'Housing', type: 'expense' }),
+        seedCategory({ id: 'rent', name: 'Rent', parentCategoryId: 'housing', type: 'expense' }),
+      ]);
+      await fakeDb['budgets'].bulkInsert([
+        seedBudget({ id: 'b-housing', categoryId: 'housing', amount: 300 }),
+        seedBudget({ id: 'b-rent', categoryId: 'rent', amount: 1500 }),
+      ]);
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'rent', amount: -1500 }));
+
+      await store.refresh();
+
+      // Housing's row already combines Rent's 1500/1500 into its own 300/0 — the aggregate must
+      // count that combined total once, not once via Housing's row and again via Rent's own row.
+      const aggregate = store.aggregate();
+      expect(aggregate.totalBudget).toBe(1800);
+      expect(aggregate.totalSpent).toBe(1500);
     });
   });
 });

@@ -4,6 +4,9 @@ import {
   buildSignedActualsMap,
   computeBudgetStatus,
   getBudgetForExactPeriod,
+  getCombinedActualAmount,
+  getCombinedBudgetAmounts,
+  getDescendantCategories,
   getEffectiveBudgetForScope,
   getRollupActualAmount,
   recomputeRollovers,
@@ -161,6 +164,98 @@ describe('getRollupActualAmount (carry-forward rollup fix)', () => {
     const budgets = [budget({ id: 'b-a', categoryId: 'a', period: '2026-08' })];
 
     expect(getRollupActualAmount('2026-08', 'a', categories, actuals, budgets)).toBe(75);
+  });
+});
+
+describe('getDescendantCategories', () => {
+  it('returns children and grandchildren, generic over depth', () => {
+    const categories = [
+      category({ id: 'a', parentCategoryId: null }),
+      category({ id: 'b', parentCategoryId: 'a' }),
+      category({ id: 'c', parentCategoryId: 'b' }),
+      category({ id: 'd', parentCategoryId: 'a' }),
+    ];
+    expect(getDescendantCategories('a', categories).map((c) => c.id).sort()).toEqual(['b', 'c', 'd']);
+    expect(getDescendantCategories('c', categories)).toEqual([]);
+  });
+});
+
+describe('getCombinedActualAmount (unified rollup rule)', () => {
+  it('includes a budgeted descendant\'s spend too, unlike getRollupActualAmount', () => {
+    const categories = [
+      category({ id: 'housing', name: 'Housing', parentCategoryId: null }),
+      category({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
+      category({ id: 'utilities', name: 'Utilities', parentCategoryId: 'housing' }),
+    ];
+    const actuals = new Map([
+      ['2026-08:rent', 1200],
+      ['2026-08:utilities', 150],
+      ['2026-08:housing', 20],
+    ]);
+
+    expect(getCombinedActualAmount('2026-08', 'housing', categories, actuals)).toBe(1370);
+  });
+
+  it('recurses through multiple levels', () => {
+    const categories = [
+      category({ id: 'a', parentCategoryId: null }),
+      category({ id: 'b', parentCategoryId: 'a' }),
+      category({ id: 'c', parentCategoryId: 'b' }),
+    ];
+    const actuals = new Map([['2026-08:c', 75]]);
+
+    expect(getCombinedActualAmount('2026-08', 'a', categories, actuals)).toBe(75);
+  });
+});
+
+describe('getCombinedBudgetAmounts (unified amount rule)', () => {
+  it('is just the own budget for a leaf category with no descendants', () => {
+    const categories = [category({ id: 'cat-1', parentCategoryId: null })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', period: '2026-08', amount: 500, rolloverAmount: 40 })];
+
+    const result = getCombinedBudgetAmounts('cat-1', categories, budgets, '2026-08');
+
+    expect(result).toEqual({ amount: 500, rolloverAmount: 40, hasOwnBudget: true, hasBudgetedDescendant: false });
+  });
+
+  it('adds a budgeted child\'s amount/rollover onto the parent\'s own explicit budget', () => {
+    const categories = [
+      category({ id: 'housing', parentCategoryId: null }),
+      category({ id: 'rent', parentCategoryId: 'housing' }),
+    ];
+    const budgets = [
+      budget({ id: 'b-housing', categoryId: 'housing', period: '2026-08', amount: 300, rolloverAmount: 10 }),
+      budget({ id: 'b-rent', categoryId: 'rent', period: '2026-08', amount: 1500, rolloverAmount: 50 }),
+    ];
+
+    const result = getCombinedBudgetAmounts('housing', categories, budgets, '2026-08');
+
+    expect(result).toEqual({ amount: 1800, rolloverAmount: 60, hasOwnBudget: true, hasBudgetedDescendant: true });
+  });
+
+  it('is implied (zero own amount, hasOwnBudget false) when only a descendant is budgeted', () => {
+    const categories = [
+      category({ id: 'transportation', parentCategoryId: null }),
+      category({ id: 'auto-payment', parentCategoryId: 'transportation' }),
+    ];
+    const budgets = [
+      budget({ id: 'b-auto', categoryId: 'auto-payment', period: '2026-08', amount: 400, rolloverAmount: 0 }),
+    ];
+
+    const result = getCombinedBudgetAmounts('transportation', categories, budgets, '2026-08');
+
+    expect(result).toEqual({ amount: 400, rolloverAmount: 0, hasOwnBudget: false, hasBudgetedDescendant: true });
+  });
+
+  it('has neither an own budget nor a budgeted descendant when nothing in the tree is budgeted', () => {
+    const categories = [
+      category({ id: 'transportation', parentCategoryId: null }),
+      category({ id: 'gas', parentCategoryId: 'transportation' }),
+    ];
+
+    const result = getCombinedBudgetAmounts('transportation', categories, [], '2026-08');
+
+    expect(result).toEqual({ amount: 0, rolloverAmount: 0, hasOwnBudget: false, hasBudgetedDescendant: false });
   });
 });
 

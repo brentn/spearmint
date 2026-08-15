@@ -8,7 +8,12 @@
       <div class="budget-detail__hero-label">
         {{ row.categoryType === 'income' ? 'Target vs. actual' : 'Spent this month' }}
       </div>
-      <h1 class="budget-detail__hero-title">{{ row.categoryName }}</h1>
+      <h1 class="budget-detail__hero-title">
+        {{ row.categoryName }}
+        @if (row.implied) {
+          <span class="budget-detail__implied-badge">computed</span>
+        }
+      </h1>
       <div class="budget-detail__hero-value">
         ${{ row.spent | number: '1.0-0' }}
         <span class="budget-detail__hero-sub">of ${{ row.available | number: '1.0-0' }}</span>
@@ -47,6 +52,33 @@
         </p>
       </div>
 
+      @if (subcategoryRows().length > 0) {
+        <div class="budget-detail__card">
+          <h2 class="budget-detail__section-title">Subcategories</h2>
+          <ul class="budget-detail__subcat-list">
+            @for (subRow of subcategoryRows(); track subRow.id) {
+              <li>
+                <a class="budget-detail__subcat-row" [routerLink]="['/budgets', subRow.id]">
+                  <div class="budget-detail__subcat-line">
+                    <span class="budget-detail__subcat-name">{{ subRow.categoryName }}</span>
+                    <span>${{ subRow.spent | number: '1.0-0' }} of ${{ subRow.available | number: '1.0-0' }}</span>
+                  </div>
+                  <div class="bar-track">
+                    <div
+                      class="bar-fill"
+                      [class.bar-fill--normal]="subRow.state === 'normal'"
+                      [class.bar-fill--warning]="subRow.state === 'warning'"
+                      [class.bar-fill--over]="subRow.state === 'over'"
+                      [style.width.%]="subRow.barPercent * 100"
+                    ></div>
+                  </div>
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
       <div class="budget-detail__card">
         <h2 class="budget-detail__section-title">Transactions</h2>
         @if (categoryTransactions().length === 0) {
@@ -69,9 +101,11 @@
         <p class="budget-detail__banner budget-detail__banner--error">{{ store.error() }}</p>
       }
 
-      @if (editing()) {
+      @if (formMode(); as mode) {
         <div class="budget-detail__card">
-          <h2 class="budget-detail__section-title">Edit budget</h2>
+          <h2 class="budget-detail__section-title">
+            {{ mode === 'edit' ? 'Edit budget' : 'Add a budget for ' + row.categoryName }}
+          </h2>
           <div class="budget-detail__edit-form">
             <label class="budget-detail__edit-label">
               Amount
@@ -79,25 +113,33 @@
                 type="number"
                 min="0"
                 step="0.01"
-                [value]="editAmount() ?? ''"
-                (input)="editAmount.set($any($event.target).valueAsNumber)"
+                [value]="formAmount() ?? ''"
+                (input)="formAmount.set($any($event.target).valueAsNumber)"
               />
             </label>
             @if (row.categoryType !== 'income') {
               <label class="budget-detail__edit-checkbox">
                 <input
                   type="checkbox"
-                  [checked]="editRollOver()"
-                  (change)="editRollOver.set($any($event.target).checked)"
+                  [checked]="formRollOver()"
+                  (change)="formRollOver.set($any($event.target).checked)"
                 />
                 Roll over unused amount into next month
               </label>
             }
             <div class="budget-detail__edit-actions">
-              <button type="button" class="budget-detail__save" (click)="saveEdit()">Save changes</button>
-              <button type="button" class="budget-detail__cancel" (click)="cancelEdit()">Cancel</button>
+              <button type="button" class="budget-detail__save" (click)="submitForm()">
+                {{ mode === 'edit' ? 'Save changes' : 'Add budget' }}
+              </button>
+              <button type="button" class="budget-detail__cancel" (click)="cancelForm()">Cancel</button>
             </div>
           </div>
+        </div>
+      } @else if (row.implied) {
+        <div class="budget-detail__actions">
+          <button type="button" class="budget-detail__edit-button" (click)="startAddBudget()">
+            Add a budget for this category
+          </button>
         </div>
       } @else {
         <div class="budget-detail__actions">

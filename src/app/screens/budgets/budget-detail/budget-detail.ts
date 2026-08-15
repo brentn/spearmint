@@ -2,7 +2,6 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
-import { currentYearMonth } from '../../../budgets/period.util';
 import type { Transaction } from '../../../data/models';
 
 @Component({
@@ -22,49 +21,82 @@ export class BudgetDetail {
     this.store.rows().find((row) => row.id === this.id()),
   );
 
-  /** Direct transactions in this category for the current period — not a recursive rollup
-   * of unbudgeted child categories, even though `row.spent` includes that rollup for
-   * parent categories. Kept simple for this detail view; revisit if the mismatch confuses. */
+  /** Transactions across this category and all of its descendants, current period only — for a
+   * leaf category (no children) this is just its own transactions, same as before issue #15. */
   protected readonly categoryTransactions = computed<Transaction[]>(() => {
     const row = this.row();
     if (!row) {
       return [];
     }
-    const period = currentYearMonth();
-    return this.store
-      .transactions()
-      .filter((t) => t.categoryId === row.categoryId && t.date.slice(0, 7) === period)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    return this.store.transactionsForCategoryTree(row.categoryId);
   });
 
-  protected readonly editing = signal(false);
-  protected readonly editAmount = signal<number | null>(null);
-  protected readonly editRollOver = signal(false);
+  /** Budgeted children of the tapped category, each its own mini progress row (issue #15) —
+   * unbudgeted children aren't listed here, but their spend is still folded into `row`'s
+   * combined total and into `categoryTransactions` above. */
+  protected readonly subcategoryRows = computed<BudgetRowViewModel[]>(() => {
+    const row = this.row();
+    if (!row) {
+      return [];
+    }
+    return this.store.rows().filter((r) => r.parentCategoryId === row.categoryId);
+  });
+
+  /** One shared amount/rollover form drives both "Edit budget" (a real row) and "Add a budget
+   * for this category" (an implied row) — they differ only in prefill and in which store call
+   * `submitForm` makes, not in shape (issue #15 turned this from one flow into a near-duplicate
+   * pair, so it's collapsed back into one here). */
+  protected readonly formMode = signal<'edit' | 'add' | null>(null);
+  protected readonly formAmount = signal<number | null>(null);
+  protected readonly formRollOver = signal(false);
 
   protected startEdit(): void {
     const row = this.row();
     if (!row) {
       return;
     }
-    this.editAmount.set(row.amount);
-    this.editRollOver.set(row.rollOver);
-    this.editing.set(true);
+    // row.amount is the combined display total (own + budgeted descendants' amounts) — editing
+    // must prefill/persist only this category's own explicit amount, or saving unchanged would
+    // silently inflate it by the children's amounts on every edit.
+    this.formAmount.set(row.ownAmount);
+    this.formRollOver.set(row.rollOver);
+    this.formMode.set('edit');
   }
 
-  protected cancelEdit(): void {
-    this.editing.set(false);
+  protected startAddBudget(): void {
+    this.formAmount.set(null);
+    this.formRollOver.set(false);
+    this.formMode.set('add');
   }
 
-  protected async saveEdit(): Promise<void> {
+  protected cancelForm(): void {
+    this.formMode.set(null);
+  }
+
+  protected async submitForm(): Promise<void> {
     const row = this.row();
-    const amount = this.editAmount();
-    if (!row || amount === null || amount < 0) {
+    const mode = this.formMode();
+    const amount = this.formAmount();
+    if (!row || !mode || amount === null || amount < 0) {
       return;
     }
-    const rollOver = row.categoryType === 'income' ? false : this.editRollOver();
-    await this.store.updateBudget(row.id, amount, rollOver);
+    const rollOver = row.categoryType === 'income' ? false : this.formRollOver();
+
+    if (mode === 'edit') {
+      await this.store.updateBudget(row.id, amount, rollOver);
+      if (!this.store.error()) {
+        this.formMode.set(null);
+      }
+      return;
+    }
+
+    // Creating the real budget replaces this implied row's synthetic id with a new real one
+    // (issue #15's "reverts to edit/delete on a later visit") — this screen's `id` input would
+    // otherwise point at an id that no longer resolves to any row, so navigate back to the list
+    // rather than leave the user on a stale "Budget not found" detail screen.
+    await this.store.addBudget(row.categoryId, amount, rollOver);
     if (!this.store.error()) {
-      this.editing.set(false);
+      await this.router.navigate(['/budgets']);
     }
   }
 

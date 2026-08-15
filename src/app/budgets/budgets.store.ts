@@ -7,8 +7,10 @@ import {
   type BudgetState,
   buildSignedActualsMap,
   computeBudgetStatus,
+  getCombinedActualAmount,
+  getCombinedBudgetAmounts,
+  getDescendantCategories,
   getEffectiveBudgetForScope,
-  getRollupActualAmount,
 } from './budget-engine.util';
 import { BudgetsService } from './budgets.service';
 import { currentYearMonth, elapsedMonthFraction, formatYearMonth } from './period.util';
@@ -19,7 +21,13 @@ export interface BudgetRowViewModel {
   categoryName: string;
   categoryType: CategoryType;
   parentCategoryId: string | null;
+  /** Combined amount: own explicit budget's amount (0 if none) plus every budgeted descendant's
+   * own amount (issue #15's unified amount rule) — what the progress bar and hero display. */
   amount: number;
+  /** This category's own explicit budget amount (0 if none/implied) — distinct from `amount`
+   * whenever it has a budgeted descendant. Editing a real budget must prefill/persist this, not
+   * the combined `amount`, or saving with no changes would silently inflate it every time. */
+  ownAmount: number;
   rollOver: boolean;
   rolloverAmount: number;
   available: number;
@@ -30,7 +38,13 @@ export interface BudgetRowViewModel {
   /** Whether the percentage label sits on top of the filled portion of the bar (vs. beside it). */
   pctLabelOnFill: boolean;
   state: BudgetState;
+  /** True for a synthetic row: no explicit budget of its own, computed from budgeted descendants
+   * (issue #15). `id` is a stable synthetic identifier in this case, not a real Budget id. */
+  implied: boolean;
 }
+
+/** Stable synthetic id for an implied row — distinct from real budget ids (randomUUID). */
+const impliedRowId = (categoryId: string): string => `implied:${categoryId}`;
 
 export interface BudgetsAggregate {
   monthName: string;
@@ -77,9 +91,25 @@ export class BudgetsStore {
     });
   }
 
+  /** A category whose only row is implied (computed from budgeted descendants) still counts as
+   * "not yet budgeted" here — it must stay selectable in the Add-budget picker (issue #15). */
   categoriesWithoutCurrentBudget(): Category[] {
-    const budgetedCategoryIds = new Set(this.rows().map((row) => row.categoryId));
+    const budgetedCategoryIds = new Set(
+      this.rows()
+        .filter((row) => !row.implied)
+        .map((row) => row.categoryId),
+    );
     return this.categories().filter((category) => !budgetedCategoryIds.has(category.id));
+  }
+
+  /** Transactions for `categoryId` and all of its descendants (any depth), current period only —
+   * the combined transaction list backing a (real or implied) parent's Budget Detail screen. */
+  transactionsForCategoryTree(categoryId: string): Transaction[] {
+    const period = currentYearMonth();
+    const treeIds = new Set([categoryId, ...getDescendantCategories(categoryId, this.categories()).map((c) => c.id)]);
+    return this.transactions()
+      .filter((t) => t.categoryId !== null && treeIds.has(t.categoryId) && t.date.slice(0, 7) === period)
+      .sort((a, b) => b.date.localeCompare(a.date));
   }
 
   async refresh(): Promise<void> {
@@ -127,30 +157,34 @@ export class BudgetsStore {
 
     const rows: BudgetRowViewModel[] = [];
     for (const category of categories) {
-      const effectiveBudget = getEffectiveBudgetForScope(budgets, category.id, 'month', period);
-      if (!effectiveBudget) {
+      const combined = getCombinedBudgetAmounts(category.id, categories, budgets, period);
+      // Neither an explicit budget of its own nor a budgeted descendant to imply one from —
+      // this category has no budget activity at all, so it stays out of the list entirely.
+      if (!combined.hasOwnBudget && !combined.hasBudgetedDescendant) {
         continue;
       }
-      const spent = getRollupActualAmount(period, category.id, categories, actualsByPeriodAndCategory, budgets);
-      const rolloverAmount = effectiveBudget.rolloverAmount ?? 0;
-      const status = computeBudgetStatus(category.type, spent, effectiveBudget.amount, rolloverAmount);
+      const ownBudget = getEffectiveBudgetForScope(budgets, category.id, 'month', period);
+      const spent = getCombinedActualAmount(period, category.id, categories, actualsByPeriodAndCategory);
+      const status = computeBudgetStatus(category.type, spent, combined.amount, combined.rolloverAmount);
 
       rows.push({
-        id: effectiveBudget.id,
+        id: ownBudget?.id ?? impliedRowId(category.id),
         categoryId: category.id,
         categoryName: category.name,
         categoryType: category.type,
         parentCategoryId: category.parentCategoryId,
-        amount: effectiveBudget.amount,
-        rollOver: effectiveBudget.rollOver,
-        rolloverAmount,
-        available: effectiveBudget.amount + rolloverAmount,
+        amount: combined.amount,
+        ownAmount: ownBudget?.amount ?? 0,
+        rollOver: ownBudget?.rollOver ?? false,
+        rolloverAmount: combined.rolloverAmount,
+        available: combined.amount + combined.rolloverAmount,
         spent,
         percent: status.percent,
         pctRounded: Math.round(status.percent * 100),
         barPercent: status.barPercent,
         pctLabelOnFill: status.barPercent > 0.22,
         state: status.state,
+        implied: ownBudget === null,
       });
     }
 
@@ -168,8 +202,13 @@ export class BudgetsStore {
   }
 
   private buildAggregate(rows: BudgetRowViewModel[]): BudgetsAggregate {
-    const expenseRows = rows.filter((row) => row.categoryType !== 'income');
-    const incomeRows = rows.filter((row) => row.categoryType === 'income');
+    // Top-level rows only (real or implied): a parent row already fully absorbs its descendants'
+    // amount/rollover/spend (issue #15's unified rollup), so counting a child's own row here too
+    // would double-count it. Independent of the "Show subcategories" toggle, which is purely
+    // presentational over this same row set.
+    const topLevelRows = rows.filter((row) => row.parentCategoryId === null);
+    const expenseRows = topLevelRows.filter((row) => row.categoryType !== 'income');
+    const incomeRows = topLevelRows.filter((row) => row.categoryType === 'income');
 
     const totalSpent = expenseRows.reduce((sum, row) => sum + row.spent, 0);
     const totalBudget = expenseRows.reduce((sum, row) => sum + row.available, 0);

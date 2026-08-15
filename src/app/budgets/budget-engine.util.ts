@@ -104,6 +104,78 @@ export function getRollupActualAmount(
   return direct + childContribution;
 }
 
+/** All descendants of `categoryId` at any depth (children, grandchildren, ...), generic
+ * over the category-management UI's current two-level cap so the rollup math below never
+ * hard-codes "just look at children". */
+export function getDescendantCategories(categoryId: string, categories: Category[]): Category[] {
+  const children = categories.filter((c) => c.parentCategoryId === categoryId);
+  return children.flatMap((child) => [child, ...getDescendantCategories(child.id, categories)]);
+}
+
+/**
+ * Full-subtree actual amount (issue #15's unified rollup rule): unlike `getRollupActualAmount`
+ * (which stops at a budgeted descendant for the rollover engine's own-envelope math), this
+ * always includes every descendant's spend regardless of whether that descendant has its own
+ * budget — the basis for a combined row's displayed `spent`.
+ */
+export function getCombinedActualAmount(
+  period: YearMonth,
+  categoryId: string,
+  categories: Category[],
+  actualsByPeriodAndCategory: Map<string, number>,
+): number {
+  const direct = actualsByPeriodAndCategory.get(`${period}:${categoryId}`) ?? 0;
+  const descendants = getDescendantCategories(categoryId, categories);
+  const descendantContribution = descendants.reduce(
+    (sum, descendant) => sum + (actualsByPeriodAndCategory.get(`${period}:${descendant.id}`) ?? 0),
+    0,
+  );
+  return direct + descendantContribution;
+}
+
+export interface CombinedBudgetAmounts {
+  /** Own explicit amount (0 if none) plus every budgeted descendant's own amount. */
+  amount: number;
+  /** Own explicit rolloverAmount (0 if none) plus every budgeted descendant's own rolloverAmount. */
+  rolloverAmount: number;
+  /** Whether this category has its own explicit budget for `period` (vs. only implied via descendants). */
+  hasOwnBudget: boolean;
+  /** Whether any descendant (any depth) has its own explicit budget for `period`. */
+  hasBudgetedDescendant: boolean;
+}
+
+/**
+ * Issue #15's unified amount rule: a category's effective budgeted amount/rollover is its own
+ * explicit budget's amount/rollover (zero if it has none) plus the sum of all its *budgeted*
+ * descendants' own amount/rollover, recursively. Used for both real rows (own budget present)
+ * and implied rows (own budget absent, `hasBudgetedDescendant` true) — the same formula degrades
+ * to "just its own budget" for a leaf category, matching pre-#15 behavior exactly.
+ */
+export function getCombinedBudgetAmounts(
+  categoryId: string,
+  categories: Category[],
+  budgets: Budget[],
+  period: YearMonth,
+): CombinedBudgetAmounts {
+  const ownBudget = getEffectiveBudgetForScope(budgets, categoryId, 'month', period);
+  const descendants = getDescendantCategories(categoryId, categories);
+
+  let amount = ownBudget?.amount ?? 0;
+  let rolloverAmount = ownBudget?.rolloverAmount ?? 0;
+  let hasBudgetedDescendant = false;
+
+  for (const descendant of descendants) {
+    const descendantBudget = getEffectiveBudgetForScope(budgets, descendant.id, 'month', period);
+    if (descendantBudget) {
+      amount += descendantBudget.amount;
+      rolloverAmount += descendantBudget.rolloverAmount ?? 0;
+      hasBudgetedDescendant = true;
+    }
+  }
+
+  return { amount, rolloverAmount, hasOwnBudget: ownBudget !== null, hasBudgetedDescendant };
+}
+
 /**
  * Three-state progress status (spec §4): fixed 85% global warning threshold for
  * expense/transfer categories (green/amber/red ascending), inverted for income (a target to
