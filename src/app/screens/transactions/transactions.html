@@ -2,8 +2,8 @@
   <header class="transactions__hero">
     <div class="transactions__hero-topline">
       <h1 class="transactions__hero-label">Transactions</h1>
-      @if (filteredToUncategorized()) {
-        <a class="transactions__filter-badge" routerLink="/transactions">Uncategorized &times;</a>
+      @if (filterBadgeLabel(); as label) {
+        <a class="transactions__filter-badge" routerLink="/transactions">{{ label }} &times;</a>
       }
     </div>
     <div class="transactions__hero-value">

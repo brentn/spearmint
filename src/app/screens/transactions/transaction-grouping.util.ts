@@ -56,3 +56,7 @@ export function netChangeInMonth(transactions: Transaction[], yearMonth: YearMon
 export function filterUncategorized(transactions: Transaction[]): Transaction[] {
   return transactions.filter((t) => t.categoryId === null);
 }
+
+export function filterByAccount(transactions: Transaction[], accountId: string): Transaction[] {
+  return transactions.filter((t) => t.accountId === accountId);
+}

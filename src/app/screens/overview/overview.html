@@ -76,8 +76,10 @@
               <ul class="overview__account-breakdown">
                 @for (account of card.accounts; track account.id) {
                   <li class="overview__account-row">
-                    <span>{{ account.name }}</span>
-                    <span>${{ account.balance | number: '1.2-2' }}</span>
+                    <a class="overview__account-link" routerLink="/transactions" [queryParams]="{ accountId: account.id }">
+                      <span>{{ account.name }}</span>
+                      <span>${{ account.balance | number: '1.2-2' }}</span>
+                    </a>
                   </li>
                 }
               </ul>

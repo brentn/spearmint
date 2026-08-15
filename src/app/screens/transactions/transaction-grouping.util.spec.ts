@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Transaction } from '../../data/models';
 import {
   countInMonth,
+  filterByAccount,
   filterUncategorized,
   groupTransactionsByDay,
   netChangeInMonth,
@@ -114,6 +115,22 @@ describe('filterUncategorized', () => {
 
   it('is empty when nothing is uncategorized', () => {
     expect(filterUncategorized([transaction({ categoryId: 'cat-1' })])).toEqual([]);
+  });
+});
+
+describe('filterByAccount', () => {
+  it('keeps only transactions matching the given accountId', () => {
+    const transactions = [
+      transaction({ id: 't1', accountId: 'acc-1' }),
+      transaction({ id: 't2', accountId: 'acc-2' }),
+      transaction({ id: 't3', accountId: 'acc-1' }),
+    ];
+
+    expect(filterByAccount(transactions, 'acc-1').map((t) => t.id)).toEqual(['t1', 't3']);
+  });
+
+  it('is empty when no transactions match the account', () => {
+    expect(filterByAccount([transaction({ accountId: 'acc-1' })], 'acc-2')).toEqual([]);
   });
 });
 
