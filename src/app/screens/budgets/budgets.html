@@ -72,7 +72,7 @@
             <div class="budgets__flow-bar-stack">
               <div
                 class="budgets__flow-bar budgets__flow-bar--income-overage"
-                [style.height.px]="flowBarHeight(incomeOverage())"
+                [style.height.px]="flowOverageHeight(incomeOverage())"
               ></div>
               <div
                 class="budgets__flow-bar budgets__flow-bar--budgeted-income"
@@ -88,7 +88,7 @@
             <div class="budgets__flow-bar-stack">
               <div
                 class="budgets__flow-bar budgets__flow-bar--expense-overage"
-                [style.height.px]="flowBarHeight(expenseOverage())"
+                [style.height.px]="flowOverageHeight(expenseOverage())"
               ></div>
               <div
                 class="budgets__flow-bar budgets__flow-bar--budgeted-expense"

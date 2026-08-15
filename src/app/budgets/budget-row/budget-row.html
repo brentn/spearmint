@@ -6,11 +6,7 @@
     </div>
     <div class="bar-track" [class.bar-track--implied]="row().implied">
       <div
-        class="bar-fill"
-        [class.bar-fill--normal]="row().state === 'normal'"
-        [class.bar-fill--warning]="row().state === 'warning'"
-        [class.bar-fill--over]="row().state === 'over'"
-        [class.bar-fill--info]="row().state === 'info'"
+        [class]="'bar-fill bar-fill--' + row().state"
         [style.width.%]="row().barPercent * 100"
       ></div>
       <span

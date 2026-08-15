@@ -380,6 +380,19 @@ describe('BudgetsStore', () => {
       expect(aggregate.totalBudget).toBe(1800);
       expect(aggregate.totalSpent).toBe(1500);
     });
+
+    it('counts an entirely unbudgeted income category toward earned (issue #21 cash-flow box)', async () => {
+      // No budget anywhere for this category, so it never gets a row (bullet 3's $0-computed
+      // rule is expense-only) — earned must still be sourced from actuals directly, not from
+      // rows, or the cash-flow box's "unbudgeted actual income" overage could never render.
+      await fakeDb['categories'].insert(seedCategory({ id: 'interest', name: 'Interest Income', type: 'income' }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'interest', amount: 50 }));
+
+      await store.refresh();
+
+      expect(store.rows()).toHaveLength(0);
+      expect(store.aggregate().earned).toBe(50);
+    });
   });
 
   describe('$0 computed budgets for unbudgeted spend (issue #21)', () => {

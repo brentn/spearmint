@@ -89,19 +89,26 @@ export class Budgets {
   /** Bar heights for the cash-flow comparison, scaled against whichever of the four totals
    * (earned, spent, budgeted-income-plus-overage, budgeted-expenses-plus-overage) is largest. */
   protected flowBarHeight(value: number): number {
-    if (value <= 0) {
-      return 0;
-    }
+    return Math.max((value / this.cashFlowMax()) * 70, 4);
+  }
+
+  /** Height for the grey unbudgeted-overage cap stacked on a budgeted bar — unlike
+   * flowBarHeight(), collapses to 0 (no 4px floor) when there's no overage, so the cap
+   * disappears entirely rather than drawing a stray sliver above a fully-covered budget. */
+  protected flowOverageHeight(value: number): number {
+    return value <= 0 ? 0 : this.flowBarHeight(value);
+  }
+
+  private readonly cashFlowMax = computed(() => {
     const d = this.cashFlowData();
-    const maxFlow = Math.max(
+    return Math.max(
       d.earned,
       d.spent,
       d.budgetedIncome + this.incomeOverage(),
       d.budgetedExpenses + this.expenseOverage(),
       1,
     );
-    return Math.max((value / maxFlow) * 70, 4);
-  }
+  });
 
   private resetAddForm(): void {
     this.newCategoryId.set('');

@@ -45,11 +45,7 @@
         </div>
         <div class="bar-track bar-track--large">
           <div
-            class="bar-fill"
-            [class.bar-fill--normal]="row.state === 'normal'"
-            [class.bar-fill--warning]="row.state === 'warning'"
-            [class.bar-fill--over]="row.state === 'over'"
-            [class.bar-fill--info]="row.state === 'info'"
+            [class]="'bar-fill bar-fill--' + row.state"
             [style.width.%]="row.barPercent * 100"
           ></div>
           <span
@@ -82,11 +78,7 @@
                   </div>
                   <div class="bar-track">
                     <div
-                      class="bar-fill"
-                      [class.bar-fill--normal]="subRow.state === 'normal'"
-                      [class.bar-fill--warning]="subRow.state === 'warning'"
-                      [class.bar-fill--over]="subRow.state === 'over'"
-                      [class.bar-fill--info]="subRow.state === 'info'"
+                      [class]="'bar-fill bar-fill--' + subRow.state"
                       [style.width.%]="subRow.barPercent * 100"
                     ></div>
                   </div>

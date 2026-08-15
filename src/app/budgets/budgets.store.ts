@@ -84,7 +84,9 @@ export class BudgetsStore {
   readonly transactions = signal<Transaction[]>([]);
   readonly accounts = signal<Account[]>([]);
 
-  readonly aggregate = computed<BudgetsAggregate>(() => this.buildAggregate(this.rows()));
+  readonly aggregate = computed<BudgetsAggregate>(() =>
+    this.buildAggregate(this.rows(), this.transactions(), this.categories()),
+  );
 
   constructor() {
     effect(() => {
@@ -258,21 +260,31 @@ export class BudgetsStore {
     return ordered;
   }
 
-  private buildAggregate(rows: BudgetRowViewModel[]): BudgetsAggregate {
+  private buildAggregate(
+    rows: BudgetRowViewModel[],
+    transactions: Transaction[],
+    categories: Category[],
+  ): BudgetsAggregate {
     // Top-level rows only (real or implied): a parent row already fully absorbs its descendants'
     // amount/rollover/spend (issue #15's unified rollup), so counting a child's own row here too
     // would double-count it. Independent of the "Show subcategories" toggle, which is purely
     // presentational over this same row set.
     const topLevelRows = rows.filter((row) => row.parentCategoryId === null);
     const expenseRows = topLevelRows.filter((row) => row.categoryType !== 'income');
-    const incomeRows = topLevelRows.filter((row) => row.categoryType === 'income');
 
     const totalSpent = expenseRows.reduce((sum, row) => sum + row.spent, 0);
     const totalBudget = expenseRows.reduce((sum, row) => sum + row.available, 0);
     const remaining = totalBudget - totalSpent;
     const overallStatus = computeBudgetStatus('expense', totalSpent, totalBudget, 0);
-    const earned = incomeRows.reduce((sum, row) => sum + row.spent, 0);
     const period = currentYearMonth();
+    // Deliberately not derived from `rows`/incomeRows (issue #21): a wholly unbudgeted income
+    // category never gets a row (bullet 3's $0-computed-budget rule is scoped to expenses only —
+    // see buildRows), but its earnings must still count toward the cash-flow box's "Earned" total
+    // and its "unbudgeted actual" overage, so this sums every income category's actuals directly.
+    const actualsByPeriodAndCategory = buildSignedActualsMap(transactions, categories);
+    const earned = categories
+      .filter((category) => category.type === 'income')
+      .reduce((sum, category) => sum + (actualsByPeriodAndCategory.get(`${period}:${category.id}`) ?? 0), 0);
 
     return {
       monthName: formatYearMonth(period),

@@ -2,6 +2,8 @@ import type { YearMonth } from '../data/models';
 
 /** Pure UTC-calendar YearMonth arithmetic, mirroring simplefin/date-only.util.ts's UTC discipline. */
 
+const FINAL_WEEK_DAYS = 7;
+
 export function isYearMonth(value: string): value is YearMonth {
   if (!/^\d{4}-\d{2}$/.test(value)) {
     return false;
@@ -75,5 +77,5 @@ export function isFinalWeekOfMonth(period: YearMonth, today: Date = new Date()):
   const monthIndex = Number(period.slice(5, 7)) - 1;
   const dayOfMonth = Number(todayIso.slice(8, 10));
   const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-  return dayOfMonth > daysInMonth - 7;
+  return dayOfMonth > daysInMonth - FINAL_WEEK_DAYS;
 }
