@@ -1,9 +1,16 @@
 <div class="category-picker">
-  <button type="button" class="category-picker__trigger" [disabled]="disabled()" (click)="toggle()">
+  <button #trigger type="button" class="category-picker__trigger" [disabled]="disabled()" (click)="toggle()">
     {{ selectedName() }}
   </button>
-  @if (open()) {
-    <div class="category-picker__panel">
+  @if (open() && panelPosition(); as position) {
+    <div
+      class="category-picker__panel"
+      [style.left.px]="position.left"
+      [style.width.px]="position.width"
+      [style.top.px]="position.top"
+      [style.bottom.px]="position.bottom"
+      [style.max-height.px]="position.maxHeight"
+    >
       <input
         class="category-picker__filter"
         type="text"
