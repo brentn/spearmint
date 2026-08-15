@@ -14,7 +14,7 @@ import {
   getEffectiveBudgetForScope,
 } from './budget-engine.util';
 import { BudgetsService } from './budgets.service';
-import { currentYearMonth, elapsedMonthFraction, formatYearMonth } from './period.util';
+import { currentYearMonth, elapsedMonthFraction, formatYearMonth, isFinalWeekOfMonth } from './period.util';
 
 export interface BudgetRowViewModel {
   id: string;
@@ -179,18 +179,24 @@ export class BudgetsStore {
 
   private buildRows(budgets: Budget[], categories: Category[], transactions: Transaction[]): BudgetRowViewModel[] {
     const period = currentYearMonth();
+    const isIncomeInfoPeriod = !isFinalWeekOfMonth(period);
     const actualsByPeriodAndCategory = buildSignedActualsMap(transactions, categories);
 
     const rows: BudgetRowViewModel[] = [];
     for (const category of categories) {
       const combined = getCombinedBudgetAmounts(category.id, categories, budgets, period);
-      // Neither an explicit budget of its own nor a budgeted descendant to imply one from —
-      // this category has no budget activity at all, so it stays out of the list entirely.
-      if (!combined.hasOwnBudget && !combined.hasBudgetedDescendant) {
+      // `spent` already rolls up the whole subtree (getCombinedActualAmount), so a parent whose
+      // only expense activity comes from an unbudgeted child qualifies here too — no separate
+      // check needed to cover the "child or parent" half of issue #21's $0-computed-budget rule.
+      const spent = getCombinedActualAmount(period, category.id, categories, actualsByPeriodAndCategory);
+      const hasUnbudgetedExpenseActivity = category.type !== 'income' && spent !== 0;
+      // Neither an explicit budget of its own, a budgeted descendant to imply one from, nor any
+      // expense activity to imply a $0 budget from (issue #21) — no budget activity at all, so
+      // this category stays out of the list entirely.
+      if (!combined.hasOwnBudget && !combined.hasBudgetedDescendant && !hasUnbudgetedExpenseActivity) {
         continue;
       }
       const ownBudget = getEffectiveBudgetForScope(budgets, category.id, 'month', period);
-      const spent = getCombinedActualAmount(period, category.id, categories, actualsByPeriodAndCategory);
       const status = computeBudgetStatus(category.type, spent, combined.amount, combined.rolloverAmount);
 
       rows.push({
@@ -209,22 +215,47 @@ export class BudgetsStore {
         pctRounded: Math.round(status.percent * 100),
         barPercent: status.barPercent,
         pctLabelOnFill: status.barPercent > 0.22,
-        state: status.state,
+        // Neutral "too early to judge" color for an income target (issue #21) — the real
+        // green/amber/red state resumes once the final week gives "behind target" real meaning.
+        state: category.type === 'income' && isIncomeInfoPeriod ? 'info' : status.state,
         implied: ownBudget === null,
       });
     }
 
-    rows.sort((a, b) => {
-      if (a.categoryType === 'income' && b.categoryType !== 'income') {
-        return 1;
-      }
-      if (a.categoryType !== 'income' && b.categoryType === 'income') {
-        return -1;
-      }
-      return a.categoryName.localeCompare(b.categoryName);
-    });
+    return this.orderByCategoryTree(rows);
+  }
 
-    return rows;
+  /** Parent-above-children ordering within each type group (issue #21): top-level rows sorted
+   * alphabetically, each immediately followed by its own children (also alphabetical) — the
+   * income group still sorts after expense/transfer, matching the pre-#21 group split. */
+  private orderByCategoryTree(rows: BudgetRowViewModel[]): BudgetRowViewModel[] {
+    const byParent = new Map<string | null, BudgetRowViewModel[]>();
+    for (const row of rows) {
+      const siblings = byParent.get(row.parentCategoryId) ?? [];
+      siblings.push(row);
+      byParent.set(row.parentCategoryId, siblings);
+    }
+    for (const siblings of byParent.values()) {
+      siblings.sort((a, b) => a.categoryName.localeCompare(b.categoryName));
+    }
+
+    const ordered: BudgetRowViewModel[] = [];
+    const appendTree = (row: BudgetRowViewModel): void => {
+      ordered.push(row);
+      for (const child of byParent.get(row.categoryId) ?? []) {
+        appendTree(child);
+      }
+    };
+
+    const topLevel = byParent.get(null) ?? [];
+    for (const row of topLevel.filter((r) => r.categoryType !== 'income')) {
+      appendTree(row);
+    }
+    for (const row of topLevel.filter((r) => r.categoryType === 'income')) {
+      appendTree(row);
+    }
+
+    return ordered;
   }
 
   private buildAggregate(rows: BudgetRowViewModel[]): BudgetsAggregate {

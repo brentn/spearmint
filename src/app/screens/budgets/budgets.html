@@ -43,28 +43,7 @@
       <div class="budgets__card">
         <div class="budgets__flow-label">{{ store.aggregate().monthName }} cash flow</div>
         <div class="budgets__flow-net">${{ store.aggregate().cashFlowNet | number: '1.0-0' }}</div>
-        <div class="budgets__flow-bars">
-          <div class="budgets__flow-bar-group">
-            <div class="budgets__flow-bar-caption">
-              <span>Earned</span>
-              <strong>${{ store.aggregate().earned | number: '1.0-0' }}</strong>
-            </div>
-            <div
-              class="budgets__flow-bar budgets__flow-bar--earned"
-              [style.height.px]="flowBarHeight(store.aggregate().earned)"
-            ></div>
-          </div>
-          <div class="budgets__flow-bar-group">
-            <div class="budgets__flow-bar-caption">
-              <span>Spent</span>
-              <strong>${{ store.aggregate().spent | number: '1.0-0' }}</strong>
-            </div>
-            <div
-              class="budgets__flow-bar budgets__flow-bar--spent"
-              [style.height.px]="flowBarHeight(store.aggregate().spent)"
-            ></div>
-          </div>
-        </div>
+        <app-cash-flow-prototype-host [data]="cashFlowData()" />
       </div>
 
       @if (incomeRows().length > 0) {

@@ -5,10 +5,11 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
 import { BudgetsStore } from '../../budgets/budgets.store';
 import type { CategoryType } from '../../data/models';
+import { CashFlowPrototypeHost, type CashFlowProtoData } from './cash-flow-prototype/cash-flow-prototype';
 
 @Component({
   selector: 'app-budgets',
-  imports: [FaIconComponent, DecimalPipe, BudgetRow],
+  imports: [FaIconComponent, DecimalPipe, BudgetRow, CashFlowPrototypeHost],
   templateUrl: './budgets.html',
   styleUrl: './budgets.scss',
   providers: [BudgetsStore],
@@ -29,6 +30,18 @@ export class Budgets {
     this.expenseRows().filter((r) => this.showChildBudgets() || !r.parentCategoryId),
   );
   protected readonly hasChildExpenseBudgets = computed(() => this.expenseRows().some((r) => r.parentCategoryId));
+
+  /** PROTOTYPE data for the cash-flow box layout options (issue #21) — budgeted totals come from
+   * top-level rows only, mirroring aggregate()'s own no-double-counting rule. */
+  protected readonly cashFlowData = computed<CashFlowProtoData>(() => {
+    const topLevelIncome = this.incomeRows().filter((r) => r.parentCategoryId === null);
+    return {
+      earned: this.store.aggregate().earned,
+      spent: this.store.aggregate().spent,
+      budgetedIncome: topLevelIncome.reduce((sum, r) => sum + r.available, 0),
+      budgetedExpenses: this.store.aggregate().totalBudget,
+    };
+  });
 
   protected selectedCategoryType(): CategoryType | null {
     const categoryId = this.newCategoryId();
@@ -63,13 +76,6 @@ export class Budgets {
     if (!this.store.error()) {
       this.closeAddDialog();
     }
-  }
-
-  /** Bar heights for the cash-flow comparison, scaled against whichever of earned/spent is larger. */
-  protected flowBarHeight(value: number): number {
-    const aggregate = this.store.aggregate();
-    const maxFlow = Math.max(aggregate.earned, aggregate.spent, 1);
-    return Math.max((value / maxFlow) * 70, 4);
   }
 
   private resetAddForm(): void {

@@ -3,6 +3,7 @@ import {
   currentYearMonth,
   elapsedMonthFraction,
   formatYearMonth,
+  isFinalWeekOfMonth,
   nextYearMonth,
   previousYearMonth,
 } from './period.util';
@@ -58,5 +59,28 @@ describe('elapsedMonthFraction', () => {
 
   it('clamps to 1 on the last day of the month', () => {
     expect(elapsedMonthFraction('2026-08', new Date('2026-08-31T00:00:00Z'))).toBeCloseTo(1, 5);
+  });
+});
+
+describe('isFinalWeekOfMonth', () => {
+  // August 2026 has 31 days — the final week is the 25th through the 31st.
+  it('is false with more than 7 days left in the current month', () => {
+    expect(isFinalWeekOfMonth('2026-08', new Date('2026-08-24T00:00:00Z'))).toBe(false);
+  });
+
+  it('is true on the first day of the final week', () => {
+    expect(isFinalWeekOfMonth('2026-08', new Date('2026-08-25T00:00:00Z'))).toBe(true);
+  });
+
+  it('is true on the last day of the month', () => {
+    expect(isFinalWeekOfMonth('2026-08', new Date('2026-08-31T00:00:00Z'))).toBe(true);
+  });
+
+  it('is true for a period entirely in the past', () => {
+    expect(isFinalWeekOfMonth('2026-07', new Date('2026-08-14T00:00:00Z'))).toBe(true);
+  });
+
+  it('is false for a period entirely in the future', () => {
+    expect(isFinalWeekOfMonth('2026-09', new Date('2026-08-14T00:00:00Z'))).toBe(false);
   });
 });

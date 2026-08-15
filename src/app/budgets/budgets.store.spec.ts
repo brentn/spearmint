@@ -376,4 +376,97 @@ describe('BudgetsStore', () => {
       expect(aggregate.totalSpent).toBe(1500);
     });
   });
+
+  describe('$0 computed budgets for unbudgeted spend (issue #21)', () => {
+    it('synthesizes a $0 implied row for a category with expenses but no budget anywhere in its tree', async () => {
+      await fakeDb['categories'].insert(seedCategory({ id: 'dining', name: 'Dining' }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'dining', amount: -40 }));
+
+      await store.refresh();
+
+      expect(store.rows()).toHaveLength(1);
+      const diningRow = store.rows()[0];
+      expect(diningRow.implied).toBe(true);
+      expect(diningRow.amount).toBe(0);
+      expect(diningRow.spent).toBe(40);
+      expect(diningRow.percent).toBe(1);
+      expect(diningRow.state).toBe('over');
+    });
+
+    it('synthesizes a $0 implied row for a parent whose only spend comes from an unbudgeted child', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'misc', name: 'Misc' }),
+        seedCategory({ id: 'misc-child', name: 'Misc child', parentCategoryId: 'misc' }),
+      ]);
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'misc-child', amount: -15 }));
+
+      await store.refresh();
+
+      expect(store.rows()).toHaveLength(2);
+      const parentRow = store.rows().find((r) => r.categoryId === 'misc');
+      expect(parentRow?.implied).toBe(true);
+      expect(parentRow?.spent).toBe(15);
+    });
+
+    it('does not synthesize a row for an income category with no budget, even if it has activity', async () => {
+      await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'paycheck', amount: 500 }));
+
+      await store.refresh();
+
+      expect(store.rows()).toHaveLength(0);
+    });
+  });
+
+  describe('parent-above-child ordering (issue #21)', () => {
+    it('places a parent row immediately above its children, even when the parent sorts alphabetically after them', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'zzz-parent', name: 'Zzz Parent' }),
+        seedCategory({ id: 'aaa-child', name: 'Aaa Child', parentCategoryId: 'zzz-parent' }),
+        seedCategory({ id: 'aaa-other', name: 'Aaa Other' }),
+      ]);
+      await fakeDb['budgets'].bulkInsert([
+        seedBudget({ id: 'b-parent', categoryId: 'zzz-parent', amount: 100 }),
+        seedBudget({ id: 'b-child', categoryId: 'aaa-child', amount: 50 }),
+        seedBudget({ id: 'b-other', categoryId: 'aaa-other', amount: 20 }),
+      ]);
+
+      await store.refresh();
+
+      expect(store.rows().map((r) => r.categoryId)).toEqual(['aaa-other', 'zzz-parent', 'aaa-child']);
+    });
+  });
+
+  describe('income bar color before the final week (issue #21)', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('is a neutral "info" state with more than a week left in the month', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-08-10T00:00:00Z'));
+
+      await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }));
+      await fakeDb['budgets'].insert(seedBudget({ categoryId: 'paycheck', amount: 4000 }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'paycheck', amount: 1000 }));
+
+      await store.refresh();
+
+      expect(store.rows()[0].state).toBe('info');
+    });
+
+    it('resumes real green/amber/red state during the final week of the month', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-08-28T00:00:00Z'));
+
+      await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }));
+      await fakeDb['budgets'].insert(seedBudget({ categoryId: 'paycheck', amount: 4000 }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'paycheck', amount: 1000 }));
+
+      await store.refresh();
+
+      // 1000/4000 = 25%, below the 70% income warning threshold — a real "behind target" state.
+      expect(store.rows()[0].state).toBe('over');
+    });
+  });
 });
