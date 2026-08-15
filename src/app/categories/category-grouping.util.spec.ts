@@ -30,7 +30,7 @@ describe('groupAndSortCategories', () => {
     const groups = groupAndSortCategories(categories);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0].options.map((o) => o.name)).toEqual(['Home Insurance', 'Mortgage', 'Rent']);
+    expect(groups[0].options.map((o) => o.name)).toEqual(['Housing', 'Home Insurance', 'Mortgage', 'Rent']);
   });
 
   it('falls back to the parent itself as a single option when it has no children', () => {
@@ -38,6 +38,39 @@ describe('groupAndSortCategories', () => {
 
     const groups = groupAndSortCategories(categories);
 
-    expect(groups).toEqual([{ label: 'Miscellaneous', options: [categories[0]] }]);
+    expect(groups).toEqual([
+      { label: 'Miscellaneous', options: [{ id: 'misc', name: 'Miscellaneous', displayName: 'Miscellaneous' }] },
+    ]);
+  });
+
+  it('offers the parent itself as the first, unprefixed option when it has children', () => {
+    const categories: Category[] = [
+      makeCategory({ id: 'housing', name: 'Housing' }),
+      makeCategory({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
+    ];
+
+    const groups = groupAndSortCategories(categories);
+
+    expect(groups).toEqual([
+      {
+        label: 'Housing',
+        options: [
+          { id: 'housing', name: 'Housing', displayName: 'Housing' },
+          { id: 'rent', name: 'Rent', displayName: ' | Rent' },
+        ],
+      },
+    ]);
+  });
+
+  it('places the parent option before its subcategories regardless of subcategory sort order', () => {
+    const categories: Category[] = [
+      makeCategory({ id: 'housing', name: 'Housing' }),
+      makeCategory({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
+      makeCategory({ id: 'insurance', name: 'Home Insurance', parentCategoryId: 'housing' }),
+    ];
+
+    const groups = groupAndSortCategories(categories);
+
+    expect(groups[0].options.map((o) => o.id)).toEqual(['housing', 'insurance', 'rent']);
   });
 });
