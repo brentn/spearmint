@@ -10,11 +10,12 @@
   border: 1px solid var(--spearmint-border);
   border-radius: 999px;
   background: var(--spearmint-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236B7A70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-    no-repeat right 0.55rem center;
-  background-size: 0.6rem;
-  padding: 0.15rem 1.6rem 0.15rem 0.65rem;
-  // 16px minimum: matches the iOS Safari auto-zoom threshold this control replaced.
-  font-size: 1rem;
+    no-repeat right 0.45rem center;
+  background-size: 0.55rem;
+  padding: 0.1rem 1.35rem 0.1rem 0.55rem;
+  // Shrunk (issue #19) now that the row itself opens the full edit dialog on click — this
+  // trigger is a secondary, denser quick-recategorize path, not the row's primary affordance.
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--spearmint-muted);
   max-width: 100%;
@@ -25,7 +26,7 @@
 
   &:disabled {
     background-image: none;
-    padding-right: 0.65rem;
+    padding-right: 0.55rem;
     opacity: 0.7;
     cursor: default;
   }

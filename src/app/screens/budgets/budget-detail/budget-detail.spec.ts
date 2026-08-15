@@ -2,8 +2,9 @@ import { Component, signal, provideZonelessChangeDetection } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import type { Transaction } from '../../../data/models';
+import type { Category, Transaction } from '../../../data/models';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
+import { TransactionsStore } from '../../transactions/transactions.store';
 import { stubDialogMethods } from '../../../testing/stub-dialog-methods';
 import { BudgetDetail } from './budget-detail';
 
@@ -55,6 +56,7 @@ class FakeBudgetsStore {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly rows = signal<BudgetRowViewModel[]>([]);
+  readonly categories = signal<Category[]>([]);
   private readonly transactionsByCategory = new Map<string, Transaction[]>();
 
   setTransactionTree(categoryId: string, transactions: Transaction[]): void {
@@ -65,9 +67,20 @@ class FakeBudgetsStore {
     return this.transactionsByCategory.get(categoryId) ?? [];
   }
 
+  accountName(_accountId: string): string {
+    return 'Checking';
+  }
+
   readonly addBudget = vi.fn(async (_categoryId: string, _amount: number, _rollOver: boolean) => {});
   readonly updateBudget = vi.fn(async (_id: string, _amount: number, _rollOver: boolean) => {});
   readonly deleteBudget = vi.fn(async (_id: string) => {});
+  readonly refresh = vi.fn(async () => {});
+}
+
+class FakeTransactionsStore {
+  readonly assignCategory = vi.fn(async (_transactionId: string, _categoryId: string | null) => {});
+  readonly setNotes = vi.fn(async (_transactionId: string, _notes: string | null) => {});
+  readonly setExcludeFromBudget = vi.fn(async (_transactionId: string, _excludeFromBudget: boolean) => {});
 }
 
 @Component({ selector: 'app-stub-budgets-list', template: '' })
@@ -75,6 +88,7 @@ class StubBudgetsList {}
 
 describe('BudgetDetail', () => {
   let fakeStore: FakeBudgetsStore;
+  let fakeTransactionsStore: FakeTransactionsStore;
 
   beforeAll(stubDialogMethods);
 
@@ -84,8 +98,14 @@ describe('BudgetDetail', () => {
       providers: [provideZonelessChangeDetection(), provideRouter([{ path: 'budgets', component: StubBudgetsList }])],
     });
     fakeStore = new FakeBudgetsStore();
+    fakeTransactionsStore = new FakeTransactionsStore();
     TestBed.overrideComponent(BudgetDetail, {
-      set: { providers: [{ provide: BudgetsStore, useValue: fakeStore }] },
+      set: {
+        providers: [
+          { provide: BudgetsStore, useValue: fakeStore },
+          { provide: TransactionsStore, useValue: fakeTransactionsStore },
+        ],
+      },
     });
     const fixture = TestBed.createComponent(BudgetDetail);
     fixture.componentRef.setInput('id', id);
@@ -302,5 +322,58 @@ describe('BudgetDetail', () => {
     expect(spendAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(false);
     expect(depositAmt?.textContent?.trim()).toBe('$40.00');
     expect(depositAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(true);
+  });
+
+  describe('transaction edit dialog (issue #19)', () => {
+    it('clicking a transaction row opens the edit dialog', () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fakeStore.setTransactionTree('housing', [txn({ id: 't-1', description: 'Groceries' })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
+
+      root.querySelector<HTMLElement>('.budget-detail__txn-row')?.click();
+      fixture.detectChanges();
+
+      expect(root.querySelector('app-transaction-edit-dialog')).toBeTruthy();
+    });
+
+    it("the dialog's save output calls TransactionsStore's mutation methods, then refreshes BudgetsStore and closes the dialog", async () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fakeStore.setTransactionTree('housing', [txn({ id: 't-1', description: 'Groceries', categoryId: 'housing' })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLElement>('.budget-detail__txn-row')?.click();
+      fixture.detectChanges();
+
+      root.querySelector<HTMLButtonElement>('.transaction-edit-dialog__save')?.click();
+      await vi.waitFor(() => expect(fakeTransactionsStore.assignCategory).toHaveBeenCalledWith('t-1', 'housing'));
+      await vi.waitFor(() => expect(fakeTransactionsStore.setNotes).toHaveBeenCalledWith('t-1', null));
+      await vi.waitFor(() => expect(fakeTransactionsStore.setExcludeFromBudget).toHaveBeenCalledWith('t-1', false));
+      await vi.waitFor(() => expect(fakeStore.refresh).toHaveBeenCalled());
+      fixture.detectChanges();
+      expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
+    });
+
+    it("the dialog's close output closes the dialog without calling any mutation method", () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fakeStore.setTransactionTree('housing', [txn({ id: 't-1', description: 'Groceries' })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLElement>('.budget-detail__txn-row')?.click();
+      fixture.detectChanges();
+
+      root.querySelector<HTMLButtonElement>('.transaction-edit-dialog__cancel')?.click();
+      fixture.detectChanges();
+
+      expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
+      expect(fakeTransactionsStore.assignCategory).not.toHaveBeenCalled();
+    });
   });
 });

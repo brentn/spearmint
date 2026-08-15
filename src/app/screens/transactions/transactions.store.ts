@@ -5,6 +5,7 @@ import { CategorizationSuggestionsService } from '../../categorization/categoriz
 import { DatabaseService } from '../../data/database.service';
 import type { Account, Category, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
+import { TransactionMutationService } from '../../transactions/transaction-mutation.service';
 
 /**
  * Screen-scoped store for the Transaction list: loads transactions/categories from RxDB
@@ -20,6 +21,7 @@ export class TransactionsStore {
   private readonly syncService = inject(SimplefinSyncService);
   private readonly categorizationRulesService = inject(CategorizationRulesService);
   private readonly suggestionsService = inject(CategorizationSuggestionsService);
+  private readonly mutationService = inject(TransactionMutationService);
 
   readonly loading = signal(true);
   readonly transactions = signal<Transaction[]>([]);
@@ -89,24 +91,20 @@ export class TransactionsStore {
     return this.accounts().find((a) => a.id === accountId)?.name ?? '';
   }
 
-  /** Pending transactions are wiped and replaced every sync (spec §1/§3) — locked from manual
-   * editing. Assigning a real category also records/updates a CategorizationRule from this
-   * correction so future matching transactions benefit (spec §3.1). */
+  /** Delegates to TransactionMutationService (issue #19) — pending-lock, RxDB patch, correction
+   * recording and suggestion dismissal all live there now, shared with BudgetsStore. */
   async assignCategory(transactionId: string, categoryId: string | null): Promise<void> {
-    const transaction = this.transactions().find((t) => t.id === transactionId);
-    if (!transaction || transaction.pending) {
-      return;
-    }
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.transactions.findOne(transactionId).exec();
-    await doc?.incrementalPatch({ categoryId });
-    if (categoryId) {
-      await this.categorizationRulesService.recordCorrection(
-        { id: transaction.id, accountId: transaction.accountId, description: transaction.description, amount: transaction.amount, date: transaction.date },
-        categoryId,
-      );
-    }
-    this.suggestionsService.dismiss(transactionId);
+    await this.mutationService.assignCategory(transactionId, categoryId);
+    await this.refresh();
+  }
+
+  async setNotes(transactionId: string, notes: string | null): Promise<void> {
+    await this.mutationService.setNotes(transactionId, notes);
+    await this.refresh();
+  }
+
+  async setExcludeFromBudget(transactionId: string, excludeFromBudget: boolean): Promise<void> {
+    await this.mutationService.setExcludeFromBudget(transactionId, excludeFromBudget);
     await this.refresh();
   }
 

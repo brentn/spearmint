@@ -1,0 +1,131 @@
+// Centered modal with a dimmed backdrop — visually distinct from CategoryPicker's anchored
+// popover, since this is a dialog rather than an inline control (issue #19). z-index clears both
+// .nav-shell (100) and CategoryPicker's own panel (200), which can render above this dialog.
+.transaction-edit-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--spearmint-overlay);
+}
+
+.transaction-edit-dialog__card {
+  width: min(26rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: var(--spearmint-surface);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow-strong);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.transaction-edit-dialog__header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--spearmint-border);
+}
+
+.transaction-edit-dialog__desc {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
+.transaction-edit-dialog__pending-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--spearmint-accent);
+  border: 1px solid var(--spearmint-accent);
+  border-radius: 0.35rem;
+  padding: 0.05rem 0.3rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.transaction-edit-dialog__meta {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--spearmint-muted);
+}
+
+.transaction-edit-dialog__amt {
+  margin-top: 0.4rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--spearmint-ink);
+}
+
+.transaction-edit-dialog__amt--positive {
+  // Same treatment as the Transactions screen's amount styling, so deposits read consistently.
+  color: #15803d;
+}
+
+.transaction-edit-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.transaction-edit-dialog__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--spearmint-muted);
+}
+
+.transaction-edit-dialog__notes {
+  border: 1px solid var(--spearmint-border);
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--spearmint-ink);
+  background: var(--spearmint-bg);
+  resize: vertical;
+
+  &:disabled {
+    opacity: 0.7;
+  }
+}
+
+.transaction-edit-dialog__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--spearmint-muted);
+}
+
+.transaction-edit-dialog__actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.transaction-edit-dialog__save {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+  cursor: pointer;
+}
+
+.transaction-edit-dialog__cancel {
+  flex: 1;
+  border: 1px solid var(--spearmint-border);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: none;
+  color: var(--spearmint-muted);
+  cursor: pointer;
+}

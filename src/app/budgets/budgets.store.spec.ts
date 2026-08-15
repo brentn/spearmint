@@ -3,15 +3,35 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { budgetSchema, categorySchema, transactionSchema } from '../data/schemas';
+import { accountSchema, budgetSchema, categorySchema, transactionSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Budget, Category, Transaction } from '../data/models';
+import type { Account, Budget, Category, Transaction } from '../data/models';
 import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
+import { TransactionMutationService } from '../transactions/transaction-mutation.service';
 import { currentYearMonth } from './period.util';
 import { BudgetsStore } from './budgets.store';
 
 function seedCategory(overrides: Partial<Category> = {}): Category {
   return { id: 'cat-1', name: 'Groceries', parentCategoryId: null, type: 'expense', ...overrides };
+}
+
+function seedAccount(overrides: Partial<Account> = {}): Account {
+  return {
+    id: 'acc-1',
+    institutionId: 'org-1',
+    connId: 'CON-1',
+    externalAccountId: 'ext-1',
+    originalAccountName: 'Checking',
+    name: 'Checking',
+    type: 'bank',
+    currencyCode: 'USD',
+    balance: 100,
+    balanceDate: '2026-08-01',
+    needsReconnect: false,
+    syncIssue: null,
+    missing: false,
+    ...overrides,
+  };
 }
 
 function seedBudget(overrides: Partial<Budget> = {}): Budget {
@@ -45,6 +65,11 @@ function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
 describe('BudgetsStore', () => {
   let fakeDb: RxDatabase;
   let store: BudgetsStore;
+  let mutationService: {
+    assignCategory: ReturnType<typeof vi.fn>;
+    setNotes: ReturnType<typeof vi.fn>;
+    setExcludeFromBudget: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
     fakeDb = await createRxDatabase({
@@ -55,13 +80,21 @@ describe('BudgetsStore', () => {
       budgets: { schema: budgetSchema },
       categories: { schema: categorySchema },
       transactions: { schema: transactionSchema },
+      accounts: { schema: accountSchema },
     });
+
+    mutationService = {
+      assignCategory: vi.fn(async () => {}),
+      setNotes: vi.fn(async () => {}),
+      setExcludeFromBudget: vi.fn(async () => {}),
+    };
 
     TestBed.configureTestingModule({
       providers: [
         BudgetsStore,
         { provide: DatabaseService, useValue: { getDatabase: () => Promise.resolve(fakeDb) } },
         { provide: SimplefinSyncService, useValue: { syncing: () => false } },
+        { provide: TransactionMutationService, useValue: mutationService },
       ],
     });
     store = TestBed.inject(BudgetsStore);
@@ -115,6 +148,33 @@ describe('BudgetsStore', () => {
     await store.refresh();
 
     expect(store.transactions().map((t) => t.id)).toEqual(['txn-1']);
+  });
+
+  it('accountName resolves a known account and falls back to an empty string', async () => {
+    await fakeDb['accounts'].insert(seedAccount({ name: 'Checking' }));
+
+    await store.refresh();
+
+    expect(store.accountName('acc-1')).toBe('Checking');
+    expect(store.accountName('missing')).toBe('');
+  });
+
+  it('assignCategory delegates to TransactionMutationService and refreshes', async () => {
+    await store.assignCategory('txn-1', 'cat-1');
+
+    expect(mutationService.assignCategory).toHaveBeenCalledWith('txn-1', 'cat-1');
+  });
+
+  it('setNotes delegates to TransactionMutationService and refreshes', async () => {
+    await store.setNotes('txn-1', 'Reimbursed by roommate');
+
+    expect(mutationService.setNotes).toHaveBeenCalledWith('txn-1', 'Reimbursed by roommate');
+  });
+
+  it('setExcludeFromBudget delegates to TransactionMutationService and refreshes', async () => {
+    await store.setExcludeFromBudget('txn-1', true);
+
+    expect(mutationService.setExcludeFromBudget).toHaveBeenCalledWith('txn-1', true);
   });
 
   it('rolls an unbudgeted child\'s spend up into a budgeted parent row', async () => {

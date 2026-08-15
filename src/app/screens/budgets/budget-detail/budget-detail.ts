@@ -5,18 +5,24 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
 import type { Transaction } from '../../../data/models';
+import { TransactionsStore } from '../../transactions/transactions.store';
+import { TransactionEditDialog, type TransactionEditSave } from '../../../transactions/transaction-edit-dialog/transaction-edit-dialog';
 
 @Component({
   selector: 'app-budget-detail',
-  imports: [RouterLink, DecimalPipe, FaIconComponent],
+  imports: [RouterLink, DecimalPipe, FaIconComponent, TransactionEditDialog],
   templateUrl: './budget-detail.html',
   styleUrl: './budget-detail.scss',
-  providers: [BudgetsStore],
+  providers: [BudgetsStore, TransactionsStore],
 })
 export class BudgetDetail {
   readonly id = input.required<string>();
 
   protected readonly store = inject(BudgetsStore);
+  // Screen-scoped instance used only for its assignCategory/setNotes/setExcludeFromBudget
+  // delegate methods (issue #19) — same DI pattern as the Transactions screen. Its own read side
+  // is unused here; BudgetsStore.refresh() is what the category-detail view actually reads from.
+  private readonly transactionsStore = inject(TransactionsStore);
   private readonly router = inject(Router);
   protected readonly icons = { edit: faPencil, add: faPlus };
 
@@ -120,5 +126,26 @@ export class BudgetDetail {
     }
     await this.store.deleteBudget(row.id);
     await this.router.navigate(['/budgets']);
+  }
+
+  /** Which transaction's edit dialog is open, if any — the dialog itself holds no such state. */
+  protected readonly editingTransaction = signal<Transaction | null>(null);
+
+  protected openTransactionDialog(transaction: Transaction): void {
+    this.editingTransaction.set(transaction);
+  }
+
+  protected closeTransactionDialog(): void {
+    this.editingTransaction.set(null);
+  }
+
+  /** Recategorizing out of the currently-viewed category just drops the row from
+   * categoryTransactions() once BudgetsStore.refresh() re-reads — no special handling. */
+  protected async saveTransactionEdit(transactionId: string, changes: TransactionEditSave): Promise<void> {
+    await this.transactionsStore.assignCategory(transactionId, changes.categoryId);
+    await this.transactionsStore.setNotes(transactionId, changes.notes);
+    await this.transactionsStore.setExcludeFromBudget(transactionId, changes.excludeFromBudget);
+    await this.store.refresh();
+    this.editingTransaction.set(null);
   }
 }

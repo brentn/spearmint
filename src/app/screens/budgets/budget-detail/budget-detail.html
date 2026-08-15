@@ -102,7 +102,7 @@
         } @else {
           <ul class="budget-detail__txn-list">
             @for (t of categoryTransactions(); track t.id) {
-              <li class="budget-detail__txn-row">
+              <li class="budget-detail__txn-row" (click)="openTransactionDialog(t)">
                 <span class="budget-detail__txn-desc">{{ t.description }}</span>
                 <span class="budget-detail__txn-amt" [class.budget-detail__txn-amt--positive]="t.amount > 0">
                   {{ t.amount < 0 ? '-' : '' }}${{ (t.amount < 0 ? -t.amount : t.amount) | number: '1.2-2' }}
@@ -159,6 +159,16 @@
         </div>
       }
     </dialog>
+
+    @if (editingTransaction(); as t) {
+      <app-transaction-edit-dialog
+        [transaction]="t"
+        [categories]="store.categories()"
+        [accountName]="store.accountName(t.accountId)"
+        (save)="saveTransactionEdit(t.id, $event)"
+        (close)="closeTransactionDialog()"
+      />
+    }
   </div>
 } @else if (!store.loading()) {
   <div class="empty-state">

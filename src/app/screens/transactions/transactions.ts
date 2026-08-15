@@ -11,10 +11,12 @@ import {
 } from './transaction-grouping.util';
 import { TransactionsStore } from './transactions.store';
 import { CategoryPicker } from '../../categories/category-picker/category-picker';
+import { TransactionEditDialog, type TransactionEditSave } from '../../transactions/transaction-edit-dialog/transaction-edit-dialog';
+import type { Transaction } from '../../data/models';
 
 @Component({
   selector: 'app-transactions',
-  imports: [DecimalPipe, CategoryPicker, RouterLink],
+  imports: [DecimalPipe, CategoryPicker, RouterLink, TransactionEditDialog],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
   providers: [TransactionsStore],
@@ -67,6 +69,9 @@ export class Transactions {
   );
   protected readonly dayGroups = computed(() => groupTransactionsByDay(this.visibleTransactions(), this.today));
 
+  /** Which transaction's edit dialog is open, if any — the dialog itself holds no such state. */
+  protected readonly editingTransaction = signal<Transaction | null>(null);
+
   async assignCategory(transactionId: string, categoryId: string | null): Promise<void> {
     await this.store.assignCategory(transactionId, categoryId);
   }
@@ -77,5 +82,20 @@ export class Transactions {
 
   dismissSuggestion(transactionId: string): void {
     this.store.dismissSuggestion(transactionId);
+  }
+
+  protected openEditDialog(transaction: Transaction): void {
+    this.editingTransaction.set(transaction);
+  }
+
+  protected closeEditDialog(): void {
+    this.editingTransaction.set(null);
+  }
+
+  protected async saveEdit(transactionId: string, changes: TransactionEditSave): Promise<void> {
+    await this.store.assignCategory(transactionId, changes.categoryId);
+    await this.store.setNotes(transactionId, changes.notes);
+    await this.store.setExcludeFromBudget(transactionId, changes.excludeFromBudget);
+    this.editingTransaction.set(null);
   }
 }

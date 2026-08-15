@@ -1,0 +1,59 @@
+<div class="transaction-edit-dialog" (click)="onCancel()">
+  <div class="transaction-edit-dialog__card" (click)="$event.stopPropagation()">
+    <header class="transaction-edit-dialog__header">
+      <div class="transaction-edit-dialog__desc">
+        {{ transaction().description }}
+        @if (transaction().pending) {
+          <span class="transaction-edit-dialog__pending-badge">PENDING</span>
+        }
+      </div>
+      <div class="transaction-edit-dialog__meta">{{ transaction().date }} &middot; {{ accountName() }}</div>
+      <div class="transaction-edit-dialog__amt" [class.transaction-edit-dialog__amt--positive]="transaction().amount > 0">
+        {{ transaction().amount < 0 ? '-' : '' }}${{
+          (transaction().amount < 0 ? -transaction().amount : transaction().amount) | number: '1.2-2'
+        }}
+      </div>
+    </header>
+
+    <div class="transaction-edit-dialog__field">
+      <span class="transaction-edit-dialog__label">Category</span>
+      <app-category-picker
+        [categories]="categories()"
+        [selectedId]="draftCategoryId()"
+        [disabled]="transaction().pending"
+        (categoryChange)="draftCategoryId.set($event)"
+      />
+    </div>
+
+    <label class="transaction-edit-dialog__field">
+      <span class="transaction-edit-dialog__label">Notes</span>
+      <textarea
+        class="transaction-edit-dialog__notes"
+        rows="3"
+        placeholder="Add a note&hellip;"
+        [disabled]="transaction().pending"
+        [value]="draftNotes()"
+        (input)="draftNotes.set($any($event.target).value)"
+      ></textarea>
+    </label>
+
+    <label class="transaction-edit-dialog__checkbox">
+      <input
+        type="checkbox"
+        [disabled]="transaction().pending"
+        [checked]="draftExcludeFromBudget()"
+        (change)="draftExcludeFromBudget.set($any($event.target).checked)"
+      />
+      Exclude from budget
+    </label>
+
+    <div class="transaction-edit-dialog__actions">
+      @if (!transaction().pending) {
+        <button type="button" class="transaction-edit-dialog__save" (click)="onSave()">Save</button>
+      }
+      <button type="button" class="transaction-edit-dialog__cancel" (click)="onCancel()">
+        {{ transaction().pending ? 'Close' : 'Cancel' }}
+      </button>
+    </div>
+  </div>
+</div>

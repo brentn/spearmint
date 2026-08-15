@@ -7,6 +7,7 @@ import { accountSchema, categorizationRuleSchema, categorySchema, transactionSch
 import { DatabaseService } from '../../data/database.service';
 import type { Account, CategorizationRule, Category, Transaction } from '../../data/models';
 import { CategorizationSuggestionsService } from '../../categorization/categorization-suggestions.service';
+import { TransactionMutationService } from '../../transactions/transaction-mutation.service';
 import { TransactionsStore } from './transactions.store';
 
 function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
@@ -56,6 +57,11 @@ function seedAccount(overrides: Partial<Account> = {}): Account {
 describe('TransactionsStore', () => {
   let fakeDb: RxDatabase;
   let store: TransactionsStore;
+  let mutationService: {
+    assignCategory: ReturnType<typeof vi.fn>;
+    setNotes: ReturnType<typeof vi.fn>;
+    setExcludeFromBudget: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
     fakeDb = await createRxDatabase({
@@ -69,10 +75,17 @@ describe('TransactionsStore', () => {
       categorizationRules: { schema: categorizationRuleSchema },
     });
 
+    mutationService = {
+      assignCategory: vi.fn(async () => {}),
+      setNotes: vi.fn(async () => {}),
+      setExcludeFromBudget: vi.fn(async () => {}),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         TransactionsStore,
         { provide: DatabaseService, useValue: { getDatabase: () => Promise.resolve(fakeDb) } },
+        { provide: TransactionMutationService, useValue: mutationService },
       ],
     });
     store = TestBed.inject(TransactionsStore);
@@ -105,57 +118,31 @@ describe('TransactionsStore', () => {
     expect(store.accountName('missing')).toBe('');
   });
 
-  it('assignCategory patches a posted transaction and refreshes', async () => {
-    await fakeDb['transactions'].insert(seedTransaction({ pending: false, categoryId: null }));
-    await store.refresh();
-
-    await store.assignCategory('txn-1', 'cat-1');
-
-    expect(store.transactions()[0].categoryId).toBe('cat-1');
-  });
-
-  it('does not modify a pending transaction (locked from manual editing)', async () => {
-    await fakeDb['transactions'].insert(seedTransaction({ pending: true, categoryId: null }));
-    await store.refresh();
-
-    await store.assignCategory('txn-1', 'cat-1');
-
-    expect(store.transactions()[0].categoryId).toBeNull();
-  });
-
-  it('assignCategory records a CategorizationRule correction from the transaction', async () => {
-    await fakeDb['transactions'].insert(seedTransaction({ description: 'Starbucks', amount: -5, date: '2026-08-12' }));
-    await store.refresh();
-
-    await store.assignCategory('txn-1', 'cat-1');
-
-    const rules = await fakeDb['categorizationRules'].find().exec();
-    expect(rules).toHaveLength(1);
-    const rule: CategorizationRule = rules[0].toJSON();
-    expect(rule.accountId).toBe('acc-1');
-    expect(rule.normalizedDescription).toBe('STARBUCKS');
-    expect(rule.categoryId).toBe('cat-1');
-  });
-
-  it('assignCategory does not record a rule when clearing a category back to null', async () => {
-    await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'cat-1' }));
-    await store.refresh();
-
-    await store.assignCategory('txn-1', null);
-
-    const rules = await fakeDb['categorizationRules'].find().exec();
-    expect(rules).toHaveLength(0);
-  });
-
-  it('assignCategory clears any pending suggestion for the corrected transaction', async () => {
-    const suggestions = TestBed.inject(CategorizationSuggestionsService);
-    suggestions.set('txn-1', 'cat-2');
+  it('assignCategory delegates to TransactionMutationService and refreshes', async () => {
     await fakeDb['transactions'].insert(seedTransaction());
     await store.refresh();
 
     await store.assignCategory('txn-1', 'cat-1');
 
-    expect(suggestions.get('txn-1')).toBeNull();
+    expect(mutationService.assignCategory).toHaveBeenCalledWith('txn-1', 'cat-1');
+  });
+
+  it('setNotes delegates to TransactionMutationService and refreshes', async () => {
+    await fakeDb['transactions'].insert(seedTransaction());
+    await store.refresh();
+
+    await store.setNotes('txn-1', 'Reimbursed by roommate');
+
+    expect(mutationService.setNotes).toHaveBeenCalledWith('txn-1', 'Reimbursed by roommate');
+  });
+
+  it('setExcludeFromBudget delegates to TransactionMutationService and refreshes', async () => {
+    await fakeDb['transactions'].insert(seedTransaction());
+    await store.refresh();
+
+    await store.setExcludeFromBudget('txn-1', true);
+
+    expect(mutationService.setExcludeFromBudget).toHaveBeenCalledWith('txn-1', true);
   });
 
   describe('suggestions', () => {
@@ -177,8 +164,7 @@ describe('TransactionsStore', () => {
 
       await store.acceptSuggestion('txn-1');
 
-      expect(store.transactions()[0].categoryId).toBe('cat-1');
-      expect(suggestions.get('txn-1')).toBeNull();
+      expect(mutationService.assignCategory).toHaveBeenCalledWith('txn-1', 'cat-1');
     });
 
     it('dismissSuggestion clears the suggestion without touching the transaction', async () => {
