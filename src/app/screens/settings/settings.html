@@ -22,26 +22,13 @@
       <p class="settings__danger-body">
         Permanently delete everything stored on this device — accounts, transactions, categories, budgets, and your device registration.
       </p>
-      <button class="settings__danger-button" type="button" (click)="openResetDialog()">Reset local data</button>
+      <button class="settings__danger-button" type="button" (click)="resetDialog.open()">Reset local data</button>
     </section>
   </div>
 
-  <dialog #resetDialog class="settings__dialog" (close)="closeResetDialog()">
-    <h2 class="settings__dialog-title">Reset local data?</h2>
-    <p class="settings__dialog-body">
-      This deletes everything stored locally on this device — accounts, transactions, categories, budgets, and your
-      device registration. You'll need to set up Spearmint again. This can't be undone.
-    </p>
-    @if (error()) {
-      <p class="settings__dialog-error">{{ error() }}</p>
-    }
-    <div class="settings__dialog-actions">
-      <button class="settings__dialog-cancel" type="button" [disabled]="resetting()" (click)="closeResetDialog()">
-        Cancel
-      </button>
-      <button class="settings__dialog-confirm" type="button" [disabled]="resetting()" (click)="confirmReset()">
-        {{ resetting() ? 'Resetting…' : 'Delete everything' }}
-      </button>
-    </div>
-  </dialog>
+  <app-reset-device-dialog
+    #resetDialog
+    title="Reset local data?"
+    body="This deletes everything stored locally on this device — accounts, transactions, categories, budgets, and your device registration. You'll need to set up Spearmint again. This can't be undone."
+  />
 </div>

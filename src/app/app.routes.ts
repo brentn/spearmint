@@ -22,8 +22,9 @@ export const routes: Routes = [
   },
   { path: 'settings/categories', component: CategoriesScreen },
   {
-    // Lazy-loaded, same reasoning as accounts/export-import above: a settings
-    // sub-screen most sessions never visit.
+    // Lazy-loaded to match the sibling settings sub-screens' pattern (accounts,
+    // export-import) — unlike those, this route has no heavy dependency of its
+    // own to keep out of the main bundle; it's just a rarely-visited screen.
     path: 'settings/security',
     loadComponent: () => import('./screens/settings/security/security').then((m) => m.SecurityScreen),
   },

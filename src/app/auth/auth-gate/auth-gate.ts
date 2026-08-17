@@ -1,17 +1,16 @@
-import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { AuthService } from '../auth.service';
 import { MIN_PASSWORD_LENGTH, PASSWORD_LENGTH_HINT } from '../password-policy';
-import { DatabaseService } from '../../data/database.service';
+import { ResetDeviceDialog } from '../../data/reset-device-dialog/reset-device-dialog';
 
 @Component({
   selector: 'app-auth-gate',
+  imports: [ResetDeviceDialog],
   templateUrl: './auth-gate.html',
   styleUrl: './auth-gate.scss',
 })
 export class AuthGate {
   private readonly authService = inject(AuthService);
-  private readonly databaseService = inject(DatabaseService);
-  private readonly resetDialog = viewChild<ElementRef<HTMLDialogElement>>('resetDialog');
 
   readonly stage = this.authService.stage;
   readonly startupError = this.authService.startupError;
@@ -23,9 +22,6 @@ export class AuthGate {
 
   readonly password = signal('');
   readonly passwordConfirm = signal('');
-
-  readonly resetting = signal(false);
-  readonly resetError = signal<string | null>(null);
 
   protected readonly minPasswordLength = MIN_PASSWORD_LENGTH;
   protected readonly passwordHint = PASSWORD_LENGTH_HINT;
@@ -93,32 +89,6 @@ export class AuthGate {
       }
     } finally {
       this.busy.set(false);
-    }
-  }
-
-  openResetDialog(): void {
-    this.resetError.set(null);
-    this.resetDialog()?.nativeElement.showModal();
-  }
-
-  closeResetDialog(): void {
-    this.resetDialog()?.nativeElement.close();
-  }
-
-  /** Wipes local data and, on success, reloads — DatabaseService.resetDatabase() only
-   * closes and clears storage, it doesn't reset in-memory app state, and a reload is the
-   * simplest way to land back on the fresh-install 'create-password' stage (same reasoning
-   * as Settings.confirmReset). Nothing here imports BackupService/crypto-js, so restoring
-   * a backup afterward still has to go through Settings once logged back in. */
-  async confirmReset(): Promise<void> {
-    this.resetting.set(true);
-    this.resetError.set(null);
-    try {
-      await this.databaseService.resetDatabase();
-      window.location.reload();
-    } catch (err) {
-      this.resetError.set(err instanceof Error ? err.message : 'Could not reset local data.');
-      this.resetting.set(false);
     }
   }
 }

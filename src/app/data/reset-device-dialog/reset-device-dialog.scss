@@ -1,0 +1,70 @@
+.reset-device-dialog {
+  border: none;
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow-strong);
+  padding: 1.25rem;
+  width: min(24rem, calc(100vw - 2.5rem));
+  text-align: left;
+  color: var(--spearmint-ink);
+
+  &::backdrop {
+    background: var(--spearmint-overlay);
+  }
+}
+
+.reset-device-dialog__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
+.reset-device-dialog__body {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--spearmint-ink);
+}
+
+.reset-device-dialog__error {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--spearmint-danger);
+}
+
+.reset-device-dialog__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.reset-device-dialog__cancel {
+  flex: 1;
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.reset-device-dialog__confirm {
+  flex: 1;
+  border: none;
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem;
+  background: var(--spearmint-danger);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import type { AccountType, Transaction } from '../data/models';
-import { DEFAULT_APP_SETTINGS, getAppSettingsDoc } from '../data/app-settings.util';
+import { getAppSettingsDoc, upsertAppSettings } from '../data/app-settings.util';
 import { DatabaseService, type SpearmintDatabase } from '../data/database.service';
 import { CategorizationRulesService } from '../categorization/categorization-rules.service';
 import { CategorizationSuggestionsService } from '../categorization/categorization-suggestions.service';
@@ -109,11 +109,7 @@ export class SimplefinSyncService {
       }
       this.discoveredAccounts.set(plan.discovered);
 
-      if (settingsDoc) {
-        await settingsDoc.incrementalPatch({ lastSyncDate: today });
-      } else {
-        await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, lastSyncDate: today, webauthnCredential: null, passwordHash: null });
-      }
+      await upsertAppSettings(db, { lastSyncDate: today });
 
       return { success: true, error: null };
     } catch (error) {
@@ -185,14 +181,8 @@ export class SimplefinSyncService {
     const key = externalAccountKey(discovered.connId, discovered.externalAccountId);
     const entry = { key, name: discovered.name, institutionName: discovered.orgName };
     const settingsDoc = await getAppSettingsDoc(db);
-    if (settingsDoc) {
-      if (!settingsDoc.ignoredExternalAccounts.some((i) => i.key === key)) {
-        await settingsDoc.incrementalPatch({
-          ignoredExternalAccounts: [...settingsDoc.ignoredExternalAccounts, entry],
-        });
-      }
-    } else {
-      await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, passwordHash: null, ignoredExternalAccounts: [entry] });
+    if (!settingsDoc?.ignoredExternalAccounts.some((i) => i.key === key)) {
+      await upsertAppSettings(db, { ignoredExternalAccounts: [...(settingsDoc?.ignoredExternalAccounts ?? []), entry] });
     }
     this.removeDiscovered(discovered);
   }

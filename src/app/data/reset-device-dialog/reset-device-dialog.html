@@ -1,0 +1,15 @@
+<dialog #dialog class="reset-device-dialog" (close)="close()">
+  <h2 class="reset-device-dialog__title">{{ title() }}</h2>
+  <p class="reset-device-dialog__body">{{ body() }}</p>
+  @if (error()) {
+    <p class="reset-device-dialog__error">{{ error() }}</p>
+  }
+  <div class="reset-device-dialog__actions">
+    <button class="reset-device-dialog__cancel" type="button" [disabled]="resetting()" (click)="close()">
+      Cancel
+    </button>
+    <button class="reset-device-dialog__confirm" type="button" [disabled]="resetting()" (click)="confirm()">
+      {{ resetting() ? 'Resetting…' : 'Delete everything' }}
+    </button>
+  </div>
+</dialog>
