@@ -59,6 +59,8 @@ describe('AccountsStore', () => {
       id: 'settings',
       lastSyncDate: null,
       webauthnCredential: null,
+      passwordHash: null,
+      biometricsEnabled: false,
       ignoredExternalAccounts: [{ key: 'CON-1:ext-ignored', name: 'Old Savings', institutionName: 'My Bank' }],
       exportEncryptionDefault: false,
     });

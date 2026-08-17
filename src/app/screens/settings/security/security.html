@@ -1,0 +1,78 @@
+<div class="security">
+  <app-settings-header title="Security" backLink="/settings" />
+
+  <div class="security__content">
+    <section class="security__card">
+      <h2 class="security__section-title">Change password</h2>
+
+      <label class="security__label">
+        Current password
+        <input
+          type="password"
+          [value]="currentPassword()"
+          (input)="currentPassword.set($any($event.target).value)"
+        />
+      </label>
+      <label class="security__label">
+        New password
+        <input type="password" [value]="newPassword()" (input)="newPassword.set($any($event.target).value)" />
+      </label>
+      <label class="security__label">
+        Confirm new password
+        <input
+          type="password"
+          [value]="newPasswordConfirm()"
+          (input)="newPasswordConfirm.set($any($event.target).value)"
+        />
+      </label>
+
+      @if (newPassword() && newPassword().length < minPasswordLength) {
+        <p class="security__hint">{{ passwordHint }}</p>
+      } @else if (newPasswordConfirm() && newPassword() !== newPasswordConfirm()) {
+        <p class="security__hint">Passwords don't match.</p>
+      }
+
+      @if (passwordError()) {
+        <p class="security__banner security__banner--error">{{ passwordError() }}</p>
+      }
+      @if (passwordChanged()) {
+        <p class="security__banner security__banner--success">Password changed.</p>
+      }
+
+      <button
+        class="security__primary-button"
+        type="button"
+        [disabled]="
+          changingPassword() ||
+          !currentPassword() ||
+          newPassword().length < minPasswordLength ||
+          newPassword() !== newPasswordConfirm()
+        "
+        (click)="changePassword()"
+      >
+        {{ changingPassword() ? 'Changing…' : 'Change password' }}
+      </button>
+    </section>
+
+    <section class="security__card">
+      <h2 class="security__section-title">Biometrics</h2>
+      <p class="security__body">
+        Use Face ID, Touch ID, or your device PIN as a faster 2nd step alongside your password.
+      </p>
+
+      <label class="security__toggle">
+        <input
+          type="checkbox"
+          [checked]="biometricsEnabled()"
+          [disabled]="biometricsBusy()"
+          (change)="toggleBiometrics($any($event.target).checked)"
+        />
+        Enable biometrics
+      </label>
+
+      @if (biometricsError()) {
+        <p class="security__banner security__banner--error">{{ biometricsError() }}</p>
+      }
+    </section>
+  </div>
+</div>

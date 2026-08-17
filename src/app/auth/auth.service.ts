@@ -2,27 +2,40 @@ import { Injectable, inject, signal } from '@angular/core';
 import { client, server } from '@passwordless-id/webauthn';
 import { getAppSettingsDoc, upsertAppSettings } from '../data/app-settings.util';
 import { DatabaseService } from '../data/database.service';
-import type { WebauthnCredential } from '../data/models';
+import { hashPassword, verifyPassword as verifyPasswordHash } from './password-hash.util';
 
-export type CredentialStatus = 'loading' | 'present' | 'absent' | 'error';
+export type AuthStage =
+  | 'loading'
+  | 'error'
+  // Fresh install: no password, no legacy WebAuthn credential.
+  | 'create-password'
+  // Upgraded from a WebAuthn-only install (issue #33): a legacy credential exists but no
+  // password yet — the auth-gate makes unlocking via that credential mandatory before it
+  // will show the password-creation form, so this stage covers both halves of that flow.
+  | 'migrate-set-password'
+  // Steady state: a password exists, optionally with biometrics as a faster 2nd step.
+  | 'unlock';
 
 /**
- * Fully local WebAuthn auth: registration and authentication both run
- * client-side (client.* triggers the platform authenticator, server.*
- * verifies the signature — both run in-browser here, no network round trip).
- * The credential is the only thing persisted; losing it means lockout,
- * recoverable only via export/import (a later ticket), not by this service.
+ * Password-primary local auth (issue #25): a password is the sole credential required to
+ * unlock, created on first run and verified thereafter. WebAuthn (`@passwordless-id/webauthn`,
+ * fully client-side — see docs/adr/0003) is kept only as an optional biometric shortcut
+ * layered on top, either from a pre-existing security key carried forward by the schema
+ * migration (`biometricsEnabled`) or turned on later in Settings. Losing the password with
+ * biometrics also off means lockout, recoverable only via the reset-device escape hatch
+ * (issue #35) followed by an export/import backup restore, not by this service.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly databaseService = inject(DatabaseService);
 
-  readonly credentialStatus = signal<CredentialStatus>('loading');
+  readonly stage = signal<AuthStage>('loading');
   readonly isUnlocked = signal(false);
   readonly startupError = signal<string | null>(null);
+  readonly biometricsEnabled = signal(false);
 
   constructor() {
-    void this.loadCredentialStatus();
+    void this.loadStage();
   }
 
   private async getSettingsDoc() {
@@ -30,29 +43,59 @@ export class AuthService {
     return getAppSettingsDoc(db);
   }
 
-  private async loadCredentialStatus(): Promise<void> {
+  private async loadStage(): Promise<void> {
     try {
       const settings = await this.getSettingsDoc();
-      this.credentialStatus.set(settings?.webauthnCredential ? 'present' : 'absent');
+      this.biometricsEnabled.set(!!settings?.biometricsEnabled);
+      if (settings?.passwordHash) {
+        this.stage.set('unlock');
+      } else if (settings?.webauthnCredential) {
+        this.stage.set('migrate-set-password');
+      } else {
+        this.stage.set('create-password');
+      }
     } catch (error) {
-      // Surface this instead of leaving credentialStatus stuck at 'loading' forever:
-      // a rejected getDatabase() here previously vanished silently, showing an
-      // unexplained infinite spinner with no way for the user to know anything failed.
+      // Surface this instead of leaving stage stuck at 'loading' forever: a rejected
+      // getDatabase() here previously vanished silently, showing an unexplained
+      // infinite spinner with no way for the user to know anything failed.
       console.error('Failed to open the local database:', error);
       this.startupError.set(error instanceof Error ? error.message : 'Could not open the local database.');
-      this.credentialStatus.set('error');
+      this.stage.set('error');
     }
   }
 
-  private async saveCredential(credential: WebauthnCredential): Promise<void> {
+  /** Sets the unlock password (fresh install, or completing the post-migration mandatory
+   * password step) and unlocks. Callers are responsible for length/confirm validation
+   * against the shared password-policy module before calling this. */
+  async createPassword(password: string): Promise<void> {
+    const hash = await hashPassword(password);
     const db = await this.databaseService.getDatabase();
-    await upsertAppSettings(db, { webauthnCredential: credential });
+    await upsertAppSettings(db, { passwordHash: hash });
+    this.stage.set('unlock');
+    this.isUnlocked.set(true);
   }
 
-  async register(deviceLabel: string): Promise<void> {
+  async verifyPassword(password: string): Promise<boolean> {
+    const settings = await this.getSettingsDoc();
+    const stored = settings?.passwordHash;
+    if (!stored) {
+      return false;
+    }
+    const ok = await verifyPasswordHash(password, stored);
+    if (ok) {
+      this.isUnlocked.set(true);
+    }
+    return ok;
+  }
+
+  /** Registers a new WebAuthn credential as the biometric 2nd step. No device-label prompt
+   * — used both by the migrate stage's schema-carried-forward credential (already present,
+   * this isn't called there) and by Settings' biometrics toggle (issue #34), neither of
+   * which collects a label. */
+  async registerBiometrics(): Promise<void> {
     const challenge = server.randomChallenge();
     const registrationJson = await client.register({
-      user: deviceLabel,
+      user: 'Spearmint',
       challenge,
       userVerification: 'required',
       // `authenticatorAttachment: 'platform'` is a registration-time-only WebAuthn
@@ -67,11 +110,21 @@ export class AuthService {
       origin: window.location.origin,
     });
 
-    await this.saveCredential(credential);
-    this.credentialStatus.set('present');
-    this.isUnlocked.set(true);
+    const db = await this.databaseService.getDatabase();
+    await upsertAppSettings(db, { webauthnCredential: credential, biometricsEnabled: true });
+    this.biometricsEnabled.set(true);
   }
 
+  async disableBiometrics(): Promise<void> {
+    const db = await this.databaseService.getDatabase();
+    await upsertAppSettings(db, { webauthnCredential: null, biometricsEnabled: false });
+    this.biometricsEnabled.set(false);
+  }
+
+  /** WebAuthn unlock. In the steady 'unlock' stage this is the biometric shortcut and marks
+   * the app unlocked on success. In 'migrate-set-password' it's the mandatory first half of
+   * that flow — success there deliberately does NOT unlock the app, since a password still
+   * has to be set; the auth-gate is responsible for moving to the password-creation form. */
   async authenticate(): Promise<boolean> {
     const settings = await this.getSettingsDoc();
     const credential = settings?.webauthnCredential;
@@ -91,7 +144,9 @@ export class AuthService {
         origin: window.location.origin,
         userVerified: true,
       });
-      this.isUnlocked.set(true);
+      if (this.stage() === 'unlock') {
+        this.isUnlocked.set(true);
+      }
       return true;
     } catch (error) {
       console.error('Local authentication failed:', error);

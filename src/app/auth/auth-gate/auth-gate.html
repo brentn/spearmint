@@ -1,44 +1,101 @@
 <div class="auth-gate">
-  @switch (credentialStatus()) {
-    @case ('loading') {
-      <p class="auth-gate__loading">Loading&hellip;</p>
+  @if (stage() === 'loading') {
+    <p class="auth-gate__loading">Loading&hellip;</p>
+  } @else if (stage() === 'error') {
+    <h1 class="auth-gate__title">Couldn't open Spearmint</h1>
+    <p class="auth-gate__body">{{ startupError() }}</p>
+    <button class="auth-gate__button" type="button" (click)="reload()">Try again</button>
+  } @else if (stage() === 'migrate-set-password' && !migrationVerified()) {
+    <h1 class="auth-gate__title">Welcome back</h1>
+    <p class="auth-gate__body">
+      Unlock with your security key to continue setting up a password for this device.
+    </p>
+    <button class="auth-gate__button" type="button" [disabled]="busy()" (click)="welcomeBackUnlock()">
+      {{ busy() ? 'Verifying…' : 'Unlock' }}
+    </button>
+    <details class="auth-gate__trouble">
+      <summary>Trouble unlocking?</summary>
+      <button class="auth-gate__reset-link" type="button" (click)="openResetDialog()">Reset this device</button>
+    </details>
+  } @else if (stage() === 'create-password' || stage() === 'migrate-set-password') {
+    <h1 class="auth-gate__title">Create a password</h1>
+    <p class="auth-gate__body">
+      @if (stage() === 'migrate-set-password') {
+        Set a password to finish upgrading Spearmint's login. Your security key stays enabled as a faster 2nd
+        step next time.
+      } @else {
+        This unlocks Spearmint on this device. Everything stays local — nothing is sent to a server.
+      }
+    </p>
+    <input
+      #passwordInput
+      class="auth-gate__input"
+      type="password"
+      placeholder="Password"
+      [disabled]="busy()"
+      (input)="password.set(passwordInput.value)"
+    />
+    <input
+      #confirmInput
+      class="auth-gate__input"
+      type="password"
+      placeholder="Confirm password"
+      [disabled]="busy()"
+      (input)="passwordConfirm.set(confirmInput.value)"
+    />
+    @if (password() && password().length < minPasswordLength) {
+      <p class="auth-gate__hint">{{ passwordHint }}</p>
+    } @else if (passwordConfirm() && password() !== passwordConfirm()) {
+      <p class="auth-gate__hint">Passwords don't match.</p>
     }
-    @case ('absent') {
-      <h1 class="auth-gate__title">Set up Spearmint</h1>
-      <p class="auth-gate__body">
-        Register this device to unlock the app with Face ID, Touch ID, or your device PIN.
-        Everything stays on this device — nothing is sent to a server.
-      </p>
-      <input
-        #deviceLabelInput
-        class="auth-gate__input"
-        type="text"
-        placeholder="e.g. Brent's iPhone"
-        [disabled]="busy()"
-      />
-      <button
-        class="auth-gate__button"
-        type="button"
-        [disabled]="busy()"
-        (click)="register(deviceLabelInput.value)"
-      >
-        {{ busy() ? 'Registering…' : 'Register device' }}
-      </button>
-    }
-    @case ('present') {
-      <h1 class="auth-gate__title">Welcome back</h1>
-      <p class="auth-gate__body">Unlock Spearmint to continue.</p>
-      <button class="auth-gate__button" type="button" [disabled]="busy()" (click)="unlock()">
-        {{ busy() ? 'Verifying…' : 'Unlock' }}
-      </button>
-    }
-    @case ('error') {
-      <h1 class="auth-gate__title">Couldn't open Spearmint</h1>
-      <p class="auth-gate__body">{{ startupError() }}</p>
-      <button class="auth-gate__button" type="button" (click)="reload()">Try again</button>
-    }
+    <button
+      class="auth-gate__button"
+      type="button"
+      [disabled]="busy() || password().length < minPasswordLength || password() !== passwordConfirm()"
+      (click)="submitCreatePassword()"
+    >
+      {{ busy() ? 'Creating…' : 'Create password' }}
+    </button>
+  } @else {
+    <h1 class="auth-gate__title">Welcome back</h1>
+    <p class="auth-gate__body">Unlock Spearmint to continue.</p>
+    <input
+      #unlockPasswordInput
+      class="auth-gate__input"
+      type="password"
+      placeholder="Password"
+      [disabled]="busy()"
+      (input)="password.set(unlockPasswordInput.value)"
+    />
+    <button class="auth-gate__button" type="button" [disabled]="busy() || !password()" (click)="unlockWithPassword()">
+      {{ busy() ? 'Unlocking…' : 'Unlock' }}
+    </button>
+    <details class="auth-gate__trouble">
+      <summary>Trouble unlocking?</summary>
+      <button class="auth-gate__reset-link" type="button" (click)="openResetDialog()">Reset this device</button>
+    </details>
   }
   @if (error()) {
     <p class="auth-gate__error">{{ error() }}</p>
   }
+
+  <dialog #resetDialog class="auth-gate__dialog" (close)="closeResetDialog()">
+    <h2 class="auth-gate__dialog-title">Reset this device?</h2>
+    <p class="auth-gate__dialog-body">
+      This deletes everything stored locally on this device — accounts, transactions, categories, budgets, your
+      password, and your device registration — and starts Spearmint over from scratch. This can't be undone. If
+      you have a backup file, you can restore it from Settings once you're back in.
+    </p>
+    @if (resetError()) {
+      <p class="auth-gate__dialog-error">{{ resetError() }}</p>
+    }
+    <div class="auth-gate__dialog-actions">
+      <button class="auth-gate__dialog-cancel" type="button" [disabled]="resetting()" (click)="closeResetDialog()">
+        Cancel
+      </button>
+      <button class="auth-gate__dialog-confirm" type="button" [disabled]="resetting()" (click)="confirmReset()">
+        {{ resetting() ? 'Resetting…' : 'Delete everything' }}
+      </button>
+    </div>
+  </dialog>
 </div>

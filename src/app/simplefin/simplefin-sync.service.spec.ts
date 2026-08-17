@@ -95,6 +95,8 @@ describe('SimplefinSyncService', () => {
       id: 'settings',
       lastSyncDate: null,
       webauthnCredential: null,
+      passwordHash: null,
+      biometricsEnabled: false,
       ignoredExternalAccounts: [],
       exportEncryptionDefault: false,
       ...overrides,

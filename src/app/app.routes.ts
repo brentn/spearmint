@@ -22,6 +22,12 @@ export const routes: Routes = [
   },
   { path: 'settings/categories', component: CategoriesScreen },
   {
+    // Lazy-loaded, same reasoning as accounts/export-import above: a settings
+    // sub-screen most sessions never visit.
+    path: 'settings/security',
+    loadComponent: () => import('./screens/settings/security/security').then((m) => m.SecurityScreen),
+  },
+  {
     // Lazy-loaded: this screen's BackupService pulls in crypto-js (~600kB
     // unminified, non-tree-shakeable CommonJS) for the optional export
     // encryption, which is too heavy to ship in the app's eagerly-loaded

@@ -1,5 +1,5 @@
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { MINIMUM_PASSWORD_LENGTH } from 'rxdb/plugins/encryption-crypto-js';
+import { MIN_PASSWORD_LENGTH } from '../../../auth/password-policy';
 import { BackupService } from '../../../data/backup.service';
 import { SettingsHeader } from '../settings-header/settings-header';
 
@@ -13,7 +13,7 @@ export class ExportImportScreen {
   private readonly backupService = inject(BackupService);
   private readonly importDialog = viewChild<ElementRef<HTMLDialogElement>>('importDialog');
 
-  protected readonly minPasswordLength = MINIMUM_PASSWORD_LENGTH;
+  protected readonly minPasswordLength = MIN_PASSWORD_LENGTH;
 
   readonly encryptExport = signal(false);
   readonly exportPassword = signal('');

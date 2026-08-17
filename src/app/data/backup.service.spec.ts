@@ -114,6 +114,8 @@ const settingsDoc: AppSettings = {
   webauthnCredential: { id: 'cred-1', publicKey: 'pk', algorithm: 'ES256', transports: ['internal'] },
   ignoredExternalAccounts: [],
   exportEncryptionDefault: false,
+  passwordHash: null,
+  biometricsEnabled: true,
 };
 
 describe('BackupService', () => {

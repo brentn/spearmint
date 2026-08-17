@@ -140,6 +140,8 @@ describe('domain schemas', () => {
       webauthnCredential: null,
       ignoredExternalAccounts: [],
       exportEncryptionDefault: false,
+      passwordHash: null,
+      biometricsEnabled: false,
     });
     expect(doc.webauthnCredential).toBeNull();
   });
@@ -151,8 +153,23 @@ describe('domain schemas', () => {
       webauthnCredential: { id: 'cred-1', publicKey: 'pk-base64', algorithm: 'ES256' },
       ignoredExternalAccounts: [],
       exportEncryptionDefault: false,
+      passwordHash: null,
+      biometricsEnabled: true,
     });
     expect(doc.webauthnCredential?.algorithm).toBe('ES256');
+  });
+
+  it('stores a password hash once a password is created', async () => {
+    const doc = await db['appSettings'].insert({
+      id: 'settings',
+      lastSyncDate: null,
+      webauthnCredential: null,
+      ignoredExternalAccounts: [],
+      exportEncryptionDefault: false,
+      passwordHash: { salt: 'c2FsdA==', hash: 'aGFzaA==' },
+      biometricsEnabled: false,
+    });
+    expect(doc.passwordHash).toEqual({ salt: 'c2FsdA==', hash: 'aGFzaA==' });
   });
 
   it('accepts a minimal valid simplefin link', async () => {

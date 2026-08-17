@@ -15,7 +15,7 @@ import {
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { accountSchema } from './schemas';
+import { accountSchema, appSettingsMigrationStrategies } from './schemas';
 import { DatabaseService, RX_STORAGE } from './database.service';
 
 // DatabaseService defaults to the real Dexie/IndexedDB driver, which isn't
@@ -46,6 +46,40 @@ const staleAppSettingsSchema: RxJsonSchema<{
     lastSyncDate: { type: ['string', 'null'] },
     webauthnCredential: { type: ['object', 'null'] },
     ignoredExternalAccounts: { type: 'array', items: { type: 'string' } },
+    exportEncryptionDefault: { type: 'boolean' },
+  },
+  required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault'],
+};
+
+// The pre-#30 shape of the appSettings schema: same title, version 1, but
+// without passwordHash/biometricsEnabled (password-primary login).
+const staleAppSettingsSchemaV1: RxJsonSchema<{
+  id: string;
+  lastSyncDate: string | null;
+  webauthnCredential: unknown;
+  ignoredExternalAccounts: { key: string; name: string; institutionName: string }[];
+  exportEncryptionDefault: boolean;
+}> = {
+  title: 'appSettings',
+  version: 1,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 20, enum: ['settings'], default: 'settings' },
+    lastSyncDate: { type: ['string', 'null'] },
+    webauthnCredential: { type: ['object', 'null'] },
+    ignoredExternalAccounts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          key: { type: 'string' },
+          name: { type: 'string' },
+          institutionName: { type: 'string' },
+        },
+        required: ['key', 'name', 'institutionName'],
+      },
+    },
     exportEncryptionDefault: { type: 'boolean' },
   },
   required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault'],
@@ -130,6 +164,58 @@ describe('DatabaseService', () => {
     expect(settings?.ignoredExternalAccounts).toEqual([
       { key: 'CON-1:ext-ignored', name: 'CON-1:ext-ignored', institutionName: '' },
     ]);
+  });
+
+  it('turns biometricsEnabled on for a v1 doc that already has a webauthn credential', async () => {
+    const staleDb = await createRxDatabase({
+      name: 'spearmint',
+      storage: wrappedValidateAjvStorage({ storage: currentStorage }),
+    });
+    await staleDb.addCollections({
+      appSettings: { schema: staleAppSettingsSchemaV1, migrationStrategies: { 1: appSettingsMigrationStrategies[1] } },
+    });
+    await staleDb['appSettings'].insert({
+      id: 'settings',
+      lastSyncDate: null,
+      webauthnCredential: { id: 'cred-1', publicKey: 'pk-base64', algorithm: 'ES256', transports: ['internal'] },
+      ignoredExternalAccounts: [],
+      exportEncryptionDefault: false,
+    });
+    await staleDb.close();
+
+    const service = TestBed.inject(DatabaseService);
+    const db = await service.getDatabase();
+    openDb = db;
+
+    const settings = await db.appSettings.findOne('settings').exec();
+    expect(settings?.biometricsEnabled).toBe(true);
+    expect(settings?.passwordHash).toBeNull();
+  });
+
+  it('leaves biometricsEnabled off for a v1 doc with no webauthn credential', async () => {
+    const staleDb = await createRxDatabase({
+      name: 'spearmint',
+      storage: wrappedValidateAjvStorage({ storage: currentStorage }),
+    });
+    await staleDb.addCollections({
+      appSettings: { schema: staleAppSettingsSchemaV1, migrationStrategies: { 1: appSettingsMigrationStrategies[1] } },
+    });
+    await staleDb['appSettings'].insert({
+      id: 'settings',
+      lastSyncDate: null,
+      webauthnCredential: null,
+      ignoredExternalAccounts: [],
+      exportEncryptionDefault: false,
+    });
+    await staleDb.close();
+
+    const service = TestBed.inject(DatabaseService);
+    const db = await service.getDatabase();
+    openDb = db;
+
+    const settings = await db.appSettings.findOne('settings').exec();
+    expect(settings?.biometricsEnabled).toBe(false);
+    expect(settings?.passwordHash).toBeNull();
   });
 
   it('silently resets a database left over from an incompatible RxDB major version', async () => {

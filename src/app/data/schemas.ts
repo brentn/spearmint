@@ -161,7 +161,7 @@ export const simplefinLinkSchema: RxJsonSchema<SimplefinLink> = {
 
 export const appSettingsSchema: RxJsonSchema<AppSettings> = {
   title: 'appSettings',
-  version: 1,
+  version: 2,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -189,8 +189,16 @@ export const appSettingsSchema: RxJsonSchema<AppSettings> = {
       },
     },
     exportEncryptionDefault: { type: 'boolean' },
+    passwordHash: {
+      type: ['object', 'null'],
+      properties: {
+        salt: { type: 'string' },
+        hash: { type: 'string' },
+      },
+    },
+    biometricsEnabled: { type: 'boolean' },
   },
-  required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault'],
+  required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault', 'biometricsEnabled'],
 };
 
 /**
@@ -208,5 +216,17 @@ export const appSettingsMigrationStrategies: MigrationStrategies = {
           typeof entry === 'string' ? { key: entry, name: entry, institutionName: '' } : entry
         )
       : [],
+  }),
+  /**
+   * v1 -> v2: password-primary login (issue #25). Anyone who already registered a
+   * security key gets biometricsEnabled turned on automatically — their existing
+   * credential becomes the 2nd-step biometric instead of the sole login method —
+   * so the app can prompt them to set a password (a later ticket) without also
+   * silently disabling the device they already set up.
+   */
+  2: (oldDoc: { webauthnCredential: unknown }) => ({
+    ...oldDoc,
+    passwordHash: null,
+    biometricsEnabled: !!oldDoc.webauthnCredential,
   }),
 };

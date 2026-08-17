@@ -97,12 +97,27 @@ export interface IgnoredExternalAccount {
   institutionName: string;
 }
 
+/**
+ * A PBKDF2-SHA256 hash of the app-unlock password, both base64-encoded — see
+ * `password-hash.util.ts`. The iteration count is a fixed in-code constant,
+ * not stored per-password.
+ */
+export interface PasswordHash {
+  salt: string;
+  hash: string;
+}
+
 export interface AppSettings {
   id: 'settings'; // singleton document
   lastSyncDate: DateOnly | null;
   webauthnCredential: WebauthnCredential | null;
   ignoredExternalAccounts: IgnoredExternalAccount[];
   exportEncryptionDefault: boolean;
+  /** Password-primary login (issue #25): null until a password has been created. */
+  passwordHash: PasswordHash | null;
+  /** Whether WebAuthn is offered as a faster 2nd-step alongside the password.
+   * Migrated on for anyone who already had a `webauthnCredential` pre-upgrade. */
+  biometricsEnabled: boolean;
 }
 
 /**

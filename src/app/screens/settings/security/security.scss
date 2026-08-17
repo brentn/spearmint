@@ -1,0 +1,99 @@
+.security__content {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.security__card {
+  background: var(--spearmint-surface);
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  box-shadow: var(--spearmint-shadow);
+  padding: 1.15rem 1.25rem;
+}
+
+.security__section-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+}
+
+.security__body {
+  margin: 0 0 1rem;
+  color: var(--spearmint-ink);
+  font-size: 0.9rem;
+}
+
+.security__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--spearmint-muted);
+  margin-bottom: 0.75rem;
+
+  input {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--spearmint-border);
+    border-radius: var(--spearmint-radius);
+    color: var(--spearmint-ink);
+    // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+    // computed font-size is below this.
+    font-size: 1rem;
+    font-weight: 400;
+  }
+}
+
+.security__hint {
+  margin: -0.4rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--spearmint-danger);
+}
+
+.security__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--spearmint-ink);
+}
+
+.security__banner {
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem 0.9rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+}
+
+.security__banner--error {
+  background: rgba(223, 32, 48, 0.1);
+  color: var(--spearmint-danger);
+}
+
+.security__banner--success {
+  background: rgba(19, 124, 103, 0.1);
+  color: var(--spearmint-success);
+}
+
+.security__primary-button {
+  width: 100%;
+  border: none;
+  border-radius: var(--spearmint-radius);
+  padding: 0.7rem;
+  margin-top: 0.75rem;
+  background: var(--spearmint-primary);
+  color: var(--spearmint-on-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}

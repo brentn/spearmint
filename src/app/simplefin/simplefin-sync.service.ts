@@ -112,7 +112,7 @@ export class SimplefinSyncService {
       if (settingsDoc) {
         await settingsDoc.incrementalPatch({ lastSyncDate: today });
       } else {
-        await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, lastSyncDate: today, webauthnCredential: null });
+        await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, lastSyncDate: today, webauthnCredential: null, passwordHash: null });
       }
 
       return { success: true, error: null };
@@ -192,7 +192,7 @@ export class SimplefinSyncService {
         });
       }
     } else {
-      await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, ignoredExternalAccounts: [entry] });
+      await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, passwordHash: null, ignoredExternalAccounts: [entry] });
     }
     this.removeDiscovered(discovered);
   }

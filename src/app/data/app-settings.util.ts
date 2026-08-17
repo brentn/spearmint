@@ -1,11 +1,12 @@
 import type { AppSettings } from './models';
 import type { SpearmintDatabase } from './database.service';
 
-export const DEFAULT_APP_SETTINGS: Omit<AppSettings, 'webauthnCredential'> = {
+export const DEFAULT_APP_SETTINGS: Omit<AppSettings, 'webauthnCredential' | 'passwordHash'> = {
   id: 'settings',
   lastSyncDate: null,
   ignoredExternalAccounts: [],
   exportEncryptionDefault: false,
+  biometricsEnabled: false,
 };
 
 export function getAppSettingsDoc(db: SpearmintDatabase) {
@@ -24,5 +25,5 @@ export async function upsertAppSettings(
     await existing.incrementalPatch(patch);
     return;
   }
-  await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, ...patch });
+  await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, passwordHash: null, ...patch });
 }
