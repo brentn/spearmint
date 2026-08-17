@@ -1,10 +1,32 @@
 <div class="budgets">
   <header class="budgets__hero">
     <div class="budgets__hero-topline">
-      <h1 class="budgets__hero-label">{{ store.aggregate().monthName }} budget</h1>
-      <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()" aria-label="Add a budget">
-        <fa-icon [icon]="icons.add"></fa-icon>
-      </button>
+      <div class="budgets__hero-month-nav">
+        <button
+          class="budgets__hero-icon-btn"
+          type="button"
+          [disabled]="!store.canGoToPreviousMonth()"
+          (click)="store.goToPreviousMonth()"
+          aria-label="Previous month"
+        >
+          <fa-icon [icon]="icons.previous"></fa-icon>
+        </button>
+        <h1 class="budgets__hero-label">{{ store.aggregate().monthName }} budget</h1>
+        <button
+          class="budgets__hero-icon-btn"
+          type="button"
+          [disabled]="!store.canGoToNextMonth()"
+          (click)="store.goToNextMonth()"
+          aria-label="Next month"
+        >
+          <fa-icon [icon]="icons.next"></fa-icon>
+        </button>
+      </div>
+      @if (store.isCurrentPeriod()) {
+        <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()" aria-label="Add a budget">
+          <fa-icon [icon]="icons.add"></fa-icon>
+        </button>
+      }
     </div>
     <div class="budgets__hero-value">
       ${{ store.aggregate().totalSpent | number: '1.0-0' }}
@@ -23,7 +45,9 @@
       </div>
     } @else {
       <div class="budgets__card">
-        <div class="budgets__progress-label">Progress this month</div>
+        <div class="budgets__progress-label">
+          Progress {{ store.isCurrentPeriod() ? 'this month' : 'in ' + store.aggregate().monthName }}
+        </div>
         <div class="budgets__progress-track">
           <div class="bar-track bar-track--thin">
             <div
@@ -34,9 +58,11 @@
               [style.width.%]="store.aggregate().overallBarPercent * 100"
             ></div>
           </div>
-          <div class="budgets__today-tick" [style.left.%]="store.aggregate().todayPercent">
-            <span class="budgets__today-label">&#9650; Today</span>
-          </div>
+          @if (store.isCurrentPeriod()) {
+            <div class="budgets__today-tick" [style.left.%]="store.aggregate().todayPercent">
+              <span class="budgets__today-label">&#9650; Today</span>
+            </div>
+          }
         </div>
       </div>
 

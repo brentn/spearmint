@@ -52,6 +52,9 @@ class FakeBudgetsStore {
   readonly error = signal<string | null>(null);
   readonly rows = signal<BudgetRowViewModel[]>([]);
   readonly aggregate = signal<BudgetsAggregate>(emptyAggregate);
+  readonly isCurrentPeriod = signal(true);
+  readonly canGoToPreviousMonth = signal(true);
+  readonly canGoToNextMonth = signal(false);
   categoriesForAdd: Category[] = [];
 
   categoriesWithoutCurrentBudget(): Category[] {
@@ -59,6 +62,8 @@ class FakeBudgetsStore {
   }
 
   readonly addBudget = vi.fn(async (_categoryId: string, _amount: number, _rollOver: boolean) => {});
+  readonly goToPreviousMonth = vi.fn(() => {});
+  readonly goToNextMonth = vi.fn(() => {});
 }
 
 @Component({ selector: 'app-stub-budget-detail', template: '' })
@@ -108,6 +113,33 @@ describe('Budgets', () => {
     expect(root.querySelector('.budgets__toggle-children')).toBeNull();
   });
 
+  it('month nav buttons call the store and reflect its canGo*/isCurrentPeriod signals (issue #23)', () => {
+    const { fixture, fakeStore } = createFixture();
+    fakeStore.canGoToPreviousMonth.set(true);
+    fakeStore.canGoToNextMonth.set(false);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const prevBtn = root.querySelector<HTMLButtonElement>('[aria-label="Previous month"]');
+    const nextBtn = root.querySelector<HTMLButtonElement>('[aria-label="Next month"]');
+    expect(prevBtn?.disabled).toBe(false);
+    expect(nextBtn?.disabled).toBe(true);
+
+    prevBtn?.click();
+    expect(fakeStore.goToPreviousMonth).toHaveBeenCalled();
+  });
+
+  it('hides the "Add a budget" button and the Today tick when viewing a past month (issue #23)', () => {
+    const { fixture, fakeStore } = createFixture();
+    fakeStore.rows.set([row()]);
+    fakeStore.isCurrentPeriod.set(false);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[aria-label="Add a budget"]')).toBeNull();
+    expect(root.querySelector('.budgets__today-tick')).toBeNull();
+  });
+
   it('opens the add-budget dialog from the hero "+" button, closed by default', () => {
     const { fixture } = createFixture();
     fixture.detectChanges();
@@ -116,7 +148,7 @@ describe('Budgets', () => {
     const dialog = root.querySelector<HTMLDialogElement>('.budgets__dialog');
     expect(dialog?.hasAttribute('open')).toBe(false);
 
-    root.querySelector<HTMLButtonElement>('.budgets__hero-icon-btn')?.click();
+    root.querySelector<HTMLButtonElement>('[aria-label="Add a budget"]')?.click();
     fixture.detectChanges();
 
     expect(dialog?.hasAttribute('open')).toBe(true);
@@ -128,7 +160,7 @@ describe('Budgets', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    root.querySelector<HTMLButtonElement>('.budgets__hero-icon-btn')?.click();
+    root.querySelector<HTMLButtonElement>('[aria-label="Add a budget"]')?.click();
     fixture.detectChanges();
 
     const select = root.querySelector<HTMLSelectElement>('.budgets__add-select');

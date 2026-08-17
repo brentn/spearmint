@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faChevronLeft, faChevronRight, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
 import { BudgetsStore } from '../../budgets/budgets.store';
 import type { CategoryType } from '../../data/models';
@@ -15,7 +15,7 @@ import type { CategoryType } from '../../data/models';
 })
 export class Budgets {
   protected readonly store = inject(BudgetsStore);
-  protected readonly icons = { add: faPlus };
+  protected readonly icons = { add: faPlus, previous: faChevronLeft, next: faChevronRight };
 
   private readonly addDialog = viewChild<ElementRef<HTMLDialogElement>>('addDialog');
   protected readonly newCategoryId = signal('');

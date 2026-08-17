@@ -1,7 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { CategoriesService } from '../categories/categories.service';
 import { DatabaseService } from '../data/database.service';
-import type { Account, Budget, Category, CategoryType, Transaction } from '../data/models';
+import type { Account, Budget, Category, CategoryType, Transaction, YearMonth } from '../data/models';
 import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
 import { TransactionMutationService } from '../transactions/transaction-mutation.service';
 import {
@@ -14,7 +14,14 @@ import {
   getEffectiveBudgetForScope,
 } from './budget-engine.util';
 import { BudgetsService } from './budgets.service';
-import { currentYearMonth, elapsedMonthFraction, formatYearMonth, isFinalWeekOfMonth } from './period.util';
+import {
+  currentYearMonth,
+  elapsedMonthFraction,
+  formatYearMonth,
+  isFinalWeekOfMonth,
+  nextYearMonth,
+  previousYearMonth,
+} from './period.util';
 
 export interface BudgetRowViewModel {
   id: string;
@@ -64,10 +71,11 @@ export interface BudgetsAggregate {
 
 /**
  * Screen-scoped store for the Budgets tab and Budget detail, following this codebase's
- * plain-signals-refreshed-imperatively convention (TransactionsStore/AccountsStore). Only
- * ever shows/edits the current period — there's no period navigation in the locked visual
- * spec, and no period-closing UI (spec §4): rollover is purely computed on read via
- * BudgetsService.reconcileAndList(), never entered or confirmed by the user.
+ * plain-signals-refreshed-imperatively convention (TransactionsStore/AccountsStore).
+ * `period` (issue #23) lets the Budgets screen browse prior months read-only; creating/editing
+ * budgets stays locked to the current period regardless of `period` (spec §4's no-period-closing-UI
+ * rule) — rollover is purely computed on read via BudgetsService.reconcileAndList(), never entered
+ * or confirmed by the user.
  */
 @Injectable()
 export class BudgetsStore {
@@ -80,12 +88,33 @@ export class BudgetsStore {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly categories = signal<Category[]>([]);
-  readonly rows = signal<BudgetRowViewModel[]>([]);
+  readonly budgets = signal<Budget[]>([]);
   readonly transactions = signal<Transaction[]>([]);
   readonly accounts = signal<Account[]>([]);
+  /** The month currently being viewed (issue #23) — defaults to the current month, moved by
+   * goToPreviousMonth()/goToNextMonth(). Purely a view-side concern: reconcileAndList() always
+   * reconciles rollovers through the real current month regardless of what's being viewed. */
+  readonly period = signal<YearMonth>(currentYearMonth());
+  readonly isCurrentPeriod = computed(() => this.period() === currentYearMonth());
+
+  /** Earliest month with any transaction at all, or null with none — the floor for
+   * goToPreviousMonth() (issue #23: "no need to view ... months prior to the earliest transaction"). */
+  private readonly earliestTransactionPeriod = computed<YearMonth | null>(() => {
+    const dates = this.transactions().map((t) => t.date.slice(0, 7));
+    return dates.length === 0 ? null : dates.reduce((min, d) => (d < min ? d : min));
+  });
+  readonly canGoToPreviousMonth = computed(() => {
+    const earliest = this.earliestTransactionPeriod();
+    return earliest !== null && this.period() > earliest;
+  });
+  readonly canGoToNextMonth = computed(() => this.period() < currentYearMonth());
+
+  readonly rows = computed<BudgetRowViewModel[]>(() =>
+    this.buildRows(this.budgets(), this.categories(), this.transactions(), this.period()),
+  );
 
   readonly aggregate = computed<BudgetsAggregate>(() =>
-    this.buildAggregate(this.rows(), this.transactions(), this.categories()),
+    this.buildAggregate(this.rows(), this.transactions(), this.categories(), this.period()),
   );
 
   constructor() {
@@ -94,6 +123,18 @@ export class BudgetsStore {
         void this.refresh();
       }
     });
+  }
+
+  goToPreviousMonth(): void {
+    if (this.canGoToPreviousMonth()) {
+      this.period.set(previousYearMonth(this.period()));
+    }
+  }
+
+  goToNextMonth(): void {
+    if (this.canGoToNextMonth()) {
+      this.period.set(nextYearMonth(this.period()));
+    }
   }
 
   /** A category whose only row is implied (computed from budgeted descendants) still counts as
@@ -107,10 +148,10 @@ export class BudgetsStore {
     return this.categories().filter((category) => !budgetedCategoryIds.has(category.id));
   }
 
-  /** Transactions for `categoryId` and all of its descendants (any depth), current period only —
-   * the combined transaction list backing a (real or implied) parent's Budget Detail screen. */
+  /** Transactions for `categoryId` and all of its descendants (any depth), the viewed period
+   * only — the combined transaction list backing a (real or implied) parent's Budget Detail screen. */
   transactionsForCategoryTree(categoryId: string): Transaction[] {
-    const period = currentYearMonth();
+    const period = this.period();
     const treeIds = new Set([categoryId, ...getDescendantCategories(categoryId, this.categories()).map((c) => c.id)]);
     return this.transactions()
       .filter((t) => t.categoryId !== null && treeIds.has(t.categoryId) && t.date.slice(0, 7) === period)
@@ -129,7 +170,7 @@ export class BudgetsStore {
     this.categories.set(categories);
     this.transactions.set(transactions);
     this.accounts.set(accountDocs.map((doc) => doc.toJSON()));
-    this.rows.set(this.buildRows(budgets, categories, transactions));
+    this.budgets.set(budgets);
     this.loading.set(false);
   }
 
@@ -179,8 +220,12 @@ export class BudgetsStore {
     await this.refresh();
   }
 
-  private buildRows(budgets: Budget[], categories: Category[], transactions: Transaction[]): BudgetRowViewModel[] {
-    const period = currentYearMonth();
+  private buildRows(
+    budgets: Budget[],
+    categories: Category[],
+    transactions: Transaction[],
+    period: YearMonth,
+  ): BudgetRowViewModel[] {
     const isIncomeInfoPeriod = !isFinalWeekOfMonth(period);
     const actualsByPeriodAndCategory = buildSignedActualsMap(transactions, categories);
 
@@ -264,6 +309,7 @@ export class BudgetsStore {
     rows: BudgetRowViewModel[],
     transactions: Transaction[],
     categories: Category[],
+    period: YearMonth,
   ): BudgetsAggregate {
     // Top-level rows only (real or implied): a parent row already fully absorbs its descendants'
     // amount/rollover/spend (issue #15's unified rollup), so counting a child's own row here too
@@ -276,7 +322,6 @@ export class BudgetsStore {
     const totalBudget = expenseRows.reduce((sum, row) => sum + row.available, 0);
     const remaining = totalBudget - totalSpent;
     const overallStatus = computeBudgetStatus('expense', totalSpent, totalBudget, 0);
-    const period = currentYearMonth();
     // Deliberately not derived from `rows`/incomeRows (issue #21): a wholly unbudgeted income
     // category never gets a row (bullet 3's $0-computed-budget rule is scoped to expenses only —
     // see buildRows), but its earnings must still count toward the cash-flow box's "Earned" total
@@ -285,6 +330,11 @@ export class BudgetsStore {
     const earned = categories
       .filter((category) => category.type === 'income')
       .reduce((sum, category) => sum + (actualsByPeriodAndCategory.get(`${period}:${category.id}`) ?? 0), 0);
+
+    // "this month" only reads correctly for the real current month (issue #23: browsing a past
+    // month must update every piece of text on screen, not just the numbers) — a viewed period
+    // names itself instead ("...in July 2026").
+    const monthPhrase = period === currentYearMonth() ? 'this month' : `in ${formatYearMonth(period)}`;
 
     return {
       monthName: formatYearMonth(period),
@@ -296,8 +346,8 @@ export class BudgetsStore {
       overallState: overallStatus.state,
       message:
         remaining >= 0
-          ? `Keep it up! You can save $${Math.round(remaining)} more this month`
-          : `You're $${Math.round(Math.abs(remaining))} over budget this month`,
+          ? `Keep it up! You can save $${Math.round(remaining)} more ${monthPhrase}`
+          : `You're $${Math.round(Math.abs(remaining))} over budget ${monthPhrase}`,
       todayPercent: elapsedMonthFraction(period) * 100,
       earned,
       spent: totalSpent,

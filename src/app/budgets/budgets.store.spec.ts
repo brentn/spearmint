@@ -8,7 +8,7 @@ import { DatabaseService } from '../data/database.service';
 import type { Account, Budget, Category, Transaction } from '../data/models';
 import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
 import { TransactionMutationService } from '../transactions/transaction-mutation.service';
-import { currentYearMonth } from './period.util';
+import { currentYearMonth, formatYearMonth, previousYearMonth } from './period.util';
 import { BudgetsStore } from './budgets.store';
 
 function seedCategory(overrides: Partial<Category> = {}): Category {
@@ -452,6 +452,96 @@ describe('BudgetsStore', () => {
       await store.refresh();
 
       expect(store.rows().map((r) => r.categoryId)).toEqual(['aaa-other', 'zzz-parent', 'aaa-child']);
+    });
+  });
+
+  describe('month navigation (issue #23)', () => {
+    it('starts on the current month, unable to go forward', () => {
+      expect(store.aggregate().monthName).toBe(formatYearMonth(currentYearMonth()));
+      expect(store.isCurrentPeriod()).toBe(true);
+      expect(store.canGoToNextMonth()).toBe(false);
+    });
+
+    it('cannot go back with no transactions at all', () => {
+      expect(store.canGoToPreviousMonth()).toBe(false);
+      store.goToPreviousMonth();
+      expect(store.aggregate().monthName).toBe(formatYearMonth(currentYearMonth()));
+    });
+
+    it('goToPreviousMonth switches rows/aggregate to the prior month\'s budgets and spend', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['categories'].insert(seedCategory());
+      await fakeDb['budgets'].insert(seedBudget({ period: prevPeriod, amount: 200 }));
+      await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05`, amount: -50 }));
+      await store.refresh();
+      // The prior month's budget carries forward as effective for the current month too
+      // (getEffectiveBudgetForScope), but that month had no spend of its own.
+      expect(store.rows()).toHaveLength(1);
+      expect(store.rows()[0].spent).toBe(0);
+
+      store.goToPreviousMonth();
+
+      expect(store.isCurrentPeriod()).toBe(false);
+      expect(store.aggregate().monthName).toBe(formatYearMonth(prevPeriod));
+      expect(store.rows()).toHaveLength(1);
+      expect(store.rows()[0].amount).toBe(200);
+      expect(store.rows()[0].spent).toBe(50);
+    });
+
+    it('stops at the earliest transaction\'s month and refuses to go further back', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05` }));
+      await store.refresh();
+
+      expect(store.canGoToPreviousMonth()).toBe(true);
+      store.goToPreviousMonth();
+      expect(store.canGoToPreviousMonth()).toBe(false);
+
+      store.goToPreviousMonth();
+      expect(store.aggregate().monthName).toBe(formatYearMonth(prevPeriod));
+    });
+
+    it('goToNextMonth moves forward but refuses to pass the current month', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05` }));
+      await store.refresh();
+      store.goToPreviousMonth();
+
+      expect(store.canGoToNextMonth()).toBe(true);
+      store.goToNextMonth();
+      expect(store.aggregate().monthName).toBe(formatYearMonth(currentYearMonth()));
+      expect(store.isCurrentPeriod()).toBe(true);
+
+      store.goToNextMonth();
+      expect(store.aggregate().monthName).toBe(formatYearMonth(currentYearMonth()));
+    });
+
+    it('aggregate message names the viewed month instead of always saying "this month"', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['categories'].insert(seedCategory());
+      await fakeDb['budgets'].insert(seedBudget({ period: prevPeriod, amount: 100 }));
+      await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05`, amount: -150 }));
+      await store.refresh();
+      expect(store.aggregate().message).toContain('this month');
+
+      store.goToPreviousMonth();
+
+      expect(store.aggregate().message).toContain(`in ${formatYearMonth(prevPeriod)}`);
+      expect(store.aggregate().message).not.toContain('this month');
+    });
+
+    it('transactionsForCategoryTree reflects the viewed period, not always the current month', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['categories'].insert(seedCategory({ id: 'housing', name: 'Housing' }));
+      await fakeDb['transactions'].insert(
+        seedTransaction({ id: 't-prev', categoryId: 'housing', date: `${prevPeriod}-05` }),
+      );
+      await store.refresh();
+      expect(store.transactionsForCategoryTree('housing')).toHaveLength(0);
+
+      store.goToPreviousMonth();
+
+      expect(store.transactionsForCategoryTree('housing').map((t) => t.id)).toEqual(['t-prev']);
     });
   });
 
