@@ -156,12 +156,64 @@ describe('BackupService', () => {
     const settings = await db.appSettings.findOne('settings').exec();
     expect(account?.toJSON()).toEqual(checking);
     expect(category?.toJSON()).toEqual(groceries);
+    // Not round-tripped through the backup file itself (see the dedicated auth-field
+    // tests below) — preserved because it was this device's own login before the import.
     expect(settings?.webauthnCredential).toEqual(settingsDoc.webauthnCredential);
     // Reopening after reset re-seeds the default category taxonomy into the
     // now-empty categories collection (DatabaseService's first-run
     // convenience) before the import runs — guards against that reseed
     // leaving extra categories behind alongside the imported ones.
     expect(await db.categories.count().exec()).toBe(categoryCountBeforeExport);
+  });
+
+  it('never writes passwordHash/webauthnCredential/biometricsEnabled into the exported file', async () => {
+    await seed();
+    const db = await fakeDatabaseService.getDatabase();
+    await db.appSettings.findOne('settings').exec().then((doc) =>
+      doc?.incrementalPatch({ passwordHash: { salt: 'c2FsdA==', hash: 'aGFzaA==' } })
+    );
+    const service = TestBed.inject(BackupService);
+
+    const blob = await service.exportBackup(false, '');
+    const fileText = await readBlobText(blob);
+
+    expect(fileText).not.toContain('c2FsdA==');
+    expect(fileText).not.toContain('aGFzaA==');
+    expect(fileText).not.toContain('cred-1');
+    const envelope = JSON.parse(fileText) as { payload: { collections: { name: string; docs: unknown[] }[] } };
+    const appSettingsDocs = envelope.payload.collections.find((c) => c.name === 'appSettings')?.docs;
+    expect(appSettingsDocs).toEqual([
+      expect.objectContaining({ passwordHash: null, webauthnCredential: null, biometricsEnabled: false }),
+    ]);
+  });
+
+  it('preserves the importing device\'s own login instead of adopting the backup\'s', async () => {
+    await seed();
+    const service = TestBed.inject(BackupService);
+    const blob = await service.exportBackup(false, '');
+    const fileText = await readBlobText(blob);
+
+    // A different device's login than whatever was captured in the backup file.
+    const db = await fakeDatabaseService.getDatabase();
+    const localCredential = { id: 'cred-local', publicKey: 'pk-local', algorithm: 'ES256' as const, transports: [] };
+    await db.appSettings
+      .findOne('settings')
+      .exec()
+      .then((doc) =>
+        doc?.incrementalPatch({
+          passwordHash: { salt: 'bG9jYWw=', hash: 'aGFzaA==' },
+          webauthnCredential: localCredential,
+          biometricsEnabled: true,
+        })
+      );
+
+    await service.importBackup(fileText, null);
+
+    const dbAfterImport = await fakeDatabaseService.getDatabase();
+    const settings = await dbAfterImport.appSettings.findOne('settings').exec();
+    expect(settings?.passwordHash).toEqual({ salt: 'bG9jYWw=', hash: 'aGFzaA==' });
+    expect(settings?.webauthnCredential).toEqual(localCredential);
+    expect(settings?.biometricsEnabled).toBe(true);
   });
 
   it('round-trips an encrypted export through import with the correct password', async () => {
