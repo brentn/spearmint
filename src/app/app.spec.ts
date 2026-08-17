@@ -1,12 +1,27 @@
 import { provideZonelessChangeDetection, signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './app';
 import { AuthService, type AuthStage } from './auth/auth.service';
 import { IdleLockService } from './auth/idle-lock.service';
 import { routes } from './app.routes';
 import { SimplefinSyncService } from './simplefin/simplefin-sync.service';
+
+class NoopResizeObserver {
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
+}
+
+beforeEach(() => {
+  // jsdom doesn't implement ResizeObserver; NavShell (rendered once unlocked) needs one.
+  vi.stubGlobal('ResizeObserver', NoopResizeObserver);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function configureWithAuth(overrides: Partial<Pick<AuthService, 'isUnlocked' | 'stage'>>) {
   const idleLockService = { start: vi.fn(), stop: vi.fn() };

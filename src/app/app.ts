@@ -5,6 +5,7 @@ import { AuthGate } from './auth/auth-gate/auth-gate';
 import { IdleLockService } from './auth/idle-lock.service';
 import { NavShell } from './shell/nav-shell/nav-shell';
 import { NavScrollContainerDirective } from './shell/nav-scroll-container.directive';
+import { NavScrollService } from './shell/nav-scroll.service';
 import { SimplefinSyncService } from './simplefin/simplefin-sync.service';
 
 @Component({
@@ -15,6 +16,7 @@ import { SimplefinSyncService } from './simplefin/simplefin-sync.service';
 })
 export class App {
   protected readonly authService = inject(AuthService);
+  protected readonly navScrollService = inject(NavScrollService);
   private readonly syncService = inject(SimplefinSyncService);
   private readonly idleLockService = inject(IdleLockService);
 

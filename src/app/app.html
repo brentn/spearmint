@@ -1,7 +1,7 @@
 @if (authService.isUnlocked()) {
   <div class="app-shell">
     <div class="app-scroll" appNavScrollContainer>
-      <div class="app-content">
+      <div class="app-content" [style.paddingBottom.px]="navScrollService.navHeightPx()">
         <router-outlet></router-outlet>
       </div>
     </div>

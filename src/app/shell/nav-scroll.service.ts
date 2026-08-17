@@ -4,6 +4,7 @@ import { computeNavHidden } from './nav-scroll';
 @Injectable({ providedIn: 'root' })
 export class NavScrollService {
   readonly hidden = signal(false);
+  readonly navHeightPx = signal(0);
 
   private previousY = 0;
   private element: HTMLElement | null = null;
@@ -20,12 +21,20 @@ export class NavScrollService {
     this.element = null;
   }
 
+  /** NavShell reports its own live-rendered height here — see NavShell's ResizeObserver. */
+  setNavHeight(px: number): void {
+    this.navHeightPx.set(px);
+  }
+
   private onScroll(): void {
     if (!this.element) {
       return;
     }
     const currentY = this.element.scrollTop;
-    this.hidden.set(computeNavHidden(this.previousY, currentY, this.hidden()));
+    const distanceFromBottom = this.element.scrollHeight - this.element.clientHeight - currentY;
+    this.hidden.set(
+      computeNavHidden(this.previousY, currentY, this.hidden(), distanceFromBottom, this.navHeightPx()),
+    );
     this.previousY = currentY;
   }
 }

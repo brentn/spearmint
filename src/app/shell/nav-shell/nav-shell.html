@@ -1,4 +1,4 @@
-<nav class="nav-shell" [class.nav-shell--hidden]="hidden()">
+<nav #nav class="nav-shell" [class.nav-shell--hidden]="hidden()">
   @for (tab of tabs; track tab.path) {
     <a
       class="nav-shell__tab"
