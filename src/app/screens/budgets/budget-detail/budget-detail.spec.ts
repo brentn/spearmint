@@ -1,9 +1,9 @@
-import { Component, signal, provideZonelessChangeDetection } from '@angular/core';
+import { Component, computed, signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Category, Transaction } from '../../../data/models';
-import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
+import { type BudgetRowViewModel, type BudgetsAggregate, BudgetsStore } from '../../../budgets/budgets.store';
 import { TransactionsStore } from '../../transactions/transactions.store';
 import { stubDialogMethods } from '../../../testing/stub-dialog-methods';
 import { BudgetDetail } from './budget-detail';
@@ -46,6 +46,23 @@ function txn(overrides: Partial<Transaction> = {}): Transaction {
   };
 }
 
+function emptyAggregate(): BudgetsAggregate {
+  return {
+    monthName: 'August 2026',
+    totalSpent: 0,
+    totalBudget: 0,
+    remaining: 0,
+    overallPercent: 0,
+    overallBarPercent: 0,
+    overallState: 'normal',
+    message: '',
+    todayPercent: 0,
+    earned: 0,
+    spent: 0,
+    cashFlowNet: 0,
+  };
+}
+
 /**
  * Component-level tests exercise BudgetDetail's template wiring only (subcategories breakdown,
  * combined transaction list, implied-vs-real actions) — the underlying rollup/combination math
@@ -57,6 +74,11 @@ class FakeBudgetsStore {
   readonly error = signal<string | null>(null);
   readonly rows = signal<BudgetRowViewModel[]>([]);
   readonly categories = signal<Category[]>([]);
+  readonly aggregate = signal<BudgetsAggregate>(emptyAggregate());
+  readonly period = signal('2026-08');
+  readonly isCurrentPeriod = signal(true);
+  readonly monthPhrase = computed(() => (this.isCurrentPeriod() ? 'this month' : `in ${this.aggregate().monthName}`));
+  readonly linkQueryParams = computed(() => (this.isCurrentPeriod() ? undefined : { period: this.period() }));
   private readonly transactionsByCategory = new Map<string, Transaction[]>();
 
   setTransactionTree(categoryId: string, transactions: Transaction[]): void {
@@ -92,7 +114,7 @@ describe('BudgetDetail', () => {
 
   beforeAll(stubDialogMethods);
 
-  function createFixture(id: string) {
+  function createFixture(id: string, period?: string) {
     TestBed.configureTestingModule({
       imports: [BudgetDetail],
       providers: [provideZonelessChangeDetection(), provideRouter([{ path: 'budgets', component: StubBudgetsList }])],
@@ -109,6 +131,9 @@ describe('BudgetDetail', () => {
     });
     const fixture = TestBed.createComponent(BudgetDetail);
     fixture.componentRef.setInput('id', id);
+    if (period !== undefined) {
+      fixture.componentRef.setInput('period', period);
+    }
     fixture.detectChanges();
     return fixture;
   }
@@ -322,6 +347,101 @@ describe('BudgetDetail', () => {
     expect(spendAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(false);
     expect(depositAmt?.textContent?.trim()).toBe('$40.00');
     expect(depositAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(true);
+  });
+
+  describe('period-aware navigation (issue #23 follow-up)', () => {
+    it('seeds the store\'s period from an incoming ?period= query param', () => {
+      createFixture('b-housing', '2026-06');
+      expect(fakeStore.period()).toBe('2026-06');
+    });
+
+    it('ignores a malformed period query param, leaving the store\'s default in place', () => {
+      createFixture('b-housing', 'not-a-period');
+      expect(fakeStore.period()).toBe('2026-08');
+    });
+
+    it('hides the edit/add-budget controls while viewing a non-current period', () => {
+      const fixture = createFixture('b-housing', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('button[aria-label="Edit budget"]')).toBeNull();
+      expect(root.querySelector('button[aria-label="Add a budget for this category"]')).toBeNull();
+    });
+
+    it('names the viewed month instead of always saying "this month" once it\'s not the current period', () => {
+      const fixture = createFixture('b-housing', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.aggregate.set({ ...emptyAggregate(), monthName: 'June 2026' });
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.textContent).toContain('Spent in June 2026');
+      expect(root.textContent).not.toContain('Spent this month');
+    });
+
+    it('names the viewed month on an income row too, not just expense rows', () => {
+      const fixture = createFixture('b-paycheck', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.aggregate.set({ ...emptyAggregate(), monthName: 'June 2026' });
+      fakeStore.rows.set([
+        row({ id: 'b-paycheck', categoryId: 'paycheck', categoryName: 'Paycheck', categoryType: 'income', implied: false }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.textContent).toContain('Target vs. actual in June 2026');
+      expect(root.textContent).not.toContain('Target vs. actual this month');
+    });
+
+    it('names the viewed month in the empty transactions note instead of always saying "this month"', () => {
+      const fixture = createFixture('b-housing', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.aggregate.set({ ...emptyAggregate(), monthName: 'June 2026' });
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.textContent).toContain('No transactions in this category in June 2026.');
+    });
+
+    it('the "← Budgets" back link carries the viewed period, so backing out doesn\'t lose it', () => {
+      const fixture = createFixture('b-housing', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const backLink = root.querySelector<HTMLAnchorElement>('.budget-detail__back');
+      expect(backLink?.getAttribute('href')).toBe('/budgets?period=2026-06');
+    });
+
+    it('the back link stays a plain /budgets link for the current period', () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const backLink = root.querySelector<HTMLAnchorElement>('.budget-detail__back');
+      expect(backLink?.getAttribute('href')).toBe('/budgets');
+    });
+
+    it('a subcategory link carries the viewed period along too', () => {
+      const fixture = createFixture('b-housing', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.rows.set([
+        row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false }),
+        row({ id: 'b-rent', categoryId: 'rent', categoryName: 'Rent', parentCategoryId: 'housing', implied: false }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const subcatLink = root.querySelector<HTMLAnchorElement>('.budget-detail__subcat-row');
+      expect(subcatLink?.getAttribute('href')).toBe('/budgets/b-rent?period=2026-06');
+    });
   });
 
   describe('transaction edit dialog (issue #19)', () => {

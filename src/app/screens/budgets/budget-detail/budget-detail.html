@@ -1,13 +1,11 @@
 @if (row(); as row) {
   <div class="budget-detail">
     <div class="budget-detail__topbar">
-      <a class="budget-detail__back" routerLink="/budgets">&larr; Budgets</a>
+      <a class="budget-detail__back" routerLink="/budgets" [queryParams]="store.linkQueryParams()">&larr; Budgets</a>
     </div>
 
     <header class="budget-detail__hero">
-      <div class="budget-detail__hero-label">
-        {{ row.categoryType === 'income' ? 'Target vs. actual' : 'Spent this month' }}
-      </div>
+      <div class="budget-detail__hero-label">{{ categoryLabel() }}</div>
       <h1 class="budget-detail__hero-title">
         {{ row.categoryName }}
         @if (row.implied) {
@@ -28,19 +26,21 @@
     <div class="budget-detail__content">
       <div class="budget-detail__card">
         <div class="budget-detail__bar-header">
-          @if (row.implied) {
-            <button
-              type="button"
-              class="budget-detail__icon-btn"
-              aria-label="Add a budget for this category"
-              (click)="openAddDialog()"
-            >
-              <fa-icon [icon]="icons.add"></fa-icon>
-            </button>
-          } @else {
-            <button type="button" class="budget-detail__icon-btn" aria-label="Edit budget" (click)="openEditDialog()">
-              <fa-icon [icon]="icons.edit"></fa-icon>
-            </button>
+          @if (store.isCurrentPeriod()) {
+            @if (row.implied) {
+              <button
+                type="button"
+                class="budget-detail__icon-btn"
+                aria-label="Add a budget for this category"
+                (click)="openAddDialog()"
+              >
+                <fa-icon [icon]="icons.add"></fa-icon>
+              </button>
+            } @else {
+              <button type="button" class="budget-detail__icon-btn" aria-label="Edit budget" (click)="openEditDialog()">
+                <fa-icon [icon]="icons.edit"></fa-icon>
+              </button>
+            }
           }
         </div>
         <div class="bar-track bar-track--large">
@@ -71,7 +71,11 @@
           <ul class="budget-detail__subcat-list">
             @for (subRow of subcategoryRows(); track subRow.id) {
               <li>
-                <a class="budget-detail__subcat-row" [routerLink]="['/budgets', subRow.id]">
+                <a
+                  class="budget-detail__subcat-row"
+                  [routerLink]="['/budgets', subRow.id]"
+                  [queryParams]="store.linkQueryParams()"
+                >
                   <div class="budget-detail__subcat-line">
                     <span class="budget-detail__subcat-name">{{ subRow.categoryName }}</span>
                     <span>${{ subRow.spent | number: '1.0-0' }} of ${{ subRow.available | number: '1.0-0' }}</span>
@@ -92,7 +96,7 @@
       <div class="budget-detail__card">
         <h2 class="budget-detail__section-title">Transactions</h2>
         @if (categoryTransactions().length === 0) {
-          <p class="budget-detail__empty-note">No transactions in this category this month.</p>
+          <p class="budget-detail__empty-note">No transactions in this category {{ store.monthPhrase() }}.</p>
         } @else {
           <ul class="budget-detail__txn-list">
             @for (t of categoryTransactions(); track t.id) {
@@ -167,6 +171,6 @@
 } @else if (!store.loading()) {
   <div class="empty-state">
     <h2 class="empty-state__title">Budget not found</h2>
-    <p class="empty-state__body"><a routerLink="/budgets">Back to Budgets</a></p>
+    <p class="empty-state__body"><a routerLink="/budgets" [queryParams]="store.linkQueryParams()">Back to Budgets</a></p>
   </div>
 }

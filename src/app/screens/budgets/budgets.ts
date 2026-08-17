@@ -1,9 +1,10 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faChevronLeft, faChevronRight, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
 import { BudgetsStore } from '../../budgets/budgets.store';
+import { isYearMonth } from '../../budgets/period.util';
 import type { CategoryType } from '../../data/models';
 
 @Component({
@@ -17,11 +18,28 @@ export class Budgets {
   protected readonly store = inject(BudgetsStore);
   protected readonly icons = { add: faPlus, previous: faChevronLeft, next: faChevronRight };
 
+  /** Optional ?period= query param carried from a Budget Detail "← Budgets" link (issue #23
+   * follow-up) — seeds the store's period on entry so backing out of a past month's detail view
+   * returns to that same month instead of resetting to the current one. Ignored if malformed. */
+  readonly period = input<string>();
+
   private readonly addDialog = viewChild<ElementRef<HTMLDialogElement>>('addDialog');
   protected readonly newCategoryId = signal('');
   protected readonly newAmount = signal<number | null>(null);
   protected readonly newRollOver = signal(false);
   protected readonly showChildBudgets = signal(false);
+
+  constructor() {
+    // Seeds the store's period from the incoming query param (see `period` above) — runs once
+    // on entry and again if the param itself changes, but never fights the </>-chevron clicks
+    // below since those mutate store.period directly without touching this input.
+    effect(() => {
+      const incoming = this.period();
+      if (incoming && isYearMonth(incoming)) {
+        this.store.period.set(incoming);
+      }
+    });
+  }
 
   protected readonly incomeRows = computed(() => this.store.rows().filter((r) => r.categoryType === 'income'));
   protected readonly expenseRows = computed(() => this.store.rows().filter((r) => r.categoryType !== 'income'));

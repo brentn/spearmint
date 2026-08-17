@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, type Params } from '@angular/router';
 import type { BudgetRowViewModel } from '../budgets.store';
 
 /**
@@ -18,4 +18,8 @@ export class BudgetRow {
   readonly row = input.required<BudgetRowViewModel>();
   /** Indents a subcategory's row when shown alongside its parent (Budgets screen's "show subcategories" toggle). */
   readonly indent = input(false);
+  /** Query params to carry into the linked Budget Detail screen — e.g. `{ period }` when the
+   * caller is viewing a past month (issue #23 follow-up), so drilling into a category stays
+   * anchored to the month being browsed. Undefined keeps today's plain link for the current month. */
+  readonly queryParams = input<Params | undefined>(undefined);
 }

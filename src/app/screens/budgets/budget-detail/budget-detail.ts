@@ -1,9 +1,10 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
+import { isYearMonth } from '../../../budgets/period.util';
 import type { Transaction } from '../../../data/models';
 import { TransactionsStore } from '../../transactions/transactions.store';
 import { TransactionEditDialog, type TransactionEditSave } from '../../../transactions/transaction-edit-dialog/transaction-edit-dialog';
@@ -17,6 +18,10 @@ import { TransactionEditDialog, type TransactionEditSave } from '../../../transa
 })
 export class BudgetDetail {
   readonly id = input.required<string>();
+  /** Optional ?period= query param carried from the Budgets list's own row link (issue #23
+   * follow-up) — a category clicked while browsing a past month opens on that same month
+   * instead of always defaulting to the current one. Ignored if absent or malformed. */
+  readonly period = input<string>();
 
   protected readonly store = inject(BudgetsStore);
   // Screen-scoped instance used only for its assignCategory/setNotes/setExcludeFromBudget
@@ -30,8 +35,28 @@ export class BudgetDetail {
     this.store.rows().find((row) => row.id === this.id()),
   );
 
-  /** Transactions across this category and all of its descendants, current period only — for a
-   * leaf category (no children) this is just its own transactions, same as before issue #15. */
+  /** Hero label naming both the metric and the viewed month — "Spent this month"/"Spent in July
+   * 2026" for expense/transfer, "Target vs. actual this month"/"...in July 2026" for income
+   * (issue #23 follow-up: browsing a past month must be visible on income rows too, not just
+   * expense ones). */
+  protected readonly categoryLabel = computed(() => {
+    const kind = this.row()?.categoryType === 'income' ? 'Target vs. actual' : 'Spent';
+    return `${kind} ${this.store.monthPhrase()}`;
+  });
+
+  constructor() {
+    // Seeds the store's period from the incoming query param (see `period` above), so this
+    // screen opens on whichever month it was linked from rather than always the current one.
+    effect(() => {
+      const incoming = this.period();
+      if (incoming && isYearMonth(incoming)) {
+        this.store.period.set(incoming);
+      }
+    });
+  }
+
+  /** Transactions across this category and all of its descendants, the viewed period only — for
+   * a leaf category (no children) this is just its own transactions, same as before issue #15. */
   protected readonly categoryTransactions = computed<Transaction[]>(() => {
     const row = this.row();
     if (!row) {

@@ -96,6 +96,18 @@ export class BudgetsStore {
    * reconciles rollovers through the real current month regardless of what's being viewed. */
   readonly period = signal<YearMonth>(currentYearMonth());
   readonly isCurrentPeriod = computed(() => this.period() === currentYearMonth());
+  /** "this month" only reads correctly for the real current month — a viewed period names
+   * itself instead ("...in July 2026"). Shared by the aggregate message, the list screen's
+   * progress-card label, and Budget Detail's hero label, so the phrasing stays one place. */
+  readonly monthPhrase = computed(() =>
+    this.isCurrentPeriod() ? 'this month' : `in ${formatYearMonth(this.period())}`,
+  );
+  /** Query params for links into/around Budget Detail (issue #23 follow-up) — carries `{ period }`
+   * forward so drilling into a category, or backing out of one, stays anchored to the month being
+   * browsed. Undefined for the current month, matching today's plain links. */
+  readonly linkQueryParams = computed<{ period: YearMonth } | undefined>(() =>
+    this.isCurrentPeriod() ? undefined : { period: this.period() },
+  );
 
   /** Earliest month with any transaction at all, or null with none — the floor for
    * goToPreviousMonth() (issue #23: "no need to view ... months prior to the earliest transaction"). */
@@ -114,7 +126,7 @@ export class BudgetsStore {
   );
 
   readonly aggregate = computed<BudgetsAggregate>(() =>
-    this.buildAggregate(this.rows(), this.transactions(), this.categories(), this.period()),
+    this.buildAggregate(this.rows(), this.transactions(), this.categories(), this.period(), this.monthPhrase()),
   );
 
   constructor() {
@@ -310,6 +322,7 @@ export class BudgetsStore {
     transactions: Transaction[],
     categories: Category[],
     period: YearMonth,
+    monthPhrase: string,
   ): BudgetsAggregate {
     // Top-level rows only (real or implied): a parent row already fully absorbs its descendants'
     // amount/rollover/spend (issue #15's unified rollup), so counting a child's own row here too
@@ -330,11 +343,6 @@ export class BudgetsStore {
     const earned = categories
       .filter((category) => category.type === 'income')
       .reduce((sum, category) => sum + (actualsByPeriodAndCategory.get(`${period}:${category.id}`) ?? 0), 0);
-
-    // "this month" only reads correctly for the real current month (issue #23: browsing a past
-    // month must update every piece of text on screen, not just the numbers) — a viewed period
-    // names itself instead ("...in July 2026").
-    const monthPhrase = period === currentYearMonth() ? 'this month' : `in ${formatYearMonth(period)}`;
 
     return {
       monthName: formatYearMonth(period),

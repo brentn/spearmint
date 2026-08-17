@@ -45,9 +45,7 @@
       </div>
     } @else {
       <div class="budgets__card">
-        <div class="budgets__progress-label">
-          Progress {{ store.isCurrentPeriod() ? 'this month' : 'in ' + store.aggregate().monthName }}
-        </div>
+        <div class="budgets__progress-label">Progress {{ store.monthPhrase() }}</div>
         <div class="budgets__progress-track">
           <div class="bar-track bar-track--thin">
             <div
@@ -134,7 +132,7 @@
           <h2 class="budgets__section-title">Income</h2>
           <ul class="budgets__rows">
             @for (row of incomeRows(); track row.id) {
-              <app-budget-row [row]="row" />
+              <app-budget-row [row]="row" [queryParams]="store.linkQueryParams()" />
             }
           </ul>
         </div>
@@ -151,7 +149,7 @@
         </div>
         <ul class="budgets__rows">
           @for (row of visibleExpenseRows(); track row.id) {
-            <app-budget-row [row]="row" [indent]="!!row.parentCategoryId" />
+            <app-budget-row [row]="row" [indent]="!!row.parentCategoryId" [queryParams]="store.linkQueryParams()" />
           }
         </ul>
       </div>

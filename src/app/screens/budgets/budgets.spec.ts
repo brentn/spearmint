@@ -1,4 +1,4 @@
-import { Component, signal, provideZonelessChangeDetection } from '@angular/core';
+import { Component, computed, signal, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -55,6 +55,9 @@ class FakeBudgetsStore {
   readonly isCurrentPeriod = signal(true);
   readonly canGoToPreviousMonth = signal(true);
   readonly canGoToNextMonth = signal(false);
+  readonly period = signal('2026-08');
+  readonly monthPhrase = computed(() => (this.isCurrentPeriod() ? 'this month' : `in ${this.aggregate().monthName}`));
+  readonly linkQueryParams = computed(() => (this.isCurrentPeriod() ? undefined : { period: this.period() }));
   categoriesForAdd: Category[] = [];
 
   categoriesWithoutCurrentBudget(): Category[] {
@@ -72,7 +75,7 @@ class StubBudgetDetail {}
 describe('Budgets', () => {
   beforeAll(stubDialogMethods);
 
-  function createFixture() {
+  function createFixture(period?: string) {
     TestBed.configureTestingModule({
       imports: [Budgets],
       providers: [
@@ -83,6 +86,9 @@ describe('Budgets', () => {
     const fakeStore = new FakeBudgetsStore();
     TestBed.overrideComponent(Budgets, { set: { providers: [{ provide: BudgetsStore, useValue: fakeStore }] } });
     const fixture = TestBed.createComponent(Budgets);
+    if (period !== undefined) {
+      fixture.componentRef.setInput('period', period);
+    }
     return { fixture, fakeStore };
   }
 
@@ -178,5 +184,43 @@ describe('Budgets', () => {
 
     const dialog = root.querySelector<HTMLDialogElement>('.budgets__dialog');
     await vi.waitFor(() => expect(dialog?.hasAttribute('open')).toBe(false));
+  });
+
+  describe('period-aware navigation (issue #23 follow-up)', () => {
+    it('seeds the store\'s period from an incoming ?period= query param', () => {
+      const { fixture, fakeStore } = createFixture('2026-06');
+      fixture.detectChanges();
+
+      expect(fakeStore.period()).toBe('2026-06');
+    });
+
+    it('ignores a malformed period query param, leaving the store\'s default in place', () => {
+      const { fixture, fakeStore } = createFixture('not-a-period');
+      fixture.detectChanges();
+
+      expect(fakeStore.period()).toBe('2026-08');
+    });
+
+    it('row links stay plain /budgets/:id links for the current month', () => {
+      const { fixture, fakeStore } = createFixture();
+      fakeStore.rows.set([row({ id: 'b-groceries', categoryId: 'groceries', categoryName: 'Groceries' })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const link = root.querySelector<HTMLAnchorElement>('.budget-row__link');
+      expect(link?.getAttribute('href')).toBe('/budgets/b-groceries');
+    });
+
+    it('row links carry the viewed period while browsing a past month', () => {
+      const { fixture, fakeStore } = createFixture();
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.period.set('2026-06');
+      fakeStore.rows.set([row({ id: 'b-groceries', categoryId: 'groceries', categoryName: 'Groceries' })]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const link = root.querySelector<HTMLAnchorElement>('.budget-row__link');
+      expect(link?.getAttribute('href')).toBe('/budgets/b-groceries?period=2026-06');
+    });
   });
 });

@@ -516,6 +516,34 @@ describe('BudgetsStore', () => {
       expect(store.aggregate().monthName).toBe(formatYearMonth(currentYearMonth()));
     });
 
+    it('monthPhrase reads "this month" for the current period and names the viewed month otherwise', () => {
+      expect(store.monthPhrase()).toBe('this month');
+
+      store.goToPreviousMonth(); // no-op with no transactions, still current
+      expect(store.monthPhrase()).toBe('this month');
+    });
+
+    it('monthPhrase names the viewed month once browsing a past period', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05` }));
+      await store.refresh();
+
+      store.goToPreviousMonth();
+
+      expect(store.monthPhrase()).toBe(`in ${formatYearMonth(prevPeriod)}`);
+    });
+
+    it('linkQueryParams is undefined for the current period and carries the period once browsing the past', async () => {
+      const prevPeriod = previousYearMonth(currentYearMonth());
+      await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05` }));
+      await store.refresh();
+      expect(store.linkQueryParams()).toBeUndefined();
+
+      store.goToPreviousMonth();
+
+      expect(store.linkQueryParams()).toEqual({ period: prevPeriod });
+    });
+
     it('aggregate message names the viewed month instead of always saying "this month"', async () => {
       const prevPeriod = previousYearMonth(currentYearMonth());
       await fakeDb['categories'].insert(seedCategory());
