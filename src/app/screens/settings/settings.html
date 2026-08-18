@@ -10,20 +10,24 @@
         <a class="settings__link" routerLink="categories">Categories</a>
       </li>
       <li>
-        <a class="settings__link" routerLink="export-import">Export / Import backup</a>
+        <a class="settings__link" routerLink="security">Security</a>
       </li>
       <li>
-        <a class="settings__link" routerLink="security">Security</a>
+        <a class="settings__link" routerLink="export-import">Export / Import backup</a>
       </li>
     </ul>
 
-    <section class="settings__danger-zone">
-      <h2 class="settings__danger-title">Danger zone</h2>
-      <p class="settings__danger-body">
-        Permanently delete everything stored on this device — accounts, transactions, categories, budgets, and your device registration.
-      </p>
-      <button class="settings__danger-button" type="button" (click)="resetDialog.open()">Reset local data</button>
-    </section>
+    @if (!showAdvanced()) {
+      <button class="settings__advanced-toggle" type="button" (click)="showAdvanced.set(true)">Advanced</button>
+    } @else {
+      <section class="settings__danger-zone">
+        <h2 class="settings__danger-title">Danger zone</h2>
+        <p class="settings__danger-body">
+          Permanently delete everything stored on this device — accounts, transactions, categories, budgets, and your device registration.
+        </p>
+        <button class="settings__danger-button" type="button" (click)="resetDialog.open()">Reset local data</button>
+      </section>
+    }
   </div>
 
   <app-reset-device-dialog

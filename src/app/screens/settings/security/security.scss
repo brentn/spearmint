@@ -55,12 +55,82 @@
   color: var(--spearmint-danger);
 }
 
-.security__toggle {
+.security__row {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--spearmint-ink);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.security__row-text {
+  flex: 1;
+}
+
+.security__row .security__body {
+  margin-bottom: 0;
+}
+
+// Custom switch: a visually-hidden checkbox drives a styled track + thumb via
+// the sibling selector, so it stays a real, keyboard- and screen-reader-usable
+// checkbox rather than a div with a click handler.
+.security__switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 3rem;
+  height: 1.75rem;
+  margin-top: 0.15rem;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+}
+
+.security__switch-track {
+  position: absolute;
+  inset: 0;
+  background: var(--spearmint-border);
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 1.45rem;
+    height: 1.45rem;
+    background: var(--spearmint-surface);
+    border-radius: 50%;
+    box-shadow: var(--spearmint-shadow);
+    transition: transform 0.15s ease;
+  }
+}
+
+.security__switch input:checked + .security__switch-track {
+  background: var(--spearmint-primary);
+
+  &::before {
+    transform: translateX(1.25rem);
+  }
+}
+
+.security__switch input:focus-visible + .security__switch-track {
+  outline: 2px solid var(--spearmint-primary);
+  outline-offset: 2px;
+}
+
+.security__switch input:disabled + .security__switch-track {
+  opacity: 0.6;
 }
 
 .security__banner {

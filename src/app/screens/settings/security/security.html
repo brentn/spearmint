@@ -3,6 +3,31 @@
 
   <div class="security__content">
     <section class="security__card">
+      <div class="security__row">
+        <div class="security__row-text">
+          <h2 class="security__section-title">Biometrics</h2>
+          <p class="security__body">
+            Use Face ID, Touch ID, or your device PIN as a faster 2nd step alongside your password.
+          </p>
+        </div>
+
+        <label class="security__switch" aria-label="Enable biometrics">
+          <input
+            type="checkbox"
+            [checked]="biometricsEnabled()"
+            [disabled]="biometricsBusy()"
+            (change)="toggleBiometrics($any($event.target).checked)"
+          />
+          <span class="security__switch-track"></span>
+        </label>
+      </div>
+
+      @if (biometricsError()) {
+        <p class="security__banner security__banner--error">{{ biometricsError() }}</p>
+      }
+    </section>
+
+    <section class="security__card">
       <h2 class="security__section-title">Change password</h2>
 
       <label class="security__label">
@@ -52,27 +77,6 @@
       >
         {{ changingPassword() ? 'Changing…' : 'Change password' }}
       </button>
-    </section>
-
-    <section class="security__card">
-      <h2 class="security__section-title">Biometrics</h2>
-      <p class="security__body">
-        Use Face ID, Touch ID, or your device PIN as a faster 2nd step alongside your password.
-      </p>
-
-      <label class="security__toggle">
-        <input
-          type="checkbox"
-          [checked]="biometricsEnabled()"
-          [disabled]="biometricsBusy()"
-          (change)="toggleBiometrics($any($event.target).checked)"
-        />
-        Enable biometrics
-      </label>
-
-      @if (biometricsError()) {
-        <p class="security__banner security__banner--error">{{ biometricsError() }}</p>
-      }
     </section>
   </div>
 </div>

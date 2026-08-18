@@ -106,4 +106,18 @@ describe('SecurityScreen', () => {
 
     expect(fixture.componentInstance.biometricsError()).toBe('user cancelled');
   });
+
+  it('lists Biometrics before Change password, with the biometrics control a switch', () => {
+    const fixture = TestBed.createComponent(SecurityScreen);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const titles = Array.from(compiled.querySelectorAll('.security__section-title')).map((el) =>
+      el.textContent?.trim(),
+    );
+    expect(titles).toEqual(['Biometrics', 'Change password']);
+
+    const switchControl = compiled.querySelector('.security__switch input[type="checkbox"]');
+    expect(switchControl).toBeTruthy();
+  });
 });
