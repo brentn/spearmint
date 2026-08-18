@@ -1,10 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FaIconComponent } from '@fortawesome/angular-fontawesome';
+import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import { todayDateOnlyUtc } from '../../simplefin/date-only.util';
 import {
   countInMonth,
   filterByAccount,
+  filterBySearch,
   filterUncategorized,
   groupTransactionsByDay,
   totalSpentInMonth,
@@ -16,7 +19,7 @@ import type { Transaction } from '../../data/models';
 
 @Component({
   selector: 'app-transactions',
-  imports: [DecimalPipe, CategoryPicker, RouterLink, TransactionEditDialog],
+  imports: [DecimalPipe, CategoryPicker, RouterLink, TransactionEditDialog, FaIconComponent],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
   providers: [TransactionsStore],
@@ -31,6 +34,8 @@ export class Transactions {
   /** ActivatedRoute's observables are router-lifecycle-managed — no manual unsubscribe needed. */
   protected readonly filteredToUncategorized = signal(false);
   protected readonly filteredAccountId = signal<string | null>(null);
+  protected readonly searchQuery = signal('');
+  protected readonly icons = { search: faMagnifyingGlass };
 
   constructor() {
     this.route.queryParamMap.subscribe((params) => {
@@ -39,16 +44,27 @@ export class Transactions {
     });
   }
 
+  /** Whether there's anything at all to search — independent of the active filter/query, so the
+   * search box itself doesn't disappear just because it produced zero results. */
+  protected readonly hasAnyTransactions = computed(() => this.store.transactions().length > 0);
+
   /** Respects the active filter (uncategorized or a single account) so the hero stats match the
    * list below it. The two filters are mutually exclusive — set via independent query params
-   * that Angular's default navigation replaces wholesale. */
-  private readonly visibleTransactions = computed(() => {
+   * that Angular's default navigation replaces wholesale. The free-text search box narrows the
+   * list further (see `visibleTransactions`) but deliberately isn't folded in here — searching
+   * for one transaction shouldn't make the hero's month total/count look like that's all there is. */
+  private readonly filteredTransactions = computed(() => {
     if (this.filteredToUncategorized()) {
       return filterUncategorized(this.store.transactions());
     }
     const accountId = this.filteredAccountId();
     return accountId ? filterByAccount(this.store.transactions(), accountId) : this.store.transactions();
   });
+
+  /** `filteredTransactions` further narrowed by the search box — feeds the list only. */
+  private readonly visibleTransactions = computed(() =>
+    filterBySearch(this.filteredTransactions(), this.searchQuery(), this.store.categories(), this.today),
+  );
 
   /** Label for the filter badge — reused for both the uncategorized and account-drill-in filters. */
   protected readonly filterBadgeLabel = computed(() => {
@@ -62,10 +78,10 @@ export class Transactions {
   });
 
   protected readonly totalSpentThisMonth = computed(() =>
-    totalSpentInMonth(this.visibleTransactions(), this.currentYearMonth),
+    totalSpentInMonth(this.filteredTransactions(), this.currentYearMonth),
   );
   protected readonly transactionCountThisMonth = computed(() =>
-    countInMonth(this.visibleTransactions(), this.currentYearMonth),
+    countInMonth(this.filteredTransactions(), this.currentYearMonth),
   );
   protected readonly dayGroups = computed(() => groupTransactionsByDay(this.visibleTransactions(), this.today));
 

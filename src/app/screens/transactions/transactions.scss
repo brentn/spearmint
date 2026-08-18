@@ -23,7 +23,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.7rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #fff;
   background: rgba(255, 255, 255, 0.16);
@@ -40,7 +40,7 @@
 }
 
 .transactions__hero-sub {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   opacity: 0.75;
   margin-left: 0.4rem;
@@ -48,7 +48,7 @@
 
 .transactions__hero-note {
   margin: 0.5rem 0 0;
-  font-size: 0.8rem;
+  font-size: 1rem;
   font-weight: 600;
   opacity: 0.9;
 }
@@ -58,7 +58,11 @@
   color: var(--spearmint-accent);
 }
 
-.transactions__list {
+// Wraps the search box plus whichever of loading/empty-state/list is showing, so all three sit
+// at the same pulled-up position relative to the hero — matching budgets.scss's own
+// `.budgets__content` (issue #27: the empty state used to live outside this wrapper, landing
+// ~3rem lower than "No budgets yet" on a freshly opened page).
+.transactions__content {
   position: relative;
   z-index: 1;
   max-width: 32rem;
@@ -69,10 +73,41 @@
   padding: 0 1rem;
 }
 
+.transactions__search {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.transactions__search-icon {
+  position: absolute;
+  top: 50%;
+  left: 0.9rem;
+  transform: translateY(-50%);
+  color: var(--spearmint-muted);
+  font-size: 1rem;
+}
+
+.transactions__search-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  background: var(--spearmint-surface);
+  box-shadow: var(--spearmint-shadow);
+  padding: 0.7rem 0.9rem 0.7rem 2.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--spearmint-ink);
+
+  &::placeholder {
+    color: var(--spearmint-muted);
+  }
+}
+
 .transactions__day-heading {
   margin: 0;
   padding: 0.9rem 0.15rem 0.4rem;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--spearmint-muted);
   text-transform: uppercase;
@@ -138,7 +173,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--spearmint-ink);
 }
@@ -148,8 +183,20 @@
   min-width: 0;
 }
 
+// Description and amount share this line, spanning the row's full width — rather than the
+// amount sitting in its own column beside the whole row (icon-height tall), which used to push
+// every line in `.transactions__mid` (account, category, suggestion) to the left (issue #27).
+.transactions__top-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
 .transactions__desc {
-  font-size: 0.9rem;
+  min-width: 0;
+  flex: 1;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--spearmint-ink);
   white-space: nowrap;
@@ -158,18 +205,18 @@
 }
 
 .transactions__pending-badge {
-  font-size: 0.6rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--spearmint-accent);
   border: 1px solid var(--spearmint-accent);
   border-radius: 0.35rem;
-  padding: 0.05rem 0.3rem;
+  padding: 0.05rem 0.35rem;
   margin-left: 0.4rem;
   vertical-align: middle;
 }
 
 .transactions__account {
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: var(--spearmint-muted);
 }
 
@@ -179,7 +226,7 @@
 .transactions__category {
   display: block;
   margin-top: 0.3rem;
-  font-size: 0.72rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--spearmint-muted);
 }
@@ -195,10 +242,11 @@
 
 .transactions__suggestion-label {
   // Fills the space the dismiss button used to occupy (issue #20) instead of shrinking to fit
-  // its own text, so the accept button reads as pinned to the row's trailing edge.
+  // its own text, so the accept button reads as pinned to the row's trailing edge — now the
+  // trailing edge of the full-width `.transactions__mid` column (issue #27), i.e. the card itself.
   flex: 1;
   min-width: 0;
-  font-size: 0.75rem;
+  font-size: 1rem;
   color: var(--spearmint-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -209,8 +257,8 @@
   flex-shrink: 0;
   border: none;
   border-radius: 999px;
-  padding: 0.2rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.3rem 0.85rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   background: var(--spearmint-primary);
@@ -219,7 +267,7 @@
 
 .transactions__amt {
   flex-shrink: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--spearmint-ink);
 }

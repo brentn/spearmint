@@ -191,6 +191,79 @@ describe('Transactions', () => {
     expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
   });
 
+  it('shows a search box once there are transactions to search', () => {
+    const fixture = createFixture();
+    fakeStore.accounts.set([account()]);
+    fakeStore.transactions.set([txn()]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.transactions__search-input')).toBeTruthy();
+  });
+
+  it('hides the search box when there are no transactions at all', () => {
+    const fixture = createFixture();
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.transactions__search-input')).toBeNull();
+  });
+
+  it('typing in the search box narrows the list to matching transactions', () => {
+    const fixture = createFixture();
+    fakeStore.accounts.set([account()]);
+    fakeStore.transactions.set([txn({ id: 't1', description: "Trader Joe's" }), txn({ id: 't2', description: 'Shell Gas' })]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const input = root.querySelector<HTMLInputElement>('.transactions__search-input')!;
+    input.value = 'shell';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const rows = root.querySelectorAll('.transactions__row');
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain('Shell Gas');
+  });
+
+  it("narrowing the list via search doesn't change the hero's month total/count (issue #27: search filters the list only)", () => {
+    const fixture = createFixture();
+    fakeStore.accounts.set([account()]);
+    fakeStore.transactions.set([
+      txn({ id: 't1', description: "Trader Joe's", date: '2026-08-14', amount: -64.2 }),
+      txn({ id: 't2', description: 'Shell Gas', date: '2026-08-13', amount: -30 }),
+    ]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const heroBefore = root.querySelector('.transactions__hero-value')?.textContent?.trim();
+    const noteBefore = root.querySelector('.transactions__hero-note')?.textContent?.trim();
+
+    const input = root.querySelector<HTMLInputElement>('.transactions__search-input')!;
+    input.value = 'shell';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(root.querySelectorAll('.transactions__row').length).toBe(1);
+    expect(root.querySelector('.transactions__hero-value')?.textContent?.trim()).toBe(heroBefore);
+    expect(root.querySelector('.transactions__hero-note')?.textContent?.trim()).toBe(noteBefore);
+  });
+
+  it('shows a "no matching transactions" message when the search has no results', () => {
+    const fixture = createFixture();
+    fakeStore.accounts.set([account()]);
+    fakeStore.transactions.set([txn({ description: "Trader Joe's" })]);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const input = root.querySelector<HTMLInputElement>('.transactions__search-input')!;
+    input.value = 'nonexistent';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(root.querySelector('.empty-state__title')?.textContent).toBe('No matching transactions');
+  });
+
   it("the dialog's close output closes the dialog without calling any mutation method", () => {
     const fixture = createFixture();
     fakeStore.accounts.set([account()]);

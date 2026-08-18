@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Transaction } from '../../data/models';
+import type { Category, Transaction } from '../../data/models';
 import {
   countInMonth,
   filterByAccount,
+  filterBySearch,
   filterUncategorized,
   groupTransactionsByDay,
   netChangeInMonth,
@@ -131,6 +132,79 @@ describe('filterByAccount', () => {
 
   it('is empty when no transactions match the account', () => {
     expect(filterByAccount([transaction({ accountId: 'acc-1' })], 'acc-2')).toEqual([]);
+  });
+});
+
+describe('filterBySearch', () => {
+  const categories: Category[] = [{ id: 'cat-1', name: 'Groceries', type: 'expense', parentCategoryId: null }];
+  const today = '2026-08-14';
+
+  it('returns every transaction unchanged when the query is empty or whitespace', () => {
+    const transactions = [transaction({ id: 't1' }), transaction({ id: 't2' })];
+
+    expect(filterBySearch(transactions, '', categories, today).map((t) => t.id)).toEqual(['t1', 't2']);
+    expect(filterBySearch(transactions, '   ', categories, today).map((t) => t.id)).toEqual(['t1', 't2']);
+  });
+
+  it('matches on description, case-insensitively', () => {
+    const transactions = [
+      transaction({ id: 't1', description: "Trader Joe's" }),
+      transaction({ id: 't2', description: 'Shell Gas Station' }),
+    ];
+
+    expect(filterBySearch(transactions, 'trader', categories, today).map((t) => t.id)).toEqual(['t1']);
+  });
+
+  it('matches on notes', () => {
+    const transactions = [
+      transaction({ id: 't1', notes: 'split with roommate' }),
+      transaction({ id: 't2', notes: null }),
+    ];
+
+    expect(filterBySearch(transactions, 'roommate', categories, today).map((t) => t.id)).toEqual(['t1']);
+  });
+
+  it('matches on the raw stored date', () => {
+    const transactions = [transaction({ id: 't1', date: '2026-08-14' }), transaction({ id: 't2', date: '2026-08-01' })];
+
+    expect(filterBySearch(transactions, '08-14', categories, today).map((t) => t.id)).toEqual(['t1']);
+  });
+
+  it('matches on the date as displayed in the list ("Today"/"Yesterday"/short month-day)', () => {
+    const transactions = [
+      transaction({ id: 't1', date: '2026-08-14' }), // today
+      transaction({ id: 't2', date: '2026-08-13' }), // yesterday
+      transaction({ id: 't3', date: '2026-08-11' }), // "Aug 11"
+    ];
+
+    expect(filterBySearch(transactions, 'today', categories, today).map((t) => t.id)).toEqual(['t1']);
+    expect(filterBySearch(transactions, 'yesterday', categories, today).map((t) => t.id)).toEqual(['t2']);
+    expect(filterBySearch(transactions, 'aug 11', categories, today).map((t) => t.id)).toEqual(['t3']);
+  });
+
+  it('matches on category name', () => {
+    const transactions = [
+      transaction({ id: 't1', categoryId: 'cat-1' }),
+      transaction({ id: 't2', categoryId: null }),
+    ];
+
+    expect(filterBySearch(transactions, 'grocer', categories, today).map((t) => t.id)).toEqual(['t1']);
+  });
+
+  it('matches an uncategorized transaction by searching "uncategorized"', () => {
+    const transactions = [transaction({ id: 't1', categoryId: null }), transaction({ id: 't2', categoryId: 'cat-1' })];
+
+    expect(filterBySearch(transactions, 'uncategorized', categories, today).map((t) => t.id)).toEqual(['t1']);
+  });
+
+  it('matches on amount, ignoring sign', () => {
+    const transactions = [transaction({ id: 't1', amount: -64.2 }), transaction({ id: 't2', amount: 12.5 })];
+
+    expect(filterBySearch(transactions, '64.2', categories, today).map((t) => t.id)).toEqual(['t1']);
+  });
+
+  it('is empty when nothing matches', () => {
+    expect(filterBySearch([transaction()], 'nonexistent', categories, today)).toEqual([]);
   });
 });
 
