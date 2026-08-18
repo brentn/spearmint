@@ -14,15 +14,8 @@ function category(overrides: Partial<Category> = {}): Category {
   };
 }
 
-/**
- * Regression tests for issue #16: the panel used to be `position: absolute` inside the
- * (`overflow: hidden`) day card, so it was clipped whenever it opened near the card's edge —
- * most visibly for a day with only one transaction, or the last transaction in a day. It now
- * renders `position: fixed`, positioned from the trigger's own screen rect, which no ancestor's
- * `overflow: hidden` can clip.
- */
 describe('CategoryPicker', () => {
-  function createFixture(categories: Category[] = [category()]) {
+  function createFixture(categories: Category[] = [category(), category({ id: 'cat-2', name: 'Rent' })]) {
     TestBed.configureTestingModule({
       imports: [CategoryPicker],
       providers: [provideZonelessChangeDetection()],
@@ -33,82 +26,106 @@ describe('CategoryPicker', () => {
     return fixture;
   }
 
-  function stubTriggerRect(fixture: ReturnType<typeof createFixture>, rect: Partial<DOMRect>) {
-    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.category-picker__trigger');
-    trigger.getBoundingClientRect = () =>
-      ({ left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0, toJSON: () => ({}), ...rect }) as DOMRect;
-    return trigger;
+  function openSheet(fixture: ReturnType<typeof createFixture>) {
+    fixture.nativeElement.querySelector('.category-picker__trigger').click();
+    fixture.detectChanges();
   }
 
   afterEach(() => {
     TestBed.resetTestingModule();
   });
 
-  it('renders the panel position:fixed so ancestor overflow:hidden cannot clip it', () => {
+  it('does not render the sheet until the trigger is clicked', () => {
     const fixture = createFixture();
-    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.category-picker__panel');
-    expect(panel).toBeTruthy();
-    expect(getComputedStyle(panel).position).toBe('fixed');
+    expect(fixture.nativeElement.querySelector('.category-picker__sheet')).toBeFalsy();
   });
 
-  it('anchors the panel below the trigger when there is room in the viewport', () => {
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+  it('opens the sheet when the trigger is clicked', () => {
     const fixture = createFixture();
-    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.category-picker__panel');
-    expect(panel.style.top).toBe('429px');
-    expect(panel.style.bottom).toBe('');
+    openSheet(fixture);
+    expect(fixture.nativeElement.querySelector('.category-picker__sheet')).toBeTruthy();
   });
 
-  it('flips the panel above the trigger when opening downward would run off the bottom of the viewport', () => {
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 500 });
+  it('does not open when disabled', () => {
     const fixture = createFixture();
-    // Last transaction of the day, near the bottom of a short viewport — the case from issue #16.
-    stubTriggerRect(fixture, { left: 12, top: 460, bottom: 484, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
+    fixture.componentRef.setInput('disabled', true);
     fixture.detectChanges();
-
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.category-picker__panel');
-    expect(panel.style.top).toBe('');
-    expect(panel.style.bottom).toBe('45px');
+    openSheet(fixture);
+    expect(fixture.nativeElement.querySelector('.category-picker__sheet')).toBeFalsy();
   });
 
-  it('closes the panel when an ancestor scrolls, so it never drifts away from its trigger', () => {
+  it('closes the sheet when the backdrop is clicked', () => {
     const fixture = createFixture();
-    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeTruthy();
+    openSheet(fixture);
 
-    // Uses a capture-phase document listener (not `window:scroll`) so it still catches scroll
-    // events from a nested scroll container — e.g. the app's own `.app-scroll` (issue #22) —
-    // whose `scroll` events don't bubble to `window`/`document`.
-    document.dispatchEvent(new Event('scroll'));
+    fixture.nativeElement.querySelector('.category-picker__backdrop').click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.category-picker__sheet')).toBeFalsy();
   });
 
-  it('does not close the panel when scrolling inside its own option list (issue #24)', () => {
-    const fixture = createFixture([category(), category({ id: 'cat-2', name: 'Rent' })]);
-    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
+  it('closes the sheet on Escape', () => {
+    const fixture = createFixture();
+    openSheet(fixture);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
 
-    const list: HTMLElement = fixture.nativeElement.querySelector('.category-picker__list');
-    // Capture-phase document listeners still see this even though `scroll` doesn't bubble,
-    // since capture runs on the way down to the target before the at-target phase.
-    list.dispatchEvent(new Event('scroll'));
+    expect(fixture.nativeElement.querySelector('.category-picker__sheet')).toBeFalsy();
+  });
+
+  it('narrows the option list to matches of the filter text', () => {
+    const fixture = createFixture();
+    openSheet(fixture);
+
+    const filter: HTMLInputElement = fixture.nativeElement.querySelector('.category-picker__filter');
+    filter.value = 'rent';
+    filter.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeTruthy();
+    const spans: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll('.category-picker__option span:first-child');
+    const optionLabels = Array.from(spans).map((el) => el.textContent);
+    expect(optionLabels).toEqual(['Uncategorized', 'Rent']);
+  });
+
+  it('emits the selected category id and closes on selecting an option', () => {
+    const fixture = createFixture();
+    openSheet(fixture);
+    let emitted: string | null | undefined;
+    fixture.componentInstance.categoryChange.subscribe((id: string | null) => (emitted = id));
+
+    const options: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.category-picker__option');
+    const rentOption = Array.from(options).find((el) => el.textContent?.includes('Rent'));
+    rentOption?.click();
+    fixture.detectChanges();
+
+    expect(emitted).toBe('cat-2');
+    expect(fixture.nativeElement.querySelector('.category-picker__sheet')).toBeFalsy();
+  });
+
+  it('emits null and closes on selecting Uncategorized', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('selectedId', 'cat-1');
+    openSheet(fixture);
+    let emitted: string | null | undefined = 'not called';
+    fixture.componentInstance.categoryChange.subscribe((id: string | null) => (emitted = id));
+
+    const options: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.category-picker__option');
+    const uncategorizedOption = Array.from(options).find((el) => el.textContent?.includes('Uncategorized'));
+    uncategorizedOption?.click();
+    fixture.detectChanges();
+
+    expect(emitted).toBeNull();
+  });
+
+  it('marks the currently selected option as selected', () => {
+    const fixture = createFixture();
+    fixture.componentRef.setInput('selectedId', 'cat-2');
+    openSheet(fixture);
+
+    const options: NodeListOf<HTMLButtonElement> = fixture.nativeElement.querySelectorAll('.category-picker__option');
+    const rentOption = Array.from(options).find((el) => el.textContent?.includes('Rent'));
+    expect(rentOption?.classList.contains('category-picker__option--selected')).toBe(true);
   });
 
   it('applies the emphasize modifier class to the trigger when the emphasize input is set', () => {
@@ -118,56 +135,5 @@ describe('CategoryPicker', () => {
 
     const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.category-picker__trigger');
     expect(trigger.classList.contains('category-picker__trigger--emphasize')).toBe(true);
-  });
-
-  it('does not autofocus the filter input, which can trigger an unwanted scroll-into-view that closes the panel', () => {
-    const fixture = createFixture();
-    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-
-    const filter: HTMLInputElement = fixture.nativeElement.querySelector('.category-picker__filter');
-    expect(filter.hasAttribute('autofocus')).toBe(false);
-  });
-
-  it('closes the panel on window resize', () => {
-    const fixture = createFixture();
-    stubTriggerRect(fixture, { left: 12, top: 400, bottom: 424, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-
-    window.dispatchEvent(new Event('resize'));
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('.category-picker__panel')).toBeFalsy();
-  });
-
-  it('clamps the panel to the right edge of the viewport instead of running off-screen', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
-    const fixture = createFixture();
-    // A trigger hugging the right edge of a narrow (mobile) viewport.
-    stubTriggerRect(fixture, { left: 370, top: 400, bottom: 424, width: 20 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.category-picker__panel');
-    const left = parseFloat(panel.style.left);
-    const width = parseFloat(panel.style.width);
-    expect(left + width).toBeLessThanOrEqual(390);
-    expect(left).toBeGreaterThanOrEqual(0);
-  });
-
-  it('shrinks max-height to fit when neither side of a short viewport has the full 16rem of room', () => {
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 200 });
-    const fixture = createFixture();
-    // Trigger roughly centered in a viewport too short to fit the panel's usual 256px above or below.
-    stubTriggerRect(fixture, { left: 12, top: 90, bottom: 110, width: 90 });
-    fixture.nativeElement.querySelector('.category-picker__trigger').click();
-    fixture.detectChanges();
-
-    const panel: HTMLElement = fixture.nativeElement.querySelector('.category-picker__panel');
-    const maxHeight = parseFloat(panel.style.maxHeight);
-    expect(maxHeight).toBeLessThan(256);
-    expect(maxHeight).toBeGreaterThan(0);
   });
 });

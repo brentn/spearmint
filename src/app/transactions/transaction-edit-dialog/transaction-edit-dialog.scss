@@ -1,6 +1,7 @@
-// Centered modal with a dimmed backdrop — visually distinct from CategoryPicker's anchored
-// popover, since this is a dialog rather than an inline control (issue #19). z-index clears both
-// .nav-shell (100) and CategoryPicker's own panel (200), which can render above this dialog.
+// Centered modal with a dimmed backdrop — visually distinct from CategoryPicker's own full-screen
+// sheet, since this is a dialog rather than an inline control (issue #19). z-index clears
+// .nav-shell (100); CategoryPicker's sheet uses a higher z-index (400) than this dialog's own,
+// since it must render above this dialog when opened from the Category field within it.
 .transaction-edit-dialog {
   position: fixed;
   inset: 0;

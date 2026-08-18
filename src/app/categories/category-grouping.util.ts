@@ -2,33 +2,30 @@ import type { Category } from '../data/models';
 
 export interface CategoryOption {
   id: string;
-  name: string;
-  displayName: string;
-}
-
-export interface CategoryOptionGroup {
   label: string;
-  options: CategoryOption[];
 }
 
 /**
- * Parents sorted alphabetically, then children sorted alphabetically within each parent.
- * A parent with subcategories is itself selectable as the group's first, unprefixed option
- * (issue #11), so one-off expenses don't force a new subcategory into existence.
+ * Flattens categories into a single alphabetized list where each child is labeled with its
+ * parent's name as a prefix (e.g. "Transportation: Auto Payment"), skipping the prefix when the
+ * child name already contains the parent name (e.g. parent "Auto" + child "Auto Insurance" stays
+ * "Auto Insurance"). Sorting by that label clusters a parent's children together and places the
+ * parent's own bare option immediately before them, since e.g. "Transportation" is a
+ * lexicographic prefix of "Transportation: Auto Payment" — no separate group headers needed. A
+ * parent with subcategories is still itself selectable (issue #11), so a one-off expense doesn't
+ * force a new subcategory into existence.
  */
-export function groupAndSortCategories(categories: Category[]): CategoryOptionGroup[] {
-  const topLevels = categories.filter((c) => c.parentCategoryId === null).sort((a, b) => a.name.localeCompare(b.name));
+export function buildCategoryOptions(categories: Category[]): CategoryOption[] {
+  const byId = new Map(categories.map((c) => [c.id, c]));
 
-  return topLevels.map((top) => {
-    const children = categories
-      .filter((c) => c.parentCategoryId === top.id)
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const topOption: CategoryOption = { id: top.id, name: top.name, displayName: top.name };
-    const options: CategoryOption[] =
-      children.length === 0
-        ? [topOption]
-        : [topOption, ...children.map((c) => ({ id: c.id, name: c.name, displayName: ` | ${c.name}` }))];
-    return { label: top.name, options };
-  });
+  return categories
+    .map((category) => {
+      if (category.parentCategoryId === null) {
+        return { id: category.id, label: category.name };
+      }
+      const parentName = byId.get(category.parentCategoryId)?.name ?? '';
+      const label = category.name.includes(parentName) ? category.name : `${parentName}: ${category.name}`;
+      return { id: category.id, label };
+    })
+    .sort((a, b) => a.label.localeCompare(b.label));
 }

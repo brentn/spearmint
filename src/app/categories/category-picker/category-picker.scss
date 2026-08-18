@@ -12,11 +12,10 @@
   background: var(--spearmint-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236B7A70' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
     no-repeat right 0.45rem center;
   background-size: 0.5rem;
-  padding: 0.05rem 1.2rem 0.05rem 0.45rem;
-  // Shrunk (issue #19, further in #20) now that the row itself opens the full edit dialog on
-  // click — this trigger is a secondary, denser quick-recategorize path, not the row's primary
-  // affordance.
-  font-size: 0.72rem;
+  padding: 0.2rem 1.35rem 0.2rem 0.55rem;
+  // Floor of 1rem (16px) everywhere in this component — anything smaller reads as illegible on
+  // the sheet's dark background, and iOS auto-zooms on focusing text inputs under 16px.
+  font-size: 1rem;
   font-weight: 600;
   color: var(--spearmint-muted);
   max-width: 100%;
@@ -43,66 +42,120 @@
   color: var(--spearmint-on-accent);
 }
 
-// position:fixed and coordinates set inline from the trigger's own rect (category-picker.ts) —
-// not position:absolute inside the row — so no ancestor's overflow:hidden (e.g. the transactions
-// day card) can clip it (issue #16). z-index clears .nav-shell's 100 since the panel can open
-// over the bottom nav bar for a transaction near the bottom of the screen.
-.category-picker__panel {
+// A near-full-screen sheet rather than an anchored popover: a small fixed-height popup left too
+// little room to browse ~48+ categories comfortably and was hard to scan. This also sidesteps the
+// old popover's whole class of positioning bugs (issues #16/#22/#24)
+// — a fixed full-screen overlay can't be clipped by an ancestor's overflow or drift from a
+// trigger that scrolled out from under it, since it isn't anchored to the trigger at all.
+.category-picker__backdrop {
+  // Local palette rather than the app's --spearmint-* tokens: styled after iOS's own action
+  // sheet/picker (dark, floating, fully rounded), not the app's light card surface, since that's
+  // what read as "native" in on-device comparison against a real native <select>.
+  --picker-bg: #1c1c1e;
+  --picker-field: #2c2c2e;
+  --picker-text: #f2f2f7;
+  --picker-muted: #98989f;
+  --picker-divider: rgba(255, 255, 255, 0.14);
+  --picker-selected: #30d158;
+
   position: fixed;
-  z-index: 200;
-  max-height: 16rem;
-  overflow: hidden;
+  inset: 0;
+  // Clears both .nav-shell (100) and transaction-edit-dialog (300) — this sheet must render
+  // above the edit dialog too, since it's also opened from the dialog's own Category field.
+  z-index: 400;
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  // Backdrop dims in lockstep with the sheet sliding up, matching how a native sheet presents
+  // as one motion rather than dimming first and then animating the sheet in.
+  transition: background-color 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.category-picker__backdrop--in {
+  background: var(--spearmint-overlay);
+}
+
+// Floating card, not edge-to-edge: margin on every side (including the sides and bottom, not
+// just flush to the top) so the dimmed backdrop shows all the way around it, and corners rounded
+// on all four sides rather than just the top two — the native action-sheet look rather than a
+// plain bottom sheet.
+.category-picker__sheet {
+  width: 100%;
+  max-height: 82vh;
+  height: 82vh;
+  margin: 0 1rem calc(1rem + env(safe-area-inset-bottom));
+  background: var(--picker-bg);
+  border-radius: 1.75rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
-  background: var(--spearmint-surface);
-  border: 1px solid var(--spearmint-border);
-  border-radius: var(--spearmint-radius);
-  box-shadow: var(--spearmint-shadow-strong);
+  padding: 0.6rem 0.75rem 0.75rem;
+  transform: translateY(40px) scale(0.94);
+  opacity: 0;
+  transition:
+    transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.category-picker__sheet--in {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.category-picker__handle {
+  width: 2.5rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: var(--picker-divider);
+  margin: 0 auto 0.6rem;
 }
 
 .category-picker__filter {
-  margin: 0.5rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--spearmint-border);
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--spearmint-ink);
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-radius: 0.6rem;
+  font-size: 1rem;
+  color: var(--picker-text);
+  background: var(--picker-field);
+
+  &::placeholder {
+    color: var(--picker-muted);
+  }
 }
 
 .category-picker__list {
   list-style: none;
   margin: 0;
-  padding: 0 0.4rem 0.4rem;
+  padding: 0;
   overflow-y: auto;
-}
-
-.category-picker__group-label {
-  padding: 0.4rem 0.5rem 0.15rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--spearmint-muted);
+  flex: 1;
 }
 
 .category-picker__option {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   width: 100%;
   text-align: left;
   border: none;
-  border-radius: 0.5rem;
-  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--picker-divider);
+  padding: 0.85rem 0.5rem;
+  border-radius: 0.6rem;
   background: transparent;
-  color: var(--spearmint-ink);
-  font-size: 0.9rem;
+  color: var(--picker-text);
+  font-size: 1rem;
   cursor: pointer;
-
-  &:hover {
-    background: var(--spearmint-bg);
-  }
 }
 
 .category-picker__option--selected {
   font-weight: 700;
-  color: var(--spearmint-primary);
+  color: var(--picker-selected);
+  background: rgba(48, 209, 88, 0.14);
+}
+
+.category-picker__check {
+  color: var(--picker-selected);
+  font-weight: 700;
 }

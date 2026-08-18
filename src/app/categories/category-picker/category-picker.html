@@ -1,41 +1,44 @@
 <div class="category-picker">
   <button
-    #trigger
     type="button"
     class="category-picker__trigger"
     [class.category-picker__trigger--emphasize]="emphasize()"
     [disabled]="disabled()"
-    (click)="toggle()"
+    (click)="openSheet()"
   >
-    {{ selectedName() }}
+    {{ selectedLabel() }}
   </button>
-  @if (open() && panelPosition(); as position) {
-    <div
-      class="category-picker__panel"
-      [style.left.px]="position.left"
-      [style.width.px]="position.width"
-      [style.top.px]="position.top"
-      [style.bottom.px]="position.bottom"
-      [style.max-height.px]="position.maxHeight"
-    >
-      <!-- No `autofocus`: on a scrollable ancestor (e.g. the transaction edit dialog's card),
-           autofocusing this on open can trigger the browser's own scroll-into-view, which the
-           document scroll listener above then reads as "the trigger moved" and closes the panel
-           that just opened (issue #24). -->
-      <input
-        class="category-picker__filter"
-        type="text"
-        placeholder="Filter categories"
-        [value]="filterText()"
-        (input)="filterText.set($any($event.target).value)"
-      />
-      <ul class="category-picker__list">
-        <li>
-          <button type="button" class="category-picker__option" (click)="select(null)">Uncategorized</button>
-        </li>
-        @for (group of filteredGroups(); track group.label) {
-          <li class="category-picker__group-label">{{ group.label }}</li>
-          @for (option of group.options; track option.id) {
+
+  @if (open()) {
+    <div class="category-picker__backdrop" [class.category-picker__backdrop--in]="animateIn()" (click)="close()">
+      <div
+        class="category-picker__sheet"
+        [class.category-picker__sheet--in]="animateIn()"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="category-picker__handle"></div>
+        <input
+          class="category-picker__filter"
+          type="text"
+          placeholder="Filter categories"
+          [value]="filterText()"
+          (input)="filterText.set($any($event.target).value)"
+        />
+        <ul class="category-picker__list">
+          <li>
+            <button
+              type="button"
+              class="category-picker__option"
+              [class.category-picker__option--selected]="selectedId() === null"
+              (click)="select(null)"
+            >
+              <span>Uncategorized</span>
+              @if (selectedId() === null) {
+                <span class="category-picker__check">&check;</span>
+              }
+            </button>
+          </li>
+          @for (option of filteredOptions(); track option.id) {
             <li>
               <button
                 type="button"
@@ -43,12 +46,15 @@
                 [class.category-picker__option--selected]="option.id === selectedId()"
                 (click)="select(option.id)"
               >
-                {{ option.displayName }}
+                <span>{{ option.label }}</span>
+                @if (option.id === selectedId()) {
+                  <span class="category-picker__check">&check;</span>
+                }
               </button>
             </li>
           }
-        }
-      </ul>
+        </ul>
+      </div>
     </div>
   }
 </div>
