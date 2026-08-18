@@ -1,185 +1,162 @@
 <div class="accounts">
-  <app-settings-header title="Accounts" backLink="/settings">
-    <button
-      class="accounts__sync-button"
-      type="button"
-      [disabled]="syncService.syncing()"
-      (click)="store.syncNow()"
-    >
-      <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
-      {{ syncService.syncing() ? 'Syncing…' : 'Sync now' }}
-    </button>
-    <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
-      <fa-icon [icon]="icons.add"></fa-icon>
-    </button>
-  </app-settings-header>
-
-  <div class="accounts__content">
-  @if (syncService.lastSyncError()) {
-    <p class="accounts__banner accounts__banner--error">
-      <fa-icon [icon]="icons.error"></fa-icon>
-      Last sync failed: {{ syncService.lastSyncError() }}
-    </p>
-  }
-
-  @if (syncService.discoveredAccounts().length > 0) {
-    <button class="accounts__discovered-banner" type="button" (click)="openDiscoveredDialog()">
-      <fa-icon [icon]="icons.add"></fa-icon>
-      {{ syncService.discoveredAccounts().length }}
-      new account{{ syncService.discoveredAccounts().length === 1 ? '' : 's' }} found — Review
-    </button>
-  }
-
-  @if (store.loading()) {
-    <p class="accounts__loading">Loading&hellip;</p>
-  } @else {
-    @if (store.accounts().length === 0 && syncService.discoveredAccounts().length === 0) {
-      <div class="accounts__empty">
-        <p class="accounts__empty-body">Connect a bank to start tracking accounts.</p>
-        <button class="accounts__empty-button" type="button" (click)="openConnectDialog()">
-          <fa-icon [icon]="icons.add"></fa-icon>
-          Add Account
+    <app-settings-header title="Accounts" backLink="/settings">
+        <button class="accounts__sync-button" type="button" [disabled]="syncService.syncing()"
+            (click)="store.syncNow()">
+            <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
+            {{ syncService.syncing() ? 'Syncing…' : 'Sync' }}
         </button>
-      </div>
-    } @else {
-      @if (store.accounts().length > 0) {
-        <section class="accounts__section">
-          <h2 class="accounts__section-title">Connected accounts</h2>
-          <ul class="accounts__list">
-            @for (account of store.accounts(); track account.id) {
-              <li class="account-card">
-                <div class="account-card__top">
-                  <input
-                    class="account-card__name"
-                    type="text"
-                    [value]="account.name"
-                    (change)="renameAccount(account.id, $event.target)"
-                  />
-                  <span class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
-                </div>
-                <p class="account-card__institution">{{ store.institutionName(account.institutionId) }}</p>
-                <div class="account-card__row">
-                  <select
-                    class="account-card__type"
-                    [value]="account.type"
-                    (change)="changeType(account.id, $event.target)"
-                  >
-                    <option value="bank">Bank</option>
-                    <option value="creditCard">Credit card</option>
-                  </select>
-                </div>
+        <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
+            <fa-icon [icon]="icons.add"></fa-icon>
+        </button>
+    </app-settings-header>
 
-                @if (account.needsReconnect) {
-                  <p class="account-card__badge account-card__badge--error">
-                    <fa-icon [icon]="icons.error"></fa-icon>
-                    Needs reconnect —
-                    <a [href]="bridgeUrl" target="_blank" rel="noopener">reconnect at SimpleFIN Bridge</a>
-                  </p>
+    <div class="accounts__content">
+        @if (syncService.lastSyncError()) {
+            <p class="accounts__banner accounts__banner--error">
+                <fa-icon [icon]="icons.error"></fa-icon>
+                Last sync failed: {{ syncService.lastSyncError() }}
+            </p>
+        }
+
+        @if (syncService.discoveredAccounts().length > 0) {
+            <button class="accounts__discovered-banner" type="button" (click)="openDiscoveredDialog()">
+                <fa-icon [icon]="icons.add"></fa-icon>
+                {{ syncService.discoveredAccounts().length }}
+                new account{{ syncService.discoveredAccounts().length === 1 ? '' : 's' }} found — Review
+            </button>
+        }
+
+        @if (store.loading()) {
+            <p class="accounts__loading">Loading&hellip;</p>
+        } @else {
+            @if (store.accounts().length === 0 && syncService.discoveredAccounts().length === 0) {
+                <div class="accounts__empty">
+                    <p class="accounts__empty-body">Connect a bank to start tracking accounts.</p>
+                    <button class="accounts__empty-button" type="button" (click)="openConnectDialog()">
+                        <fa-icon [icon]="icons.add"></fa-icon>
+                        Add Account
+                    </button>
+                </div>
+            } @else {
+                @if (store.accounts().length > 0) {
+                    <section class="accounts__section">
+                        <h2 class="accounts__section-title">Connected accounts</h2>
+                        <ul class="accounts__list">
+                            @for (account of store.accounts(); track account.id) {
+                                <li class="account-card">
+                                    <div class="account-card__top">
+                                        <input class="account-card__name" type="text" [value]="account.name"
+                                            (change)="renameAccount(account.id, $event.target)" />
+                                        <span
+                                            class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
+                                    </div>
+                                    <p class="account-card__institution">
+                                        {{ store.institutionName(account.institutionId) }}
+                                    </p>
+                                    <div class="account-card__row">
+                                        <select class="account-card__type" [value]="account.type"
+                                            (change)="changeType(account.id, $event.target)">
+                                            <option value="bank">Bank</option>
+                                            <option value="creditCard">Credit card</option>
+                                        </select>
+                                    </div>
+
+                                    @if (account.needsReconnect) {
+                                        <p class="account-card__badge account-card__badge--error">
+                                            <fa-icon [icon]="icons.error"></fa-icon>
+                                            Needs reconnect —
+                                            <a [href]="bridgeUrl" target="_blank" rel="noopener">reconnect at SimpleFIN
+                                                Bridge</a>
+                                        </p>
+                                    }
+                                    @if (account.syncIssue) {
+                                        <p class="account-card__badge account-card__badge--warning">
+                                            <fa-icon [icon]="icons.warning"></fa-icon>
+                                            {{ account.syncIssue }}
+                                        </p>
+                                    }
+                                    @if (account.missing) {
+                                        <p class="account-card__badge account-card__badge--warning">
+                                            <fa-icon [icon]="icons.warning"></fa-icon>
+                                            Missing — can't reconnect automatically
+                                        </p>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </section>
                 }
-                @if (account.syncIssue) {
-                  <p class="account-card__badge account-card__badge--warning">
-                    <fa-icon [icon]="icons.warning"></fa-icon>
-                    {{ account.syncIssue }}
-                  </p>
-                }
-                @if (account.missing) {
-                  <p class="account-card__badge account-card__badge--warning">
-                    <fa-icon [icon]="icons.warning"></fa-icon>
-                    Missing — can't reconnect automatically
-                  </p>
-                }
-              </li>
             }
-          </ul>
-        </section>
-      }
-    }
 
-    @if (store.ignoredExternalAccounts().length > 0) {
-      <section class="accounts__section">
-        <h2 class="accounts__section-title">Ignored accounts</h2>
-        <ul class="accounts__list">
-          @for (ignored of store.ignoredExternalAccounts(); track ignored.key) {
-            <li class="account-card account-card--compact">
-              <span>{{ ignored.institutionName ? ignored.name + ' · ' + ignored.institutionName : ignored.name }}</span>
-              <button class="account-card__action account-card__action--ghost" type="button" (click)="store.unignore(ignored.key)">
-                Un-ignore
-              </button>
-            </li>
-          }
-        </ul>
-      </section>
-    }
-  }
-  </div>
-
-  <dialog #connectDialog class="accounts__dialog" (close)="closeConnectDialog()">
-    <h2 class="accounts__dialog-title">Connect a bank</h2>
-    <p class="accounts__body">
-      Paste the setup token from your SimpleFIN Bridge provider. Don't have one yet?
-      <a [href]="bridgeUrl" target="_blank" rel="noopener">Get one at SimpleFIN Bridge <fa-icon [icon]="icons.external"></fa-icon></a>
-    </p>
-    <div class="accounts__connect-form">
-      <input
-        class="accounts__connect-input"
-        type="text"
-        placeholder="Setup token"
-        [value]="setupToken()"
-        (input)="setupToken.set($any($event.target).value)"
-        [disabled]="store.connecting()"
-      />
-      <button
-        class="accounts__connect-button"
-        type="button"
-        [disabled]="store.connecting() || !setupToken().trim()"
-        (click)="connect()"
-      >
-        {{ store.connecting() ? 'Connecting…' : 'Connect' }}
-      </button>
+            @if (store.ignoredExternalAccounts().length > 0) {
+                <section class="accounts__section">
+                    <h2 class="accounts__section-title">Ignored accounts</h2>
+                    <ul class="accounts__list">
+                        @for (ignored of store.ignoredExternalAccounts(); track ignored.key) {
+                            <li class="account-card account-card--compact">
+                                <span>{{ ignored.institutionName ? ignored.name + ' · ' + ignored.institutionName : ignored.name }}</span>
+                                <button class="account-card__action account-card__action--ghost" type="button"
+                                    (click)="store.unignore(ignored.key)">
+                                    Un-ignore
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        }
     </div>
-    @if (store.connectError()) {
-      <p class="accounts__banner accounts__banner--error">{{ store.connectError() }}</p>
-    }
-    <button class="accounts__dialog-close" type="button" (click)="closeConnectDialog()">Cancel</button>
-  </dialog>
 
-  <dialog #discoveredDialog class="accounts__dialog" (close)="closeDiscoveredDialog()">
-    <h2 class="accounts__dialog-title">New accounts found</h2>
-    <p class="accounts__body">Add each account you want to track, or ignore the ones you don't.</p>
-    <ul class="accounts__list">
-      @for (discovered of syncService.discoveredAccounts(); track discovered.connId + discovered.externalAccountId) {
-        <li class="account-card">
-          <div class="account-card__top">
-            <span class="account-card__name">{{ discovered.name }}</span>
-            <span class="account-card__balance">${{ discovered.balance | number: '1.2-2' }}</span>
-          </div>
-          <p class="account-card__institution">{{ discovered.orgName }}</p>
-          <div class="account-card__row account-card__row--end">
-            <select #newType class="account-card__type">
-              <option value="bank">Bank</option>
-              <option value="creditCard">Credit card</option>
-            </select>
-            <button
-              class="account-card__action"
-              type="button"
-              [disabled]="store.discoveredActionPending()"
-              (click)="addDiscovered(discovered, newType.value === 'creditCard' ? 'creditCard' : 'bank')"
-            >
-              <fa-icon [icon]="icons.add"></fa-icon>
-              Add
+    <dialog #connectDialog class="accounts__dialog" (close)="closeConnectDialog()">
+        <h2 class="accounts__dialog-title">Connect a bank</h2>
+        <p class="accounts__body">
+            Paste the setup token from your SimpleFIN Bridge provider. Don't have one yet?
+            <a [href]="bridgeUrl" target="_blank" rel="noopener">Get one at SimpleFIN Bridge <fa-icon
+                    [icon]="icons.external"></fa-icon></a>
+        </p>
+        <div class="accounts__connect-form">
+            <input class="accounts__connect-input" type="text" placeholder="Setup token" [value]="setupToken()"
+                (input)="setupToken.set($any($event.target).value)" [disabled]="store.connecting()" />
+            <button class="accounts__connect-button" type="button"
+                [disabled]="store.connecting() || !setupToken().trim()" (click)="connect()">
+                {{ store.connecting() ? 'Connecting…' : 'Connect' }}
             </button>
-            <button
-              class="account-card__action account-card__action--ghost"
-              type="button"
-              [disabled]="store.discoveredActionPending()"
-              (click)="ignoreDiscovered(discovered)"
-            >
-              Ignore
-            </button>
-          </div>
-        </li>
-      }
-    </ul>
-    <button class="accounts__dialog-close" type="button" (click)="closeDiscoveredDialog()">Close</button>
-  </dialog>
+        </div>
+        @if (store.connectError()) {
+            <p class="accounts__banner accounts__banner--error">{{ store.connectError() }}</p>
+        }
+        <button class="accounts__dialog-close" type="button" (click)="closeConnectDialog()">Cancel</button>
+    </dialog>
+
+    <dialog #discoveredDialog class="accounts__dialog" (close)="closeDiscoveredDialog()">
+        <h2 class="accounts__dialog-title">New accounts found</h2>
+        <p class="accounts__body">Add each account you want to track, or ignore the ones you don't.</p>
+        <ul class="accounts__list">
+            @for (discovered of syncService.discoveredAccounts(); track discovered.connId + discovered.externalAccountId) {
+                <li class="account-card">
+                    <div class="account-card__top">
+                        <span class="account-card__name">{{ discovered.name }}</span>
+                        <span class="account-card__balance">${{ discovered.balance | number: '1.2-2' }}</span>
+                    </div>
+                    <p class="account-card__institution">{{ discovered.orgName }}</p>
+                    <div class="account-card__row account-card__row--end">
+                        <select #newType class="account-card__type">
+                            <option value="bank">Bank</option>
+                            <option value="creditCard">Credit card</option>
+                        </select>
+                        <button class="account-card__action" type="button" [disabled]="store.discoveredActionPending()"
+                            (click)="addDiscovered(discovered, newType.value === 'creditCard' ? 'creditCard' : 'bank')">
+                            <fa-icon [icon]="icons.add"></fa-icon>
+                            Add
+                        </button>
+                        <button class="account-card__action account-card__action--ghost" type="button"
+                            [disabled]="store.discoveredActionPending()" (click)="ignoreDiscovered(discovered)">
+                            Ignore
+                        </button>
+                    </div>
+                </li>
+            }
+        </ul>
+        <button class="accounts__dialog-close" type="button" (click)="closeDiscoveredDialog()">Close</button>
+    </dialog>
 </div>
