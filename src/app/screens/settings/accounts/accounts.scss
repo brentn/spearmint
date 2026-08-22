@@ -355,16 +355,29 @@
 
 .account-card__top {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.account-card__balance {
+.account-card__balance-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   flex-shrink: 0;
+  gap: 0.35rem;
+}
+
+.account-card__balance {
   font-size: 1rem;
   font-weight: 700;
   color: var(--spearmint-ink);
+  text-align: right;
+}
+
+.account-card__last-synced {
+  font-size: 0.72rem;
+  color: var(--spearmint-accent);
   text-align: right;
 }
 

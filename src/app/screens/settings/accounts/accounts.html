@@ -47,8 +47,21 @@
                                     <div class="account-card__top">
                                         <input class="account-card__name" type="text" [value]="account.name"
                                             (change)="renameAccount(account.id, $event.target)" />
-                                        <span
-                                            class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
+                                        <div class="account-card__balance-col">
+                                            <span
+                                                class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
+                                            <span class="account-card__last-synced">
+                                                Last synced {{ account.balanceDate | date: 'mediumDate' }}
+                                            </span>
+                                            @if (account.isManual) {
+                                                <button class="account-card__action account-card__action--ghost" type="button"
+                                                    [disabled]="store.importingAccountId() === account.id"
+                                                    (click)="triggerImportStatement(account.id)">
+                                                    <fa-icon [icon]="icons.import"></fa-icon>
+                                                    {{ store.importingAccountId() === account.id ? 'Importing…' : 'Import statement' }}
+                                                </button>
+                                            }
+                                        </div>
                                     </div>
                                     <p class="account-card__institution">
                                         {{ store.institutionName(account.institutionId) }}
@@ -90,14 +103,6 @@
                                     }
 
                                     @if (account.isManual) {
-                                        <div class="account-card__row">
-                                            <button class="account-card__action account-card__action--ghost" type="button"
-                                                [disabled]="store.importingAccountId() === account.id"
-                                                (click)="triggerImportStatement(account.id)">
-                                                <fa-icon [icon]="icons.import"></fa-icon>
-                                                {{ store.importingAccountId() === account.id ? 'Importing…' : 'Import statement' }}
-                                            </button>
-                                        </div>
                                         @if (store.lastImportAccountId() === account.id && store.importError()) {
                                             <p class="account-card__badge account-card__badge--error">
                                                 <fa-icon [icon]="icons.error"></fa-icon>

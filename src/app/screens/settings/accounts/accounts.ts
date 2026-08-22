@@ -1,5 +1,5 @@
 import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import {
   faArrowUpRightFromSquare,
@@ -29,7 +29,7 @@ const SIMPLEFIN_BRIDGE_URL = 'https://bridge.simplefin.org';
 
 @Component({
   selector: 'app-accounts',
-  imports: [FaIconComponent, DecimalPipe, SettingsHeader],
+  imports: [FaIconComponent, DecimalPipe, DatePipe, SettingsHeader],
   templateUrl: './accounts.html',
   styleUrl: './accounts.scss',
   providers: [AccountsStore],
