@@ -5,12 +5,17 @@ import {
   faArrowUpRightFromSquare,
   faArrowsRotate,
   faCircleExclamation,
+  faDownload,
   faFileArrowUp,
   faPenToSquare,
   faPlus,
+  faTrash,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
-import type { AccountType } from '../../../data/models';
+import { MIN_PASSWORD_LENGTH } from '../../../auth/password-policy';
+import { BackupService } from '../../../data/backup.service';
+import { downloadBlob } from '../../../data/download-blob.util';
+import type { Account, AccountType } from '../../../data/models';
 import type { DiscoveredSimplefinAccount } from '../../../simplefin/simplefin-ingest-plan.util';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
 import { AccountsStore } from './accounts.store';
@@ -32,8 +37,10 @@ const SIMPLEFIN_BRIDGE_URL = 'https://bridge.simplefin.org';
 export class AccountsScreen {
   protected readonly store = inject(AccountsStore);
   protected readonly syncService = inject(SimplefinSyncService);
+  private readonly backupService = inject(BackupService);
 
   protected readonly bridgeUrl = SIMPLEFIN_BRIDGE_URL;
+  protected readonly minPasswordLength = MIN_PASSWORD_LENGTH;
   protected readonly icons = {
     external: faArrowUpRightFromSquare,
     sync: faArrowsRotate,
@@ -42,15 +49,25 @@ export class AccountsScreen {
     add: faPlus,
     manual: faPenToSquare,
     import: faFileArrowUp,
+    export: faDownload,
+    delete: faTrash,
   };
 
   protected readonly setupToken = signal('');
   protected readonly addAccountMode = signal<'simplefin' | 'manual'>('simplefin');
   private readonly addAccountDialog = viewChild<ElementRef<HTMLDialogElement>>('addAccountDialog');
   private readonly discoveredDialog = viewChild<ElementRef<HTMLDialogElement>>('discoveredDialog');
+  private readonly deleteAccountDialog = viewChild<ElementRef<HTMLDialogElement>>('deleteAccountDialog');
   private readonly statementFileInput = viewChild<ElementRef<HTMLInputElement>>('statementFileInput');
   private previousDiscoveredCount = 0;
   private statementImportTargetId: string | null = null;
+
+  protected readonly accountPendingDelete = signal<Account | null>(null);
+  protected readonly exportingBackup = signal(false);
+  protected readonly exportBackupError = signal<string | null>(null);
+  protected readonly exportEncryptionDefault = signal(false);
+  protected readonly exportPassword = signal('');
+  protected readonly exportPasswordConfirm = signal('');
 
   protected readonly manualBankName = signal('');
   protected readonly manualAccountName = signal('');
@@ -179,5 +196,54 @@ export class AccountsScreen {
       reader.onerror = () => reject(reader.error);
       reader.readAsText(file);
     });
+  }
+
+  openDeleteDialog(account: Account): void {
+    this.accountPendingDelete.set(account);
+    this.store.deleteError.set(null);
+    this.exportBackupError.set(null);
+    this.exportPassword.set('');
+    this.exportPasswordConfirm.set('');
+    void this.loadExportEncryptionDefault();
+    this.deleteAccountDialog()?.nativeElement.showModal();
+  }
+
+  private async loadExportEncryptionDefault(): Promise<void> {
+    this.exportEncryptionDefault.set(await this.backupService.getExportEncryptionDefault());
+  }
+
+  closeDeleteDialog(): void {
+    this.deleteAccountDialog()?.nativeElement.close();
+    this.accountPendingDelete.set(null);
+  }
+
+  async confirmDeleteAccount(): Promise<void> {
+    const account = this.accountPendingDelete();
+    if (!account) {
+      return;
+    }
+    await this.store.deleteAccount(account.id);
+    if (!this.store.deleteError()) {
+      this.closeDeleteDialog();
+    }
+  }
+
+  /** One-way safety net (ADR-0017) before deleting a real account — reuses the same
+   * whole-database backup as Settings -> Export/Import, including the user's saved
+   * encryption preference (and, when it's on, the password entered in this dialog),
+   * rather than a new scoped export. */
+  async exportBeforeDelete(): Promise<void> {
+    this.exportingBackup.set(true);
+    this.exportBackupError.set(null);
+    try {
+      const blob = await this.backupService.exportBackup(this.exportEncryptionDefault(), this.exportPassword());
+      downloadBlob(blob, `spearmint-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      this.exportPassword.set('');
+      this.exportPasswordConfirm.set('');
+    } catch (err) {
+      this.exportBackupError.set(err instanceof Error ? err.message : 'Could not export a backup.');
+    } finally {
+      this.exportingBackup.set(false);
+    }
   }
 }

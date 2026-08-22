@@ -139,6 +139,103 @@
   }
 }
 
+.accounts__body--danger {
+  font-weight: 600;
+}
+
+.accounts__password-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.accounts__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--spearmint-muted);
+
+  input {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--spearmint-border);
+    border-radius: var(--spearmint-radius);
+    color: var(--spearmint-ink);
+    // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+    // computed font-size is below this.
+    font-size: 1rem;
+    font-weight: 400;
+  }
+}
+
+.accounts__hint {
+  margin: -0.4rem 0 0;
+  font-size: 0.8rem;
+  color: var(--spearmint-danger);
+}
+
+.accounts__export-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.9rem;
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.accounts__delete-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.accounts__delete-cancel {
+  flex: 1;
+  border: 1px solid var(--spearmint-border);
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.accounts__delete-confirm {
+  flex: 1;
+  border: none;
+  border-radius: var(--spearmint-radius);
+  padding: 0.6rem;
+  background: var(--spearmint-danger);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
 .accounts__list {
   list-style: none;
   margin: 0;

@@ -1,6 +1,7 @@
 import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { MIN_PASSWORD_LENGTH } from '../../../auth/password-policy';
 import { BackupService } from '../../../data/backup.service';
+import { downloadBlob } from '../../../data/download-blob.util';
 import { SettingsHeader } from '../settings-header/settings-header';
 
 @Component({
@@ -41,7 +42,7 @@ export class ExportImportScreen {
     this.exporting.set(true);
     try {
       const blob = await this.backupService.exportBackup(this.encryptExport(), this.exportPassword());
-      this.downloadBlob(blob, `spearmint-backup-${new Date().toISOString().slice(0, 10)}.json`);
+      downloadBlob(blob, `spearmint-backup-${new Date().toISOString().slice(0, 10)}.json`);
       this.exportPassword.set('');
       this.exportPasswordConfirm.set('');
       this.exportDone.set(true);
@@ -50,15 +51,6 @@ export class ExportImportScreen {
     } finally {
       this.exporting.set(false);
     }
-  }
-
-  private downloadBlob(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    anchor.click();
-    URL.revokeObjectURL(url);
   }
 
   onFileSelected(event: Event): void {

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import type { AccountType, Transaction } from '../data/models';
-import { getAppSettingsDoc, upsertAppSettings } from '../data/app-settings.util';
+import { addIgnoredExternalAccountIfAbsent, getAppSettingsDoc, upsertAppSettings } from '../data/app-settings.util';
 import { DatabaseService, type SpearmintDatabase } from '../data/database.service';
 import { TransactionIngestionService } from '../transactions/transaction-ingestion.service';
 import { epochSecondsToDateOnly, parseDecimalAmount } from './simplefin-mapping.util';
@@ -182,12 +182,11 @@ export class SimplefinSyncService {
 
   async ignoreDiscoveredAccount(discovered: DiscoveredSimplefinAccount): Promise<void> {
     const db = await this.databaseService.getDatabase();
-    const key = externalAccountKey(discovered.connId, discovered.externalAccountId);
-    const entry = { key, name: discovered.name, institutionName: discovered.orgName };
-    const settingsDoc = await getAppSettingsDoc(db);
-    if (!settingsDoc?.ignoredExternalAccounts.some((i) => i.key === key)) {
-      await upsertAppSettings(db, { ignoredExternalAccounts: [...(settingsDoc?.ignoredExternalAccounts ?? []), entry] });
-    }
+    await addIgnoredExternalAccountIfAbsent(db, {
+      key: externalAccountKey(discovered.connId, discovered.externalAccountId),
+      name: discovered.name,
+      institutionName: discovered.orgName,
+    });
     this.removeDiscovered(discovered);
   }
 

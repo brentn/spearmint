@@ -62,6 +62,10 @@
                                             <option value="bank">Bank</option>
                                             <option value="creditCard">Credit card</option>
                                         </select>
+                                        <button class="account-card__action account-card__action--ghost" type="button"
+                                            title="Delete account" (click)="openDeleteDialog(account)">
+                                            <fa-icon [icon]="icons.delete"></fa-icon>
+                                        </button>
                                     </div>
 
                                     @if (account.needsReconnect) {
@@ -219,5 +223,63 @@
             }
         </ul>
         <button class="accounts__dialog-close" type="button" (click)="closeDiscoveredDialog()">Close</button>
+    </dialog>
+
+    <dialog #deleteAccountDialog class="accounts__dialog" (close)="closeDeleteDialog()">
+        @if (accountPendingDelete(); as account) {
+            <h2 class="accounts__dialog-title">Delete {{ account.name }}?</h2>
+            @if (account.isManual) {
+                <p class="accounts__body">
+                    This permanently removes this account along with its transactions and categorization
+                    rules. This can't be undone.
+                </p>
+            } @else {
+                <p class="accounts__body accounts__body--danger">
+                    This permanently removes this account's synced transaction history and categorization
+                    rules from this device — there's no other local copy. This can't be undone.
+                </p>
+                @if (exportEncryptionDefault()) {
+                    <div class="accounts__password-fields">
+                        <label class="accounts__label">
+                            Password
+                            <input type="password" [value]="exportPassword()"
+                                (input)="exportPassword.set($any($event.target).value)" />
+                        </label>
+                        <label class="accounts__label">
+                            Confirm password
+                            <input type="password" [value]="exportPasswordConfirm()"
+                                (input)="exportPasswordConfirm.set($any($event.target).value)" />
+                        </label>
+                        @if (exportPassword() && exportPassword().length < minPasswordLength) {
+                            <p class="accounts__hint">Password must be at least {{ minPasswordLength }} characters.</p>
+                        } @else if (exportPasswordConfirm() && exportPassword() !== exportPasswordConfirm()) {
+                            <p class="accounts__hint">Passwords don't match.</p>
+                        }
+                    </div>
+                }
+                <button class="accounts__export-button" type="button"
+                    [disabled]="exportingBackup() || (exportEncryptionDefault() && (exportPassword().length < minPasswordLength || exportPassword() !== exportPasswordConfirm()))"
+                    (click)="exportBeforeDelete()">
+                    <fa-icon [icon]="icons.export"></fa-icon>
+                    {{ exportingBackup() ? 'Exporting…' : 'Export a full backup first' }}
+                </button>
+                @if (exportBackupError()) {
+                    <p class="accounts__banner accounts__banner--error">{{ exportBackupError() }}</p>
+                }
+            }
+            @if (store.deleteError()) {
+                <p class="accounts__banner accounts__banner--error">{{ store.deleteError() }}</p>
+            }
+            <div class="accounts__delete-actions">
+                <button class="accounts__delete-cancel" type="button" [disabled]="store.deletingAccountId() === account.id"
+                    (click)="closeDeleteDialog()">
+                    Cancel
+                </button>
+                <button class="accounts__delete-confirm" type="button" [disabled]="store.deletingAccountId() === account.id"
+                    (click)="confirmDeleteAccount()">
+                    {{ store.deletingAccountId() === account.id ? 'Deleting…' : 'Delete account' }}
+                </button>
+            </div>
+        }
     </dialog>
 </div>

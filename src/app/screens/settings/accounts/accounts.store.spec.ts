@@ -11,6 +11,7 @@ import {
   appSettingsSchema,
   institutionSchema,
 } from '../../../data/schemas';
+import { AccountDeletionService } from '../../../accounts/account-deletion.service';
 import { DatabaseService } from '../../../data/database.service';
 import type { Account } from '../../../data/models';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
@@ -46,6 +47,7 @@ describe('AccountsStore', () => {
   let ignoreDiscoveredAccount: ReturnType<typeof vi.fn>;
   let unignoreDiscoveredAccount: ReturnType<typeof vi.fn>;
   let importStatement: ReturnType<typeof vi.fn>;
+  let deleteAccount: ReturnType<typeof vi.fn>;
   let store: AccountsStore;
 
   beforeEach(async () => {
@@ -75,6 +77,7 @@ describe('AccountsStore', () => {
     ignoreDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
     unignoreDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
     importStatement = vi.fn().mockResolvedValue({ importedCount: 2, updatedCount: 0 });
+    deleteAccount = vi.fn().mockResolvedValue(undefined);
 
     TestBed.configureTestingModule({
       providers: [
@@ -92,6 +95,7 @@ describe('AccountsStore', () => {
           },
         },
         { provide: StatementImportService, useValue: { importStatement } },
+        { provide: AccountDeletionService, useValue: { deleteAccount } },
       ],
     });
     store = TestBed.inject(AccountsStore);
@@ -232,5 +236,25 @@ describe('AccountsStore', () => {
     expect(store.importError()).toBe('Not a recognized OFX, QFX, or QBO file.');
     expect(store.importResultMessage()).toBeNull();
     expect(store.importingAccountId()).toBeNull();
+  });
+
+  it('deleteAccount delegates to AccountDeletionService and refreshes', async () => {
+    await fakeDb['accounts'].insert(seedAccount());
+    await store.refresh();
+
+    await store.deleteAccount('acc-1');
+
+    expect(deleteAccount).toHaveBeenCalledWith('acc-1');
+    expect(store.deletingAccountId()).toBeNull();
+    expect(store.deleteError()).toBeNull();
+  });
+
+  it('deleteAccount surfaces a failure without leaving deletingAccountId stuck', async () => {
+    deleteAccount.mockRejectedValue(new Error('Could not delete that account.'));
+
+    await store.deleteAccount('acc-1');
+
+    expect(store.deleteError()).toBe('Could not delete that account.');
+    expect(store.deletingAccountId()).toBeNull();
   });
 });

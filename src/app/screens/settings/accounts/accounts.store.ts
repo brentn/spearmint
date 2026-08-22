@@ -1,4 +1,5 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
+import { AccountDeletionService } from '../../../accounts/account-deletion.service';
 import { getAppSettingsDoc } from '../../../data/app-settings.util';
 import { DatabaseService } from '../../../data/database.service';
 import type { Account, AccountType, IgnoredExternalAccount, Institution } from '../../../data/models';
@@ -22,6 +23,7 @@ export class AccountsStore {
   private readonly linkService = inject(SimplefinLinkService);
   private readonly syncService = inject(SimplefinSyncService);
   private readonly statementImportService = inject(StatementImportService);
+  private readonly accountDeletionService = inject(AccountDeletionService);
 
   readonly loading = signal(true);
   readonly accounts = signal<Account[]>([]);
@@ -31,6 +33,9 @@ export class AccountsStore {
   readonly connecting = signal(false);
   readonly connectError = signal<string | null>(null);
   readonly discoveredActionPending = signal(false);
+
+  readonly deletingAccountId = signal<string | null>(null);
+  readonly deleteError = signal<string | null>(null);
 
   readonly importingAccountId = signal<string | null>(null);
   /** Sticky across the importingAccountId reset in the `finally` below, so the result/error
@@ -175,6 +180,21 @@ export class AccountsStore {
       this.importError.set(error instanceof Error ? error.message : 'Could not import that statement file.');
     } finally {
       this.importingAccountId.set(null);
+    }
+  }
+
+  /** Deletes an Account and its Transactions/CategorizationRules (ADR-0017), via
+   * AccountDeletionService — see that service for the connection-cleanup policy. */
+  async deleteAccount(accountId: string): Promise<void> {
+    this.deletingAccountId.set(accountId);
+    this.deleteError.set(null);
+    try {
+      await this.accountDeletionService.deleteAccount(accountId);
+      await this.refresh();
+    } catch (error) {
+      this.deleteError.set(error instanceof Error ? error.message : 'Could not delete that account.');
+    } finally {
+      this.deletingAccountId.set(null);
     }
   }
 }

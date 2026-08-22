@@ -1,4 +1,4 @@
-import type { AppSettings } from './models';
+import type { AppSettings, IgnoredExternalAccount } from './models';
 import type { SpearmintDatabase } from './database.service';
 
 export const DEFAULT_APP_SETTINGS: Omit<AppSettings, 'webauthnCredential' | 'passwordHash'> = {
@@ -26,4 +26,21 @@ export async function upsertAppSettings(
     return;
   }
   await db.appSettings.insert({ ...DEFAULT_APP_SETTINGS, webauthnCredential: null, passwordHash: null, ...patch });
+}
+
+/** Permanently ignores a SimpleFIN external account (by its `connId:externalAccountId`
+ * key) so the next sync's discovery pass never re-surfaces it — shared by both the
+ * "ignore a newly discovered account" flow and real-account deletion (ADR-0017), since
+ * both need the same append-if-absent behavior against the same list. */
+export async function addIgnoredExternalAccountIfAbsent(
+  db: SpearmintDatabase,
+  entry: IgnoredExternalAccount
+): Promise<void> {
+  const settingsDoc = await getAppSettingsDoc(db);
+  if (settingsDoc?.ignoredExternalAccounts.some((i) => i.key === entry.key)) {
+    return;
+  }
+  await upsertAppSettings(db, {
+    ignoredExternalAccounts: [...(settingsDoc?.ignoredExternalAccounts ?? []), entry],
+  });
 }
