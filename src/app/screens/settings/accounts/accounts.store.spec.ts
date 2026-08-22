@@ -15,6 +15,7 @@ import { DatabaseService } from '../../../data/database.service';
 import type { Account } from '../../../data/models';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
+import { StatementImportService } from '../../../statement-import/statement-import.service';
 import { AccountsStore } from './accounts.store';
 
 function seedAccount(overrides: Partial<Account> = {}): Account {
@@ -44,6 +45,7 @@ describe('AccountsStore', () => {
   let addDiscoveredAccount: ReturnType<typeof vi.fn>;
   let ignoreDiscoveredAccount: ReturnType<typeof vi.fn>;
   let unignoreDiscoveredAccount: ReturnType<typeof vi.fn>;
+  let importStatement: ReturnType<typeof vi.fn>;
   let store: AccountsStore;
 
   beforeEach(async () => {
@@ -72,6 +74,7 @@ describe('AccountsStore', () => {
     addDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
     ignoreDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
     unignoreDiscoveredAccount = vi.fn().mockResolvedValue(undefined);
+    importStatement = vi.fn().mockResolvedValue({ importedCount: 2, updatedCount: 0 });
 
     TestBed.configureTestingModule({
       providers: [
@@ -88,6 +91,7 @@ describe('AccountsStore', () => {
             unignoreDiscoveredAccount,
           },
         },
+        { provide: StatementImportService, useValue: { importStatement } },
       ],
     });
     store = TestBed.inject(AccountsStore);
@@ -204,5 +208,29 @@ describe('AccountsStore', () => {
     await store.ignoreDiscovered(discovered);
 
     expect(ignoreDiscoveredAccount).toHaveBeenCalledWith(discovered);
+  });
+
+  it('importStatement delegates to StatementImportService, reports the result, and refreshes', async () => {
+    await fakeDb['accounts'].insert(seedAccount({ isManual: true }));
+    importStatement.mockResolvedValue({ importedCount: 3, updatedCount: 1 });
+
+    await store.importStatement('acc-1', 'file-text');
+
+    expect(importStatement).toHaveBeenCalledWith('acc-1', 'file-text');
+    expect(store.lastImportAccountId()).toBe('acc-1');
+    expect(store.importResultMessage()).toBe('Imported 3 new transactions, updated 1.');
+    expect(store.importError()).toBeNull();
+    expect(store.importingAccountId()).toBeNull();
+  });
+
+  it('importStatement surfaces a failure without leaving importingAccountId stuck', async () => {
+    importStatement.mockRejectedValue(new Error('Not a recognized OFX, QFX, or QBO file.'));
+
+    await store.importStatement('acc-1', 'garbage');
+
+    expect(store.lastImportAccountId()).toBe('acc-1');
+    expect(store.importError()).toBe('Not a recognized OFX, QFX, or QBO file.');
+    expect(store.importResultMessage()).toBeNull();
+    expect(store.importingAccountId()).toBeNull();
   });
 });

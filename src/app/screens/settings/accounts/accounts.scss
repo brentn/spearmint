@@ -1,3 +1,7 @@
+.accounts__file-input {
+  display: none;
+}
+
 .accounts__content {
   max-width: 32rem;
   margin: 0 auto;
@@ -340,6 +344,10 @@
 
 .account-card__badge--warning {
   color: var(--spearmint-warning);
+}
+
+.account-card__badge--success {
+  color: var(--spearmint-accent);
 }
 
 .account-card__action {

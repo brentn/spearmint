@@ -1,0 +1,7 @@
+# Account deletion: connection-aware cleanup, export-first for real accounts
+
+Account deletion is a general capability — usable on any `Account`, not just a Manual Account (see ADR-0016) — built as a general primitive from the start rather than scoped to manual accounts only, since a Manual Account needs a defined end-of-life and building the general version once was judged simpler than building a narrower one now and widening it later. Deleting an account removes its `Transaction`s and `CategorizationRule`s.
+
+Deleting a real SimpleFIN-linked account also has to account for its `connId`, or the deletion won't stick: `SimplefinSyncService`'s discovery pass (`planIngest`) diffs the live connection's account list against what's tracked, and re-surfaces anything not tracked and not in `ignoredExternalAccounts` as a newly "discovered" account on the next sync. So if the deleted account is the last one on its `connId`, the `SimplefinLink` for that connection is deleted too; if other accounts are still active on that `connId`, the deleted account is added to `ignoredExternalAccounts` instead, so the next sync doesn't resurrect it.
+
+Deleting a real account is irreversible and destroys transaction history with no other copy, so its confirmation flow includes an "export first" button. That button reuses the existing whole-database backup (`BackupService.exportBackup()`) rather than a new single-account export format, since the export is a one-way safety net that's never re-imported.

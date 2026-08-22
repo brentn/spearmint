@@ -5,6 +5,7 @@ import {
   faArrowUpRightFromSquare,
   faArrowsRotate,
   faCircleExclamation,
+  faFileArrowUp,
   faPenToSquare,
   faPlus,
   faTriangleExclamation,
@@ -40,13 +41,16 @@ export class AccountsScreen {
     warning: faTriangleExclamation,
     add: faPlus,
     manual: faPenToSquare,
+    import: faFileArrowUp,
   };
 
   protected readonly setupToken = signal('');
   protected readonly addAccountMode = signal<'simplefin' | 'manual'>('simplefin');
   private readonly addAccountDialog = viewChild<ElementRef<HTMLDialogElement>>('addAccountDialog');
   private readonly discoveredDialog = viewChild<ElementRef<HTMLDialogElement>>('discoveredDialog');
+  private readonly statementFileInput = viewChild<ElementRef<HTMLInputElement>>('statementFileInput');
   private previousDiscoveredCount = 0;
+  private statementImportTargetId: string | null = null;
 
   protected readonly manualBankName = signal('');
   protected readonly manualAccountName = signal('');
@@ -146,5 +150,34 @@ export class AccountsScreen {
       return;
     }
     await this.store.setAccountType(accountId, value);
+  }
+
+  /** Opens the (shared, hidden) file picker for a specific account's card — the target id is
+   * stashed here rather than passed through the change event, since the native <input> only
+   * reports the chosen File. */
+  triggerImportStatement(accountId: string): void {
+    this.statementImportTargetId = accountId;
+    this.statementFileInput()?.nativeElement.click();
+  }
+
+  async onStatementFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const accountId = this.statementImportTargetId;
+    input.value = ''; // allow re-selecting the same file (e.g. after fixing it)
+    if (!file || !accountId) {
+      return;
+    }
+    const fileText = await this.readFileText(file);
+    await this.store.importStatement(accountId, fileText);
+  }
+
+  private readFileText(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
   }
 }

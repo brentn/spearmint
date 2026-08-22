@@ -6,6 +6,7 @@ import { todayDateOnlyUtc } from '../../../simplefin/date-only.util';
 import type { DiscoveredSimplefinAccount } from '../../../simplefin/simplefin-ingest-plan.util';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
+import { StatementImportService } from '../../../statement-import/statement-import.service';
 
 /**
  * Screen-scoped store for Settings -> Accounts: loads accounts/institutions from RxDB
@@ -20,6 +21,7 @@ export class AccountsStore {
   private readonly databaseService = inject(DatabaseService);
   private readonly linkService = inject(SimplefinLinkService);
   private readonly syncService = inject(SimplefinSyncService);
+  private readonly statementImportService = inject(StatementImportService);
 
   readonly loading = signal(true);
   readonly accounts = signal<Account[]>([]);
@@ -29,6 +31,13 @@ export class AccountsStore {
   readonly connecting = signal(false);
   readonly connectError = signal<string | null>(null);
   readonly discoveredActionPending = signal(false);
+
+  readonly importingAccountId = signal<string | null>(null);
+  /** Sticky across the importingAccountId reset in the `finally` below, so the result/error
+   * banner for the account just imported into stays visible once the import finishes. */
+  readonly lastImportAccountId = signal<string | null>(null);
+  readonly importError = signal<string | null>(null);
+  readonly importResultMessage = signal<string | null>(null);
 
   constructor() {
     effect(() => {
@@ -142,5 +151,30 @@ export class AccountsStore {
     });
 
     await this.refresh();
+  }
+
+  /** Imports a Statement Import file (issue #39) into a Manual Account: parses fileText via
+   * StatementImportService (upserting transactions by FITID and updating balance/balanceDate
+   * from the file's ledger balance), then re-reads so the account card reflects the result.
+   * The result/error banner is keyed by lastImportAccountId rather than cleared here, so it
+   * survives the importingAccountId reset below and stays attached to the right card. */
+  async importStatement(accountId: string, fileText: string): Promise<void> {
+    this.importingAccountId.set(accountId);
+    this.lastImportAccountId.set(accountId);
+    this.importError.set(null);
+    this.importResultMessage.set(null);
+    try {
+      const result = await this.statementImportService.importStatement(accountId, fileText);
+      const parts = [`Imported ${result.importedCount} new transaction${result.importedCount === 1 ? '' : 's'}`];
+      if (result.updatedCount > 0) {
+        parts.push(`updated ${result.updatedCount}`);
+      }
+      this.importResultMessage.set(`${parts.join(', ')}.`);
+      await this.refresh();
+    } catch (error) {
+      this.importError.set(error instanceof Error ? error.message : 'Could not import that statement file.');
+    } finally {
+      this.importingAccountId.set(null);
+    }
   }
 }

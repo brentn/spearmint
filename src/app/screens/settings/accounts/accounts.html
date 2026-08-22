@@ -84,6 +84,28 @@
                                             Missing — can't reconnect automatically
                                         </p>
                                     }
+
+                                    @if (account.isManual) {
+                                        <div class="account-card__row">
+                                            <button class="account-card__action account-card__action--ghost" type="button"
+                                                [disabled]="store.importingAccountId() === account.id"
+                                                (click)="triggerImportStatement(account.id)">
+                                                <fa-icon [icon]="icons.import"></fa-icon>
+                                                {{ store.importingAccountId() === account.id ? 'Importing…' : 'Import statement' }}
+                                            </button>
+                                        </div>
+                                        @if (store.lastImportAccountId() === account.id && store.importError()) {
+                                            <p class="account-card__badge account-card__badge--error">
+                                                <fa-icon [icon]="icons.error"></fa-icon>
+                                                {{ store.importError() }}
+                                            </p>
+                                        }
+                                        @if (store.lastImportAccountId() === account.id && store.importResultMessage()) {
+                                            <p class="account-card__badge account-card__badge--success">
+                                                {{ store.importResultMessage() }}
+                                            </p>
+                                        }
+                                    }
                                 </li>
                             }
                         </ul>
@@ -109,6 +131,9 @@
             }
         }
     </div>
+
+    <input #statementFileInput type="file" class="accounts__file-input" accept=".ofx,.qfx,.qbo"
+        (change)="onStatementFileSelected($event)" />
 
     <dialog #addAccountDialog class="accounts__dialog" (close)="closeAddAccountDialog()">
         @if (addAccountMode() === 'simplefin') {
