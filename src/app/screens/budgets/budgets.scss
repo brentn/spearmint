@@ -249,17 +249,35 @@
   justify-content: flex-end;
 }
 
-// Visually separates the Budgeted income/expenses pair from the Earned/Spent pair before it.
-.budgets__flow-bar-group--budgeted {
-  margin-left: 0.75rem;
-}
-
 // Same gap as the Earned/Spent bars' own separation (the container's flex `gap` above), so the
-// in/out pair reads with identical spacing (issue #41) despite living inside one group.
+// in/out pair reads with identical spacing (issue #41) despite living inside one group. Needs its
+// own height:100% (percentage resolves against .budgets__flow-bars' definite height) so its
+// nested .budgets__flow-bar-group children can bottom-align their captions the same way the
+// Earned/Spent groups do.
 .budgets__flow-bar-pair {
   display: flex;
   gap: 1.25rem;
   align-items: flex-end;
+  height: 100%;
+}
+
+// Visually separates the Budgeted income/expenses pair from the Earned/Spent pair before it.
+// position:relative anchors the "Budgets" overlay label below.
+.budgets__flow-bar-pair--budgeted {
+  margin-left: 0.75rem;
+  position: relative;
+}
+
+// Overlaid in the gap between the In/Out bars, aligned with their caption line (issue #41 follow-up).
+.budgets__flow-bar-budgeted-label {
+  position: absolute;
+  left: 50%;
+  bottom: 0.96rem;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--spearmint-accent);
+  white-space: nowrap;
 }
 
 .budgets__flow-bar-stack {

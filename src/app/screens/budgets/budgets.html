@@ -81,8 +81,9 @@
               <strong>${{ cashFlowData().spent | number: '1.0-0' }}</strong>
             </div>
           </div>
-          <div class="budgets__flow-bar-group budgets__flow-bar-group--budgeted">
-            <div class="budgets__flow-bar-pair">
+          <div class="budgets__flow-bar-pair budgets__flow-bar-pair--budgeted">
+            <span class="budgets__flow-bar-budgeted-label">Budgets</span>
+            <div class="budgets__flow-bar-group">
               <div class="budgets__flow-bar-stack">
                 <div
                   class="budgets__flow-bar budgets__flow-bar--income-overage"
@@ -93,6 +94,12 @@
                   [style.height.px]="flowBarHeight(cashFlowData().budgetedIncome)"
                 ></div>
               </div>
+              <div class="budgets__flow-bar-caption">
+                <span>In</span>
+                <strong>${{ cashFlowData().budgetedIncome | number: '1.0-0' }}</strong>
+              </div>
+            </div>
+            <div class="budgets__flow-bar-group">
               <div class="budgets__flow-bar-stack">
                 <div
                   class="budgets__flow-bar budgets__flow-bar--expense-overage"
@@ -103,14 +110,10 @@
                   [style.height.px]="flowBarHeight(cashFlowData().budgetedExpenses)"
                 ></div>
               </div>
-            </div>
-            <div class="budgets__flow-bar-caption">
-              <span>in Budget out</span>
-              <strong
-                >${{ cashFlowData().budgetedIncome | number: '1.0-0' }} / ${{
-                  cashFlowData().budgetedExpenses | number: '1.0-0'
-                }}</strong
-              >
+              <div class="budgets__flow-bar-caption">
+                <span>Out</span>
+                <strong>${{ cashFlowData().budgetedExpenses | number: '1.0-0' }}</strong>
+              </div>
             </div>
           </div>
         </div>
