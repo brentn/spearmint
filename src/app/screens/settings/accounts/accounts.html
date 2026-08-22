@@ -47,27 +47,16 @@
                                     <div class="account-card__top">
                                         <input class="account-card__name" type="text" [value]="account.name"
                                             (change)="renameAccount(account.id, $event.target)" />
-                                        <div class="account-card__balance-col">
-                                            <span
-                                                class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
-                                            <span class="account-card__last-synced">
-                                                Last synced {{ account.balanceDate | date: 'mediumDate' }}
-                                            </span>
-                                            @if (account.isManual) {
-                                                <button class="account-card__action account-card__action--ghost" type="button"
-                                                    [disabled]="store.importingAccountId() === account.id"
-                                                    (click)="triggerImportStatement(account.id)">
-                                                    <fa-icon [icon]="icons.import"></fa-icon>
-                                                    {{ store.importingAccountId() === account.id ? 'Importing…' : 'Import statement' }}
-                                                </button>
-                                            }
-                                        </div>
+                                        <span class="account-card__balance">${{ account.balance | number: '1.2-2' }}</span>
                                     </div>
                                     <p class="account-card__institution">
-                                        {{ store.institutionName(account.institutionId) }}
-                                        @if (account.isManual) {
-                                            <span class="account-card__manual-tag">Manual</span>
-                                        }
+                                        <span class="account-card__institution-name">
+                                            {{ store.institutionName(account.institutionId) }}
+                                            @if (account.isManual) {
+                                                <span class="account-card__manual-tag">Manual</span>
+                                            }
+                                        </span>
+                                        <span class="account-card__last-synced">{{ account.balanceDate | date: 'mediumDate' }}</span>
                                     </p>
                                     <div class="account-card__row">
                                         <select class="account-card__type" [value]="account.type"
@@ -75,6 +64,14 @@
                                             <option value="bank">Bank</option>
                                             <option value="creditCard">Credit card</option>
                                         </select>
+                                        @if (account.isManual) {
+                                            <button class="account-card__action account-card__action--ghost" type="button"
+                                                [disabled]="store.importingAccountId() === account.id"
+                                                (click)="triggerImportStatement(account.id)">
+                                                <fa-icon [icon]="icons.import"></fa-icon>
+                                                {{ store.importingAccountId() === account.id ? 'Importing…' : 'Import OFX' }}
+                                            </button>
+                                        }
                                         <button class="account-card__action account-card__action--ghost" type="button"
                                             title="Delete account" (click)="openDeleteDialog(account)">
                                             <fa-icon [icon]="icons.delete"></fa-icon>

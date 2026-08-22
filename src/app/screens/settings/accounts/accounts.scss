@@ -360,15 +360,8 @@
   gap: 0.75rem;
 }
 
-.account-card__balance-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-  gap: 0.35rem;
-}
-
 .account-card__balance {
+  flex-shrink: 0;
   font-size: 1rem;
   font-weight: 700;
   color: var(--spearmint-ink);
@@ -376,15 +369,27 @@
 }
 
 .account-card__last-synced {
+  flex-shrink: 0;
   font-size: 0.72rem;
   color: var(--spearmint-accent);
   text-align: right;
 }
 
 .account-card__institution {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin: 0.1rem 0 0.6rem;
   font-size: 0.8rem;
   color: var(--spearmint-accent);
+}
+
+.account-card__institution-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-card__manual-tag {
@@ -402,6 +407,7 @@
 
 .account-card__row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
 }

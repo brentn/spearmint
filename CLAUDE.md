@@ -11,3 +11,9 @@ Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `read
 ### Domain docs
 
 Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root (created lazily as decisions get made). See `docs/agents/domain.md`.
+
+## Styling conventions
+
+**Minimum 16px `font-size` on form controls** (inputs, selects, textareas). Below that, iOS Safari
+auto-zooms the viewport on focus — see the "16px minimum" comments in `accounts.scss` for existing
+examples of the pattern (issue #26).

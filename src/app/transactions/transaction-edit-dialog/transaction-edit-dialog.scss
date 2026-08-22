@@ -82,7 +82,9 @@
   border: 1px solid var(--spearmint-border);
   border-radius: 0.6rem;
   padding: 0.55rem 0.7rem;
-  font-size: 0.95rem;
+  // 16px minimum: iOS Safari auto-zooms the viewport when a focused form control's
+  // computed font-size is below this.
+  font-size: 1rem;
   font-family: inherit;
   color: var(--spearmint-ink);
   background: var(--spearmint-bg);
