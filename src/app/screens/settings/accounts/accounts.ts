@@ -43,7 +43,8 @@ export class AccountsScreen {
   };
 
   protected readonly setupToken = signal('');
-  private readonly connectDialog = viewChild<ElementRef<HTMLDialogElement>>('connectDialog');
+  protected readonly addAccountMode = signal<'simplefin' | 'manual'>('simplefin');
+  private readonly addAccountDialog = viewChild<ElementRef<HTMLDialogElement>>('addAccountDialog');
   private readonly discoveredDialog = viewChild<ElementRef<HTMLDialogElement>>('discoveredDialog');
   private previousDiscoveredCount = 0;
 
@@ -51,7 +52,6 @@ export class AccountsScreen {
   protected readonly manualAccountName = signal('');
   protected readonly manualAccountType = signal<AccountType>('bank');
   protected readonly manualAccountPending = signal(false);
-  private readonly manualDialog = viewChild<ElementRef<HTMLDialogElement>>('manualDialog');
 
   constructor() {
     // Surfacing new discoveries as a dialog (rather than an inline list) only helps if it
@@ -69,24 +69,24 @@ export class AccountsScreen {
     });
   }
 
-  openConnectDialog(): void {
+  /** One dialog covers both ways to add an account, switched via addAccountMode — SimpleFIN
+   * connect is the default panel, with a small toggle to the manual-account panel and back. */
+  openAddAccountDialog(mode: 'simplefin' | 'manual' = 'simplefin'): void {
     this.store.connectError.set(null);
-    this.connectDialog()?.nativeElement.showModal();
-  }
-
-  closeConnectDialog(): void {
-    this.connectDialog()?.nativeElement.close();
-  }
-
-  openManualDialog(): void {
+    this.setupToken.set('');
     this.manualBankName.set('');
     this.manualAccountName.set('');
     this.manualAccountType.set('bank');
-    this.manualDialog()?.nativeElement.showModal();
+    this.addAccountMode.set(mode);
+    this.addAccountDialog()?.nativeElement.showModal();
   }
 
-  closeManualDialog(): void {
-    this.manualDialog()?.nativeElement.close();
+  closeAddAccountDialog(): void {
+    this.addAccountDialog()?.nativeElement.close();
+  }
+
+  switchAddAccountMode(mode: 'simplefin' | 'manual'): void {
+    this.addAccountMode.set(mode);
   }
 
   async createManualAccount(): Promise<void> {
@@ -98,7 +98,7 @@ export class AccountsScreen {
     this.manualAccountPending.set(true);
     try {
       await this.store.createManualAccount(bankName, accountName, this.manualAccountType());
-      this.closeManualDialog();
+      this.closeAddAccountDialog();
     } finally {
       this.manualAccountPending.set(false);
     }
@@ -120,7 +120,7 @@ export class AccountsScreen {
     await this.store.connectBank(token);
     if (!this.store.connectError()) {
       this.setupToken.set('');
-      this.closeConnectDialog();
+      this.closeAddAccountDialog();
     }
   }
 

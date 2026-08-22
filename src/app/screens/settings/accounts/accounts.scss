@@ -42,12 +42,6 @@
   cursor: pointer;
 }
 
-.accounts__add-button--secondary {
-  background: transparent;
-  border: 1px solid var(--spearmint-border);
-  color: var(--spearmint-accent);
-}
-
 @keyframes accounts-spin {
   to {
     transform: rotate(360deg);
@@ -121,15 +115,6 @@
   cursor: pointer;
 }
 
-.accounts__empty-link {
-  border: none;
-  background: transparent;
-  color: var(--spearmint-accent);
-  font-size: 0.9rem;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .accounts__section {
   margin-bottom: 2rem;
 }
@@ -199,6 +184,20 @@
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--spearmint-ink);
+}
+
+.accounts__dialog-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .accounts__dialog-close {

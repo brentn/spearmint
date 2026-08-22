@@ -5,12 +5,8 @@
             <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
             {{ syncService.syncing() ? 'Syncing…' : 'Sync' }}
         </button>
-        <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
+        <button class="accounts__add-button" type="button" title="Add account" (click)="openAddAccountDialog()">
             <fa-icon [icon]="icons.add"></fa-icon>
-        </button>
-        <button class="accounts__add-button accounts__add-button--secondary" type="button"
-            title="Add manual account" (click)="openManualDialog()">
-            <fa-icon [icon]="icons.manual"></fa-icon>
         </button>
     </app-settings-header>
 
@@ -36,12 +32,9 @@
             @if (store.accounts().length === 0 && syncService.discoveredAccounts().length === 0) {
                 <div class="accounts__empty">
                     <p class="accounts__empty-body">Connect a bank to start tracking accounts.</p>
-                    <button class="accounts__empty-button" type="button" (click)="openConnectDialog()">
+                    <button class="accounts__empty-button" type="button" (click)="openAddAccountDialog()">
                         <fa-icon [icon]="icons.add"></fa-icon>
                         Add Account
-                    </button>
-                    <button class="accounts__empty-link" type="button" (click)="openManualDialog()">
-                        Or add a manual account
                     </button>
                 </div>
             } @else {
@@ -117,25 +110,58 @@
         }
     </div>
 
-    <dialog #connectDialog class="accounts__dialog" (close)="closeConnectDialog()">
-        <h2 class="accounts__dialog-title">Connect a bank</h2>
-        <p class="accounts__body">
-            Paste the setup token from your SimpleFIN Bridge provider. Don't have one yet?
-            <a [href]="bridgeUrl" target="_blank" rel="noopener">Get one at SimpleFIN Bridge <fa-icon
-                    [icon]="icons.external"></fa-icon></a>
-        </p>
-        <div class="accounts__connect-form">
-            <input class="accounts__connect-input" type="text" placeholder="Setup token" [value]="setupToken()"
-                (input)="setupToken.set($any($event.target).value)" [disabled]="store.connecting()" />
-            <button class="accounts__connect-button" type="button"
-                [disabled]="store.connecting() || !setupToken().trim()" (click)="connect()">
-                {{ store.connecting() ? 'Connecting…' : 'Connect' }}
+    <dialog #addAccountDialog class="accounts__dialog" (close)="closeAddAccountDialog()">
+        @if (addAccountMode() === 'simplefin') {
+            <h2 class="accounts__dialog-title">Connect a bank</h2>
+            <p class="accounts__body">
+                Paste the setup token from your SimpleFIN Bridge provider. Don't have one yet?
+                <a [href]="bridgeUrl" target="_blank" rel="noopener">Get one at SimpleFIN Bridge <fa-icon
+                        [icon]="icons.external"></fa-icon></a>
+            </p>
+            <div class="accounts__connect-form">
+                <input class="accounts__connect-input" type="text" placeholder="Setup token" [value]="setupToken()"
+                    (input)="setupToken.set($any($event.target).value)" [disabled]="store.connecting()" />
+                <button class="accounts__connect-button" type="button"
+                    [disabled]="store.connecting() || !setupToken().trim()" (click)="connect()">
+                    {{ store.connecting() ? 'Connecting…' : 'Connect' }}
+                </button>
+            </div>
+            @if (store.connectError()) {
+                <p class="accounts__banner accounts__banner--error">{{ store.connectError() }}</p>
+            }
+            <button class="accounts__dialog-toggle" type="button" (click)="switchAddAccountMode('manual')">
+                <fa-icon [icon]="icons.manual"></fa-icon>
+                Add a manual account instead
             </button>
-        </div>
-        @if (store.connectError()) {
-            <p class="accounts__banner accounts__banner--error">{{ store.connectError() }}</p>
+        } @else {
+            <h2 class="accounts__dialog-title">Add a manual account</h2>
+            <p class="accounts__body">
+                For a bank SimpleFIN doesn't support yet. Transactions and balance come later, from an
+                imported statement.
+            </p>
+            <div class="accounts__manual-form">
+                <input class="accounts__connect-input" type="text" placeholder="Bank name" [value]="manualBankName()"
+                    (input)="manualBankName.set($any($event.target).value)" [disabled]="manualAccountPending()" />
+                <input class="accounts__connect-input" type="text" placeholder="Account name"
+                    [value]="manualAccountName()" (input)="manualAccountName.set($any($event.target).value)"
+                    [disabled]="manualAccountPending()" />
+                <select class="account-card__type" [value]="manualAccountType()"
+                    (change)="manualAccountType.set($any($event.target).value)" [disabled]="manualAccountPending()">
+                    <option value="bank">Bank</option>
+                    <option value="creditCard">Credit card</option>
+                </select>
+                <button class="accounts__connect-button" type="button"
+                    [disabled]="manualAccountPending() || !manualBankName().trim() || !manualAccountName().trim()"
+                    (click)="createManualAccount()">
+                    {{ manualAccountPending() ? 'Creating…' : 'Create' }}
+                </button>
+            </div>
+            <button class="accounts__dialog-toggle" type="button" (click)="switchAddAccountMode('simplefin')">
+                <fa-icon [icon]="icons.add"></fa-icon>
+                Connect via SimpleFIN instead
+            </button>
         }
-        <button class="accounts__dialog-close" type="button" (click)="closeConnectDialog()">Cancel</button>
+        <button class="accounts__dialog-close" type="button" (click)="closeAddAccountDialog()">Cancel</button>
     </dialog>
 
     <dialog #discoveredDialog class="accounts__dialog" (close)="closeDiscoveredDialog()">
@@ -168,31 +194,5 @@
             }
         </ul>
         <button class="accounts__dialog-close" type="button" (click)="closeDiscoveredDialog()">Close</button>
-    </dialog>
-
-    <dialog #manualDialog class="accounts__dialog" (close)="closeManualDialog()">
-        <h2 class="accounts__dialog-title">Add a manual account</h2>
-        <p class="accounts__body">
-            For a bank SimpleFIN doesn't support yet. Transactions and balance come later, from an
-            imported statement.
-        </p>
-        <div class="accounts__manual-form">
-            <input class="accounts__connect-input" type="text" placeholder="Bank name" [value]="manualBankName()"
-                (input)="manualBankName.set($any($event.target).value)" [disabled]="manualAccountPending()" />
-            <input class="accounts__connect-input" type="text" placeholder="Account name"
-                [value]="manualAccountName()" (input)="manualAccountName.set($any($event.target).value)"
-                [disabled]="manualAccountPending()" />
-            <select class="account-card__type" [value]="manualAccountType()"
-                (change)="manualAccountType.set($any($event.target).value)" [disabled]="manualAccountPending()">
-                <option value="bank">Bank</option>
-                <option value="creditCard">Credit card</option>
-            </select>
-            <button class="accounts__connect-button" type="button"
-                [disabled]="manualAccountPending() || !manualBankName().trim() || !manualAccountName().trim()"
-                (click)="createManualAccount()">
-                {{ manualAccountPending() ? 'Creating…' : 'Create' }}
-            </button>
-        </div>
-        <button class="accounts__dialog-close" type="button" (click)="closeManualDialog()">Cancel</button>
     </dialog>
 </div>
