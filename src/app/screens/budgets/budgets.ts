@@ -4,12 +4,14 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faChevronLeft, faChevronRight, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
 import { BudgetsStore } from '../../budgets/budgets.store';
+import { FlowProgress } from '../../budgets/flow-progress/flow-progress';
+import { FlowProgressBar } from '../../budgets/flow-progress/flow-progress-bar';
 import { isYearMonth } from '../../budgets/period.util';
 import type { CategoryType } from '../../data/models';
 
 @Component({
   selector: 'app-budgets',
-  imports: [FaIconComponent, DecimalPipe, BudgetRow],
+  imports: [FaIconComponent, DecimalPipe, BudgetRow, FlowProgress, FlowProgressBar],
   templateUrl: './budgets.html',
   styleUrl: './budgets.scss',
   providers: [BudgetsStore],
@@ -41,7 +43,9 @@ export class Budgets {
     });
   }
 
-  protected readonly incomeRows = computed(() => this.store.rows().filter((r) => r.categoryType === 'income'));
+  /** Hides a sole implied top-level Income rollup row when appropriate (issue #42) — see
+   * BudgetsStore.incomeSectionRows. */
+  protected readonly incomeRows = computed(() => this.store.incomeSectionRows());
   protected readonly expenseRows = computed(() => this.store.rows().filter((r) => r.categoryType !== 'income'));
   protected readonly visibleExpenseRows = computed(() =>
     this.expenseRows().filter((r) => this.showChildBudgets() || !r.parentCategoryId),
@@ -50,15 +54,12 @@ export class Budgets {
 
   /** Cash-flow box figures (issue #21) — budgeted totals come from top-level rows only,
    * mirroring aggregate()'s own no-double-counting rule. */
-  protected readonly cashFlowData = computed(() => {
-    const topLevelIncome = this.incomeRows().filter((r) => r.parentCategoryId === null);
-    return {
-      earned: this.store.aggregate().earned,
-      spent: this.store.aggregate().spent,
-      budgetedIncome: topLevelIncome.reduce((sum, r) => sum + r.available, 0),
-      budgetedExpenses: this.store.aggregate().totalBudget,
-    };
-  });
+  protected readonly cashFlowData = computed(() => ({
+    earned: this.store.aggregate().earned,
+    spent: this.store.aggregate().spent,
+    budgetedIncome: this.store.aggregate().budgetedIncome,
+    budgetedExpenses: this.store.aggregate().totalBudget,
+  }));
 
   /** How far actual earned/spent overshoots what was budgeted — rendered as a grey extension
    * stacked on top of the budgeted bar (issue #21), zero whenever actual stays within budget. */

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Budget, Category, Transaction } from '../data/models';
 import {
+  buildFlowProgressRow,
   buildSignedActualsMap,
   computeBudgetStatus,
+  computeUncategorizedTotals,
   getBudgetForExactPeriod,
   getCombinedActualAmount,
   getCombinedBudgetAmounts,
@@ -297,6 +299,87 @@ describe('computeBudgetStatus', () => {
 
   it('barPercent clamps to 1 even when percent exceeds it', () => {
     expect(computeBudgetStatus('expense', 138, 100, 0).barPercent).toBe(1);
+  });
+});
+
+describe('computeUncategorizedTotals', () => {
+  it('sums a positive-amount uncategorized transaction as income', () => {
+    const transactions = [txn({ categoryId: null, amount: 200, date: '2026-08-05' })];
+    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 200, expenses: 0 });
+  });
+
+  it('sums a negative-amount uncategorized transaction as a positive expense', () => {
+    const transactions = [txn({ categoryId: null, amount: -75, date: '2026-08-05' })];
+    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 75 });
+  });
+
+  it('excludes a categorized transaction', () => {
+    const transactions = [txn({ categoryId: 'cat-1', amount: -75, date: '2026-08-05' })];
+    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 0 });
+  });
+
+  it('excludes an uncategorized transaction flagged excludeFromBudget', () => {
+    const transactions = [txn({ categoryId: null, amount: -75, date: '2026-08-05', excludeFromBudget: true })];
+    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 0 });
+  });
+
+  it('excludes a transaction outside the given period', () => {
+    const transactions = [txn({ categoryId: null, amount: -75, date: '2026-07-05' })];
+    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 0 });
+  });
+
+  it('sums multiple uncategorized transactions of both signs', () => {
+    const transactions = [
+      txn({ id: 't1', categoryId: null, amount: 500, date: '2026-08-01' }),
+      txn({ id: 't2', categoryId: null, amount: -30, date: '2026-08-10' }),
+      txn({ id: 't3', categoryId: null, amount: -20, date: '2026-08-11' }),
+    ];
+    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 500, expenses: 50 });
+  });
+});
+
+describe('buildFlowProgressRow', () => {
+  it('combines categorized and uncategorized actuals into totalActual', () => {
+    const row = buildFlowProgressRow('expense', 300, 50, 500);
+    expect(row.totalActual).toBe(350);
+    expect(row.barPercent).toBeCloseTo(0.7, 5);
+  });
+
+  it('income is always the "info" state regardless of percent', () => {
+    const under = buildFlowProgressRow('income', 100, 0, 4000);
+    const over = buildFlowProgressRow('income', 5000, 0, 4000);
+    expect(under.state).toBe('info');
+    expect(over.state).toBe('info');
+  });
+
+  it('expenses use the normal/warning/over three-state against the combined actual', () => {
+    expect(buildFlowProgressRow('expense', 400, 0, 500).state).toBe('normal'); // 80%
+    expect(buildFlowProgressRow('expense', 400, 60, 500).state).toBe('warning'); // 92%
+    expect(buildFlowProgressRow('expense', 400, 200, 500).state).toBe('over'); // 120%
+  });
+
+  it('a zero budget target forces a full-width bar', () => {
+    const row = buildFlowProgressRow('expense', 40, 0, 0);
+    expect(row.zeroBudget).toBe(true);
+    expect(row.barPercent).toBe(1);
+  });
+
+  it('a zero-budget expense row with any spend is "over" (red) — matches the existing $0-budget row convention (issue #21)', () => {
+    expect(buildFlowProgressRow('expense', 40, 0, 0).state).toBe('over');
+  });
+
+  it('a zero-budget expense row with no spend at all is "normal" (green), not "over"', () => {
+    expect(buildFlowProgressRow('expense', 0, 0, 0).state).toBe('normal');
+  });
+
+  it('a zero-budget income row is still "info" (blue), not routed through normal/warning/over', () => {
+    expect(buildFlowProgressRow('income', 40, 0, 0).state).toBe('info');
+  });
+
+  it('a non-zero budget clamps barPercent to 1 even over 100%', () => {
+    const row = buildFlowProgressRow('expense', 600, 0, 500);
+    expect(row.zeroBudget).toBe(false);
+    expect(row.barPercent).toBe(1);
   });
 });
 

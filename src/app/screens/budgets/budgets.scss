@@ -205,6 +205,8 @@
 }
 
 // ---------- progress-this-month card ----------
+// The bars/today-tick themselves live in the shared FlowProgress component
+// (../../budgets/flow-progress) — this label is this card's own heading.
 .budgets__progress-label {
   font-size: 0.75rem;
   font-weight: 700;
@@ -212,30 +214,6 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   margin-bottom: 1.4rem;
-}
-
-.budgets__progress-track {
-  position: relative;
-}
-
-.budgets__today-tick {
-  position: absolute;
-  top: -0.4rem;
-  width: 2px;
-  height: 1rem;
-  background: var(--spearmint-ink);
-  transform: translateX(-50%);
-}
-
-.budgets__today-label {
-  position: absolute;
-  top: 0.9rem;
-  left: 0;
-  transform: translateX(-50%);
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--spearmint-ink);
-  white-space: nowrap;
 }
 
 // ---------- cash-flow card ----------

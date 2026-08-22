@@ -46,22 +46,11 @@
     } @else {
       <div class="budgets__card">
         <div class="budgets__progress-label">Progress {{ store.monthPhrase() }}</div>
-        <div class="budgets__progress-track">
-          <div class="bar-track bar-track--thin">
-            <div
-              class="bar-fill"
-              [class.bar-fill--normal]="store.aggregate().overallState === 'normal'"
-              [class.bar-fill--warning]="store.aggregate().overallState === 'warning'"
-              [class.bar-fill--over]="store.aggregate().overallState === 'over'"
-              [style.width.%]="store.aggregate().overallBarPercent * 100"
-            ></div>
-          </div>
-          @if (store.isCurrentPeriod()) {
-            <div class="budgets__today-tick" [style.left.%]="store.aggregate().todayPercent">
-              <span class="budgets__today-label">&#9650; Today</span>
-            </div>
-          }
-        </div>
+        <app-flow-progress
+          [progress]="store.flowProgress()"
+          [showTodayTick]="store.isCurrentPeriod()"
+          [todayPercent]="store.aggregate().todayPercent"
+        />
       </div>
 
       <div class="budgets__card">
@@ -139,6 +128,7 @@
       }
 
       <div class="budgets__card">
+        <app-flow-progress-bar [row]="store.flowProgress().expenses" />
         <div class="budgets__section-header">
           <h2 class="budgets__section-title">Spending by category</h2>
           @if (hasChildExpenseBudgets()) {

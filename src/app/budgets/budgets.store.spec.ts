@@ -574,6 +574,121 @@ describe('BudgetsStore', () => {
     });
   });
 
+  describe('flowProgress (issue #42)', () => {
+    it('includes uncategorized transactions in both totals via the sign heuristic', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'groceries', name: 'Groceries', type: 'expense' }),
+        seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }),
+      ]);
+      await fakeDb['budgets'].bulkInsert([
+        seedBudget({ id: 'b-groceries', categoryId: 'groceries', amount: 500 }),
+        seedBudget({ id: 'b-paycheck', categoryId: 'paycheck', amount: 4000 }),
+      ]);
+      await fakeDb['transactions'].bulkInsert([
+        seedTransaction({ id: 't-groceries', categoryId: 'groceries', amount: -300 }),
+        seedTransaction({ id: 't-paycheck', categoryId: 'paycheck', amount: 3800 }),
+        seedTransaction({ id: 't-uncategorized-expense', categoryId: null, amount: -40 }),
+        seedTransaction({ id: 't-uncategorized-income', categoryId: null, amount: 100 }),
+      ]);
+
+      await store.refresh();
+
+      const progress = store.flowProgress();
+      expect(progress.expenses.categorizedActual).toBe(300);
+      expect(progress.expenses.uncategorizedActual).toBe(40);
+      expect(progress.expenses.totalActual).toBe(340);
+      expect(progress.income.categorizedActual).toBe(3800);
+      expect(progress.income.uncategorizedActual).toBe(100);
+      expect(progress.income.totalActual).toBe(3900);
+    });
+
+    it('income is always the "info" (blue) state, unaffected by percent', async () => {
+      await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }));
+      await fakeDb['budgets'].insert(seedBudget({ categoryId: 'paycheck', amount: 4000 }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'paycheck', amount: 100 }));
+
+      await store.refresh();
+
+      expect(store.flowProgress().income.state).toBe('info');
+    });
+
+    it('excludes an excludeFromBudget-flagged uncategorized transaction', async () => {
+      await fakeDb['transactions'].insert(
+        seedTransaction({ categoryId: null, amount: -500, excludeFromBudget: true }),
+      );
+
+      await store.refresh();
+
+      expect(store.flowProgress().expenses.uncategorizedActual).toBe(0);
+    });
+
+    it('a zero budget target renders a full-width bar', async () => {
+      await fakeDb['categories'].insert(seedCategory({ id: 'dining', name: 'Dining' }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'dining', amount: -40 }));
+
+      await store.refresh();
+
+      // Dining has no explicit budget anywhere, so totalBudget/budgetedIncome are both 0.
+      expect(store.flowProgress().expenses.zeroBudget).toBe(true);
+      expect(store.flowProgress().expenses.barPercent).toBe(1);
+      expect(store.flowProgress().income.zeroBudget).toBe(true);
+      expect(store.flowProgress().income.barPercent).toBe(1);
+    });
+  });
+
+  describe('incomeSectionRows (issue #42)', () => {
+    it('hides a sole implied top-level Income row when there is exactly one top-level income category', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'income', name: 'Income', type: 'income' }),
+        seedCategory({ id: 'salary', name: 'Salary', parentCategoryId: 'income', type: 'income' }),
+      ]);
+      await fakeDb['budgets'].insert(seedBudget({ id: 'b-salary', categoryId: 'salary', amount: 4000 }));
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'salary', amount: 4000 }));
+
+      await store.refresh();
+
+      const impliedTopLevel = store.rows().find((r) => r.categoryId === 'income');
+      expect(impliedTopLevel?.implied).toBe(true);
+      expect(store.incomeSectionRows().map((r) => r.categoryId)).toEqual(['salary']);
+    });
+
+    it('keeps an implied top-level Income row when 2+ top-level income categories exist', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'income', name: 'Income', type: 'income' }),
+        seedCategory({ id: 'salary', name: 'Salary', parentCategoryId: 'income', type: 'income' }),
+        seedCategory({ id: 'interest', name: 'Interest', type: 'income' }),
+      ]);
+      await fakeDb['budgets'].bulkInsert([
+        seedBudget({ id: 'b-salary', categoryId: 'salary', amount: 4000 }),
+        seedBudget({ id: 'b-interest', categoryId: 'interest', amount: 50 }),
+      ]);
+      await fakeDb['transactions'].bulkInsert([
+        seedTransaction({ id: 't-salary', categoryId: 'salary', amount: 4000 }),
+        seedTransaction({ id: 't-interest', categoryId: 'interest', amount: 50 }),
+      ]);
+
+      await store.refresh();
+
+      expect(store.incomeSectionRows().map((r) => r.categoryId).sort()).toEqual(['income', 'interest', 'salary'].sort());
+    });
+
+    it('keeps a top-level Income row that carries an explicit (non-implied) budget of its own', async () => {
+      await fakeDb['categories'].bulkInsert([
+        seedCategory({ id: 'income', name: 'Income', type: 'income' }),
+        seedCategory({ id: 'salary', name: 'Salary', parentCategoryId: 'income', type: 'income' }),
+      ]);
+      await fakeDb['budgets'].bulkInsert([
+        seedBudget({ id: 'b-income', categoryId: 'income', amount: 100 }),
+        seedBudget({ id: 'b-salary', categoryId: 'salary', amount: 4000 }),
+      ]);
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'salary', amount: 4000 }));
+
+      await store.refresh();
+
+      expect(store.incomeSectionRows().map((r) => r.categoryId).sort()).toEqual(['income', 'salary']);
+    });
+  });
+
   describe('income bar color before the final week (issue #21)', () => {
     afterEach(() => {
       vi.useRealTimers();

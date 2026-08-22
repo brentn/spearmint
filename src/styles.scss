@@ -91,3 +91,24 @@ body {
   color: var(--spearmint-ink);
 }
 
+// Split-fill primitives for the income/expenses progress widget (issue #42): a categorized
+// solid segment and a dim/crosshatched uncategorized segment, sized by flex-grow so their
+// relative widths track the two dollar amounts directly with no percentage math required.
+// Shares .bar-fill's positioning/geometry, adding only the flex layout for its two segments.
+.bar-fill-split {
+  @extend .bar-fill;
+  display: flex;
+  overflow: hidden;
+}
+
+.bar-segment {
+  height: 100%;
+  flex-basis: 0;
+  flex-shrink: 0;
+}
+
+.bar-segment--uncategorized {
+  opacity: 0.55;
+  background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.45) 0 4px, transparent 4px 8px);
+}
+

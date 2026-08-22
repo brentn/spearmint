@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+.flow-progress-bar {
+  &:not(:last-child) {
+    margin-bottom: 0.85rem;
+  }
+}
+
+.flow-progress-bar__text {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--spearmint-muted);
+}

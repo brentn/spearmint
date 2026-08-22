@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Category } from '../../data/models';
+import type { FlowProgressRow } from '../../budgets/budget-engine.util';
 import { type BudgetRowViewModel, type BudgetsAggregate, BudgetsStore } from '../../budgets/budgets.store';
 import { stubDialogMethods } from '../../testing/stub-dialog-methods';
 import { Budgets } from './budgets';
@@ -43,6 +44,17 @@ const emptyAggregate: BudgetsAggregate = {
   earned: 0,
   spent: 0,
   cashFlowNet: 0,
+  budgetedIncome: 0,
+};
+
+const emptyFlowProgressRow: FlowProgressRow = {
+  categorizedActual: 0,
+  uncategorizedActual: 0,
+  totalActual: 0,
+  budget: 0,
+  barPercent: 0,
+  state: 'normal',
+  zeroBudget: true,
 };
 
 /** Component-level test for the toggle only — row-shape/aggregate math is already covered by
@@ -52,6 +64,8 @@ class FakeBudgetsStore {
   readonly error = signal<string | null>(null);
   readonly rows = signal<BudgetRowViewModel[]>([]);
   readonly aggregate = signal<BudgetsAggregate>(emptyAggregate);
+  readonly incomeSectionRows = signal<BudgetRowViewModel[]>([]);
+  readonly flowProgress = signal({ income: emptyFlowProgressRow, expenses: emptyFlowProgressRow });
   readonly isCurrentPeriod = signal(true);
   readonly canGoToPreviousMonth = signal(true);
   readonly canGoToNextMonth = signal(false);
@@ -143,7 +157,7 @@ describe('Budgets', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[aria-label="Add a budget"]')).toBeNull();
-    expect(root.querySelector('.budgets__today-tick')).toBeNull();
+    expect(root.querySelector('.flow-progress__today-tick')).toBeNull();
   });
 
   it('opens the add-budget dialog from the hero "+" button, closed by default', () => {

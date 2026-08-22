@@ -60,6 +60,7 @@ function emptyAggregate(): BudgetsAggregate {
     earned: 0,
     spent: 0,
     cashFlowNet: 0,
+    budgetedIncome: 0,
   };
 }
 

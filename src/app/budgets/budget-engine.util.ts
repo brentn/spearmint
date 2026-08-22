@@ -215,6 +215,91 @@ export function computeBudgetStatus(
   return { percent, barPercent, state };
 }
 
+export interface UncategorizedTotals {
+  /** Sum of uncategorized (`categoryId === null`) positive-amount transactions for the period. */
+  income: number;
+  /** Sum of uncategorized negative-amount transactions for the period, negated to a positive spend. */
+  expenses: number;
+}
+
+/**
+ * Sums uncategorized transactions for `period` via a sign-of-amount heuristic — positive
+ * counts as income, negative as expense — skipping any flagged `excludeFromBudget`. Scoped to
+ * the income/expenses progress widget's two totals only (issue #42); every other budget total
+ * in the app (row spend, `BudgetsAggregate.totalSpent`/`earned`) excludes uncategorized
+ * transactions entirely (see ADR-0018).
+ */
+export function computeUncategorizedTotals(transactions: Transaction[], period: YearMonth): UncategorizedTotals {
+  let income = 0;
+  let expenses = 0;
+
+  for (const transaction of transactions) {
+    if (
+      transaction.categoryId !== null ||
+      transaction.excludeFromBudget ||
+      transaction.date.slice(0, 7) !== period
+    ) {
+      continue;
+    }
+    if (transaction.amount > 0) {
+      income += transaction.amount;
+    } else if (transaction.amount < 0) {
+      expenses += -transaction.amount;
+    }
+  }
+
+  return { income, expenses };
+}
+
+export interface FlowProgressRow {
+  /** Categorized actual — already excludes uncategorized transactions (unchanged elsewhere). */
+  categorizedActual: number;
+  /** Uncategorized actual, via computeUncategorizedTotals' sign heuristic. */
+  uncategorizedActual: number;
+  /** categorizedActual + uncategorizedActual — the bar's combined fill total. */
+  totalActual: number;
+  budget: number;
+  /** Fraction of the track this row's bar should fill — 1 (full width) when `budget` is 0. */
+  barPercent: number;
+  /** Income is always 'info' (blue) regardless of percent — a fixed color, not a judgment on
+   * progress toward target (unlike the per-category income row's pre-final-week 'info' state). */
+  state: BudgetState;
+  /** True when `budget` is 0 — the view renders actual-only text instead of "$actual of $budget". */
+  zeroBudget: boolean;
+}
+
+export interface FlowProgressViewModel {
+  income: FlowProgressRow;
+  expenses: FlowProgressRow;
+}
+
+/**
+ * Builds one row (income or expenses) of the income/expenses progress widget (issue #42).
+ * Income always renders blue ('info'); expenses use computeBudgetStatus's normal/warning/over
+ * three-state, both against the *combined* (categorized + uncategorized) actual so the bar's
+ * color matches what it visually fills.
+ */
+export function buildFlowProgressRow(
+  categoryType: 'income' | 'expense',
+  categorizedActual: number,
+  uncategorizedActual: number,
+  budget: number,
+): FlowProgressRow {
+  const totalActual = categorizedActual + uncategorizedActual;
+  const zeroBudget = budget === 0;
+  const status = computeBudgetStatus(categoryType, totalActual, budget, 0);
+
+  return {
+    categorizedActual,
+    uncategorizedActual,
+    totalActual,
+    budget,
+    barPercent: zeroBudget ? 1 : status.barPercent,
+    state: categoryType === 'income' ? 'info' : status.state,
+    zeroBudget,
+  };
+}
+
 export interface RecomputeRolloversResult {
   /** Every budget after reconciliation — existing rows (possibly mutated) plus new ones. */
   budgets: Budget[];

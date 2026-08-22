@@ -88,6 +88,10 @@
         }
       </div>
 
+      <div class="overview__card">
+        <app-flow-progress [progress]="budgetsStore.flowProgress()" />
+      </div>
+
       @if (uncategorizedPreview().length > 0) {
         <div class="overview__card">
           <div class="overview__section-header">

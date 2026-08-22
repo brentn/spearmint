@@ -6,8 +6,11 @@ import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
 import { TransactionMutationService } from '../transactions/transaction-mutation.service';
 import {
   type BudgetState,
+  type FlowProgressViewModel,
+  buildFlowProgressRow,
   buildSignedActualsMap,
   computeBudgetStatus,
+  computeUncategorizedTotals,
   getCombinedActualAmount,
   getCombinedBudgetAmounts,
   getDescendantCategories,
@@ -67,6 +70,9 @@ export interface BudgetsAggregate {
   earned: number;
   spent: number;
   cashFlowNet: number;
+  /** Sum of top-level income rows' `available` (real or implied) — the income progress
+   * widget's/cash-flow box's budget target, mirroring totalBudget's expense-side scope. */
+  budgetedIncome: number;
 }
 
 /**
@@ -128,6 +134,33 @@ export class BudgetsStore {
   readonly aggregate = computed<BudgetsAggregate>(() =>
     this.buildAggregate(this.rows(), this.transactions(), this.categories(), this.period(), this.monthPhrase()),
   );
+
+  /** Income/expenses progress widget view model (issue #42) — the one place in the app where
+   * an uncategorized transaction counts toward a budget total (see ADR-0018). */
+  readonly flowProgress = computed<FlowProgressViewModel>(() => {
+    const uncategorized = computeUncategorizedTotals(this.transactions(), this.period());
+    const aggregate = this.aggregate();
+    return {
+      income: buildFlowProgressRow('income', aggregate.earned, uncategorized.income, aggregate.budgetedIncome),
+      expenses: buildFlowProgressRow('expense', aggregate.spent, uncategorized.expenses, aggregate.totalBudget),
+    };
+  });
+
+  /** Rows for the Budgets screen's dedicated "Income" section list — hides the sole implied
+   * top-level Income rollup row when there's exactly one top-level income category, since with
+   * only one such category the rollup just repeats its own children with no comparison value
+   * (issue #42). Kept whenever 2+ top-level income categories exist, where the rollup lets
+   * each source's own total be compared against the others. */
+  readonly incomeSectionRows = computed<BudgetRowViewModel[]>(() => {
+    const rows = this.rows().filter((row) => row.categoryType === 'income');
+    const topLevelIncomeCategoryCount = this.categories().filter(
+      (category) => category.type === 'income' && category.parentCategoryId === null,
+    ).length;
+    if (topLevelIncomeCategoryCount !== 1) {
+      return rows;
+    }
+    return rows.filter((row) => !(row.parentCategoryId === null && row.implied));
+  });
 
   constructor() {
     effect(() => {
@@ -330,9 +363,11 @@ export class BudgetsStore {
     // presentational over this same row set.
     const topLevelRows = rows.filter((row) => row.parentCategoryId === null);
     const expenseRows = topLevelRows.filter((row) => row.categoryType !== 'income');
+    const topLevelIncomeRows = topLevelRows.filter((row) => row.categoryType === 'income');
 
     const totalSpent = expenseRows.reduce((sum, row) => sum + row.spent, 0);
     const totalBudget = expenseRows.reduce((sum, row) => sum + row.available, 0);
+    const budgetedIncome = topLevelIncomeRows.reduce((sum, row) => sum + row.available, 0);
     const remaining = totalBudget - totalSpent;
     const overallStatus = computeBudgetStatus('expense', totalSpent, totalBudget, 0);
     // Deliberately not derived from `rows`/incomeRows (issue #21): a wholly unbudgeted income
@@ -360,6 +395,7 @@ export class BudgetsStore {
       earned,
       spent: totalSpent,
       cashFlowNet: earned - totalSpent,
+      budgetedIncome,
     };
   }
 }

@@ -1,0 +1,18 @@
+<div class="flow-progress-bar">
+  <div class="bar-track bar-track--thin">
+    <div class="bar-fill-split" [style.width.%]="row().barPercent * 100">
+      <div [class]="'bar-segment bar-fill--' + row().state" [style.flex-grow]="segments().categorized"></div>
+      <div
+        [class]="'bar-segment bar-segment--uncategorized bar-fill--' + row().state"
+        [style.flex-grow]="segments().uncategorized"
+      ></div>
+    </div>
+  </div>
+  <div class="flow-progress-bar__text">
+    @if (row().zeroBudget) {
+      ${{ row().totalActual | number: '1.0-0' }}
+    } @else {
+      ${{ row().totalActual | number: '1.0-0' }} of ${{ row().budget | number: '1.0-0' }}
+    }
+  </div>
+</div>

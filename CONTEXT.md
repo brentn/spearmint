@@ -24,6 +24,13 @@ _Avoid_: Offline account, unlinked account
 Importing an OFX, QFX, or QBO statement file into a Manual Account. Transactions upsert by the file's `FITID`, and the account's balance updates from the file's ledger balance, the same way a SimpleFIN sync would.
 _Avoid_: Bank export, statement upload
 
+**Uncategorized**:
+A `Transaction` with `categoryId === null`. Every budget total in the app excludes these entirely
+(row spend, `BudgetsAggregate.totalSpent`/`earned`) except the Overview/Budgets-hero income/expenses
+progress widget's two totals, which include them via a sign-of-amount heuristic (positive → income,
+negative → expense), skipping any flagged `excludeFromBudget`. See [ADR-0018](docs/adr/0018-uncategorized-in-flow-progress.md).
+_Avoid_: Unassigned, uncoded
+
 **Category**:
 A budgeting bucket transactions and budgets attach to, two levels deep (parent/child), typed as `CategoryType`: `expense`, `income`, or `transfer`. Income is a first-class category type, not a sign convention on expense categories.
 _Avoid_: Tag, label

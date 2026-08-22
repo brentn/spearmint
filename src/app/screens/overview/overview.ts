@@ -5,6 +5,7 @@ import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faBell, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import { BudgetRow } from '../../budgets/budget-row/budget-row';
 import { type BudgetRowViewModel, BudgetsStore } from '../../budgets/budgets.store';
+import { FlowProgress } from '../../budgets/flow-progress/flow-progress';
 import type { Account, AccountType } from '../../data/models';
 import { OverviewStore } from './overview.store';
 
@@ -21,7 +22,7 @@ const BUDGETS_TO_WATCH_LIMIT = 3;
 
 @Component({
   selector: 'app-overview',
-  imports: [RouterLink, FaIconComponent, DecimalPipe, BudgetRow],
+  imports: [RouterLink, FaIconComponent, DecimalPipe, BudgetRow, FlowProgress],
   templateUrl: './overview.html',
   styleUrl: './overview.scss',
   providers: [OverviewStore, BudgetsStore],
