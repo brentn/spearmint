@@ -21,3 +21,37 @@
   // true bottom edge instead of it sitting mid-screen right under the content.
   flex: 1 0 auto;
 }
+
+.rotate-overlay {
+  display: none;
+}
+
+// manifest.json's "orientation": "portrait" locks rotation on Android standalone installs, but
+// iOS Safari ignores it — this is the phone-sized-landscape fallback (issue #41). max-height
+// keeps it from firing on tablets/desktop, which are legitimately used in landscape.
+@media (orientation: landscape) and (max-height: 500px) {
+  .rotate-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    // Above CategoryPicker's sheet (400), the highest in the app's existing z-index scale — see
+    // transaction-edit-dialog.scss's comment for the rest of the ladder (nav-shell 100, dialog 300).
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    background: var(--spearmint-bg);
+    color: var(--spearmint-ink);
+  }
+
+  .rotate-overlay__message {
+    font-size: 1.1rem;
+    font-weight: 700;
+    max-width: 24rem;
+  }
+
+  .app-root-content {
+    display: none;
+  }
+}

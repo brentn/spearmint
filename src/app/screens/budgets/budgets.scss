@@ -254,6 +254,14 @@
   margin-left: 0.75rem;
 }
 
+// Same gap as the Earned/Spent bars' own separation (the container's flex `gap` above), so the
+// in/out pair reads with identical spacing (issue #41) despite living inside one group.
+.budgets__flow-bar-pair {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+}
+
 .budgets__flow-bar-stack {
   display: flex;
   flex-direction: column;
@@ -283,23 +291,25 @@
   box-sizing: border-box;
 }
 
+// Blue for incoming, green for outgoing (issue #41) — matched by the budgeted-income/expense
+// pair below so each color reads consistently across both bar pairs.
 .budgets__flow-bar--earned {
-  background: var(--spearmint-primary);
+  background: var(--spearmint-accent);
 }
 
 .budgets__flow-bar--spent {
-  background: var(--spearmint-accent);
+  background: var(--spearmint-primary);
 }
 
 // A budgeted bar is dimmed (matching the implied-budget 50%-opacity treatment elsewhere on this
 // screen) so its own color still reads once the grey overage segment stacks on top of it.
 .budgets__flow-bar--budgeted-income {
-  background: var(--spearmint-primary);
+  background: var(--spearmint-accent);
   opacity: 0.4;
 }
 
 .budgets__flow-bar--budgeted-expense {
-  background: var(--spearmint-accent);
+  background: var(--spearmint-primary);
   opacity: 0.4;
 }
 
