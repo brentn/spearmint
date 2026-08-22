@@ -9,7 +9,9 @@ export interface OfxTransaction {
   fitid: string;
   datePosted: DateOnly;
   amount: number;
-  /** NAME, falling back to MEMO — see ofx-parser.util.spec.ts for the fallback cases. */
+  /** NAME, unless MEMO is a fuller version of the same text (e.g. NAME truncated with a
+   * trailing "..." and MEMO carrying the untruncated description), in which case MEMO.
+   * See ofx-parser.util.spec.ts for the fallback cases. */
   name: string;
 }
 
@@ -145,6 +147,21 @@ function parseOfxAmount(raw: string, fieldLabel: string): number {
   return Math.round(parsed * 100) / 100;
 }
 
+/** Some banks truncate NAME (often with a trailing "...") while MEMO carries the same
+ * text in full — e.g. NAME "Interac eTransfer Outgoing To..." vs. MEMO "Interac eTransfer
+ * Outgoing To: George Jacob". Detected structurally (MEMO extends NAME, stripped of its
+ * truncation dots) rather than by trusting the "..." marker alone, since not every bank
+ * marks truncation. Falls back to whichever field is present when only one is. */
+function resolveTransactionName(name: string | null, memo: string | null): string {
+  if (name && memo && memo.length > name.length) {
+    const truncatedName = name.replace(/\.+$/, '');
+    if (memo.startsWith(truncatedName)) {
+      return memo;
+    }
+  }
+  return name ?? memo ?? '';
+}
+
 function parseTransactionNode(node: OfxNode): OfxTransaction {
   const fitid = getDirectValue(node, 'FITID');
   const datePosted = getDirectValue(node, 'DTPOSTED');
@@ -154,7 +171,7 @@ function parseTransactionNode(node: OfxNode): OfxTransaction {
       'This file has a transaction missing a required field (FITID, DTPOSTED, or TRNAMT).'
     );
   }
-  const name = getDirectValue(node, 'NAME') ?? getDirectValue(node, 'MEMO') ?? '';
+  const name = resolveTransactionName(getDirectValue(node, 'NAME'), getDirectValue(node, 'MEMO'));
 
   return {
     fitid,

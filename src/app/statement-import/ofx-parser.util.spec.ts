@@ -76,6 +76,7 @@ const XML_OFX = `<?xml version="1.0" encoding="UTF-8"?>
             <TRNAMT>-12.34</TRNAMT>
             <FITID>xml-1</FITID>
             <NAME>Grocery Store</NAME>
+            <MEMO>Card purchase</MEMO>
           </STMTTRN>
         </BANKTRANLIST>
         <LEDGERBAL>
@@ -108,18 +109,32 @@ describe('parseOfxStatement', () => {
     expect(result.ledgerBalance).toEqual({ amount: 500, dateAsOf: '2026-08-15' });
   });
 
-  it('falls back to MEMO when NAME is absent', () => {
-    const result = parseOfxStatement(SGML_OFX);
+  it('falls back to NAME when MEMO is absent', () => {
+    const noMemo = SGML_OFX.replace('<MEMO>Card purchase\n', '');
+    const result = parseOfxStatement(noMemo);
 
-    expect(result.transactions[1].name).toBe('Payroll deposit');
+    expect(result.transactions[0].name).toBe('Coffee Shop');
   });
 
-  it('decodes basic XML entities in a transaction name', () => {
-    const withEntity = SGML_OFX.replace('<NAME>Coffee Shop', '<NAME>AT&amp;T Coffee Shop');
+  it('falls back to MEMO when it presents a fuller version of a truncated NAME', () => {
+    // Mirrors a real bank export: NAME cut off mid-word with a trailing "...", MEMO carrying
+    // the same description in full.
+    const truncated = SGML_OFX.replace('<NAME>Coffee Shop', '<NAME>Interac eTransfer Outgoing To...').replace(
+      '<MEMO>Card purchase',
+      '<MEMO>Interac eTransfer Outgoing To: George Jacob'
+    );
+
+    const result = parseOfxStatement(truncated);
+
+    expect(result.transactions[0].name).toBe('Interac eTransfer Outgoing To: George Jacob');
+  });
+
+  it('decodes basic XML entities in a transaction memo', () => {
+    const withEntity = SGML_OFX.replace('<MEMO>Payroll deposit', '<MEMO>AT&amp;T Payroll deposit');
 
     const result = parseOfxStatement(withEntity);
 
-    expect(result.transactions[0].name).toBe('AT&T Coffee Shop');
+    expect(result.transactions[1].name).toBe('AT&T Payroll deposit');
   });
 
   it('returns an empty transaction list for a statement with a balance but no activity', () => {
