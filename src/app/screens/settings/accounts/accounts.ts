@@ -5,6 +5,7 @@ import {
   faArrowUpRightFromSquare,
   faArrowsRotate,
   faCircleExclamation,
+  faPenToSquare,
   faPlus,
   faTriangleExclamation,
 } from '@fortawesome/free-solid-svg-icons';
@@ -38,12 +39,19 @@ export class AccountsScreen {
     error: faCircleExclamation,
     warning: faTriangleExclamation,
     add: faPlus,
+    manual: faPenToSquare,
   };
 
   protected readonly setupToken = signal('');
   private readonly connectDialog = viewChild<ElementRef<HTMLDialogElement>>('connectDialog');
   private readonly discoveredDialog = viewChild<ElementRef<HTMLDialogElement>>('discoveredDialog');
   private previousDiscoveredCount = 0;
+
+  protected readonly manualBankName = signal('');
+  protected readonly manualAccountName = signal('');
+  protected readonly manualAccountType = signal<AccountType>('bank');
+  protected readonly manualAccountPending = signal(false);
+  private readonly manualDialog = viewChild<ElementRef<HTMLDialogElement>>('manualDialog');
 
   constructor() {
     // Surfacing new discoveries as a dialog (rather than an inline list) only helps if it
@@ -68,6 +76,32 @@ export class AccountsScreen {
 
   closeConnectDialog(): void {
     this.connectDialog()?.nativeElement.close();
+  }
+
+  openManualDialog(): void {
+    this.manualBankName.set('');
+    this.manualAccountName.set('');
+    this.manualAccountType.set('bank');
+    this.manualDialog()?.nativeElement.showModal();
+  }
+
+  closeManualDialog(): void {
+    this.manualDialog()?.nativeElement.close();
+  }
+
+  async createManualAccount(): Promise<void> {
+    const bankName = this.manualBankName().trim();
+    const accountName = this.manualAccountName().trim();
+    if (!bankName || !accountName) {
+      return;
+    }
+    this.manualAccountPending.set(true);
+    try {
+      await this.store.createManualAccount(bankName, accountName, this.manualAccountType());
+      this.closeManualDialog();
+    } finally {
+      this.manualAccountPending.set(false);
+    }
   }
 
   openDiscoveredDialog(): void {

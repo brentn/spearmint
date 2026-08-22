@@ -3,7 +3,13 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountSchema, categorizationRuleSchema, categorySchema, transactionSchema } from '../../data/schemas';
+import {
+  accountMigrationStrategies,
+  accountSchema,
+  categorizationRuleSchema,
+  categorySchema,
+  transactionSchema,
+} from '../../data/schemas';
 import { DatabaseService } from '../../data/database.service';
 import type { Account, CategorizationRule, Category, Transaction } from '../../data/models';
 import { CategorizationSuggestionsService } from '../../categorization/categorization-suggestions.service';
@@ -50,6 +56,7 @@ function seedAccount(overrides: Partial<Account> = {}): Account {
     needsReconnect: false,
     syncIssue: null,
     missing: false,
+    isManual: false,
     ...overrides,
   };
 }
@@ -71,7 +78,7 @@ describe('TransactionsStore', () => {
     await fakeDb.addCollections({
       transactions: { schema: transactionSchema },
       categories: { schema: categorySchema },
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
       categorizationRules: { schema: categorizationRuleSchema },
     });
 

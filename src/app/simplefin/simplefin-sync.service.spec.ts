@@ -4,6 +4,7 @@ import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  accountMigrationStrategies,
   accountSchema,
   appSettingsMigrationStrategies,
   appSettingsSchema,
@@ -47,6 +48,7 @@ function seedAccount(overrides: Partial<Account> = {}): Account {
     needsReconnect: false,
     syncIssue: null,
     missing: false,
+    isManual: false,
     ...overrides,
   };
 }
@@ -63,7 +65,7 @@ describe('SimplefinSyncService', () => {
       storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await fakeDb.addCollections({
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
       institutions: { schema: institutionSchema },
       transactions: { schema: transactionSchema },
       categorizationRules: { schema: categorizationRuleSchema },
@@ -147,6 +149,32 @@ describe('SimplefinSyncService', () => {
     expect(institution.name).toBe('My Bank');
     const settings = await fakeDb['appSettings'].findOne('settings').exec();
     expect(settings.lastSyncDate).toBe(TODAY);
+  });
+
+  it('excludes a manual account entirely from a sync run', async () => {
+    await seedSettings({ lastSyncDate: RECENT_PAST });
+    await fakeDb['accounts'].insert(
+      seedAccount({
+        id: 'acc-manual',
+        connId: 'manual:acc-manual',
+        externalAccountId: 'acc-manual',
+        isManual: true,
+      })
+    );
+    fetchAccounts.mockResolvedValue({
+      errlist: [],
+      connections: [connection],
+      accounts: [],
+    } satisfies SimplefinAccountSet);
+
+    const result = await service.syncNow();
+
+    expect(result.success).toBe(true);
+    const account = await fakeDb['accounts'].findOne('acc-manual').exec();
+    expect(account.needsReconnect).toBe(false);
+    expect(account.syncIssue).toBeNull();
+    expect(account.missing).toBe(false);
+    expect(account.balance).toBe(0);
   });
 
   it('never re-categorizes an already-known posted transaction', async () => {

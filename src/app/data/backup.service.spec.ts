@@ -4,6 +4,7 @@ import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  accountMigrationStrategies,
   accountSchema,
   appSettingsMigrationStrategies,
   appSettingsSchema,
@@ -56,7 +57,7 @@ class FakeDatabaseService {
     });
     await db.addCollections({
       institutions: { schema: institutionSchema },
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
       categories: { schema: categorySchema },
       transactions: { schema: transactionSchema },
       budgets: { schema: budgetSchema },
@@ -99,6 +100,7 @@ const checking: Account = {
   needsReconnect: false,
   syncIssue: null,
   missing: false,
+  isManual: false,
 };
 
 const groceries: Category = {

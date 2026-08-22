@@ -4,7 +4,7 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountSchema, transactionSchema } from '../../data/schemas';
+import { accountMigrationStrategies, accountSchema, transactionSchema } from '../../data/schemas';
 import { DatabaseService } from '../../data/database.service';
 import type { Account, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
@@ -26,6 +26,7 @@ function seedAccount(overrides: Partial<Account> = {}): Account {
     needsReconnect: false,
     syncIssue: null,
     missing: false,
+    isManual: false,
     ...overrides,
   };
 }
@@ -55,7 +56,7 @@ describe('OverviewStore', () => {
       storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await fakeDb.addCollections({
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
       transactions: { schema: transactionSchema },
     });
 

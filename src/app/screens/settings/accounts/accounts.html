@@ -8,6 +8,10 @@
         <button class="accounts__add-button" type="button" title="Connect a bank" (click)="openConnectDialog()">
             <fa-icon [icon]="icons.add"></fa-icon>
         </button>
+        <button class="accounts__add-button accounts__add-button--secondary" type="button"
+            title="Add manual account" (click)="openManualDialog()">
+            <fa-icon [icon]="icons.manual"></fa-icon>
+        </button>
     </app-settings-header>
 
     <div class="accounts__content">
@@ -36,6 +40,9 @@
                         <fa-icon [icon]="icons.add"></fa-icon>
                         Add Account
                     </button>
+                    <button class="accounts__empty-link" type="button" (click)="openManualDialog()">
+                        Or add a manual account
+                    </button>
                 </div>
             } @else {
                 @if (store.accounts().length > 0) {
@@ -52,6 +59,9 @@
                                     </div>
                                     <p class="account-card__institution">
                                         {{ store.institutionName(account.institutionId) }}
+                                        @if (account.isManual) {
+                                            <span class="account-card__manual-tag">Manual</span>
+                                        }
                                     </p>
                                     <div class="account-card__row">
                                         <select class="account-card__type" [value]="account.type"
@@ -158,5 +168,31 @@
             }
         </ul>
         <button class="accounts__dialog-close" type="button" (click)="closeDiscoveredDialog()">Close</button>
+    </dialog>
+
+    <dialog #manualDialog class="accounts__dialog" (close)="closeManualDialog()">
+        <h2 class="accounts__dialog-title">Add a manual account</h2>
+        <p class="accounts__body">
+            For a bank SimpleFIN doesn't support yet. Transactions and balance come later, from an
+            imported statement.
+        </p>
+        <div class="accounts__manual-form">
+            <input class="accounts__connect-input" type="text" placeholder="Bank name" [value]="manualBankName()"
+                (input)="manualBankName.set($any($event.target).value)" [disabled]="manualAccountPending()" />
+            <input class="accounts__connect-input" type="text" placeholder="Account name"
+                [value]="manualAccountName()" (input)="manualAccountName.set($any($event.target).value)"
+                [disabled]="manualAccountPending()" />
+            <select class="account-card__type" [value]="manualAccountType()"
+                (change)="manualAccountType.set($any($event.target).value)" [disabled]="manualAccountPending()">
+                <option value="bank">Bank</option>
+                <option value="creditCard">Credit card</option>
+            </select>
+            <button class="accounts__connect-button" type="button"
+                [disabled]="manualAccountPending() || !manualBankName().trim() || !manualAccountName().trim()"
+                (click)="createManualAccount()">
+                {{ manualAccountPending() ? 'Creating…' : 'Create' }}
+            </button>
+        </div>
+        <button class="accounts__dialog-close" type="button" (click)="closeManualDialog()">Cancel</button>
     </dialog>
 </div>

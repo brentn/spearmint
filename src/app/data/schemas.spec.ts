@@ -3,6 +3,7 @@ import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import {
+  accountMigrationStrategies,
   accountSchema,
   appSettingsMigrationStrategies,
   appSettingsSchema,
@@ -24,7 +25,7 @@ describe('domain schemas', () => {
     });
     await db.addCollections({
       institutions: { schema: institutionSchema },
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
       categories: { schema: categorySchema },
       transactions: { schema: transactionSchema },
       budgets: { schema: budgetSchema },
@@ -58,8 +59,29 @@ describe('domain schemas', () => {
       needsReconnect: false,
       syncIssue: null,
       missing: false,
+      isManual: false,
     });
     expect(doc.type).toBe('bank');
+  });
+
+  it('accepts a manual account with a synthetic connId', async () => {
+    const doc = await db['accounts'].insert({
+      id: 'acc-manual-1',
+      institutionId: 'inst-manual-1',
+      connId: 'manual:acc-manual-1',
+      externalAccountId: 'acc-manual-1',
+      originalAccountName: 'My Stopgap Account',
+      name: 'My Stopgap Account',
+      type: 'bank',
+      currencyCode: 'USD',
+      balance: 0,
+      balanceDate: '2026-08-01',
+      needsReconnect: false,
+      syncIssue: null,
+      missing: false,
+      isManual: true,
+    });
+    expect(doc.isManual).toBe(true);
   });
 
   it('rejects an account with an invalid type', async () => {
@@ -78,6 +100,7 @@ describe('domain schemas', () => {
         needsReconnect: false,
         syncIssue: null,
         missing: false,
+        isManual: false,
       })
     ).rejects.toThrow();
   });

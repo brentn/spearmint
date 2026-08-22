@@ -29,6 +29,10 @@ export interface Account {
   needsReconnect: boolean;
   syncIssue: string | null;
   missing: boolean;
+  /** True for a Manual Account (see ADR-0016) — populated via Statement Import instead of
+   * SimpleFIN sync. `connId`/`externalAccountId` are synthetic placeholders, never a real
+   * SimpleFIN identity, and the sync loop excludes these accounts entirely. */
+  isManual: boolean;
 }
 
 export type CategoryType = 'expense' | 'income' | 'transfer';

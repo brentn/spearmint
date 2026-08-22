@@ -31,7 +31,7 @@ export const institutionSchema: RxJsonSchema<Institution> = {
 
 export const accountSchema: RxJsonSchema<Account> = {
   title: 'account',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -48,6 +48,7 @@ export const accountSchema: RxJsonSchema<Account> = {
     needsReconnect: { type: 'boolean' },
     syncIssue: { type: ['string', 'null'] },
     missing: { type: 'boolean' },
+    isManual: { type: 'boolean' },
   },
   required: [
     'id',
@@ -62,8 +63,21 @@ export const accountSchema: RxJsonSchema<Account> = {
     'balanceDate',
     'needsReconnect',
     'missing',
+    'isManual',
   ],
   indexes: ['institutionId', 'connId'],
+};
+
+/**
+ * v0 -> v1: adds `isManual` (issue #37, Manual Accounts). Every pre-existing account was
+ * SimpleFIN-linked, so migrated rows default to `isManual: false` — no existing account
+ * silently becomes manual, and the sync loop keeps treating it exactly as before.
+ */
+export const accountMigrationStrategies: MigrationStrategies = {
+  1: (oldDoc: Record<string, unknown>) => ({
+    ...oldDoc,
+    isManual: false,
+  }),
 };
 
 export const categorySchema: RxJsonSchema<Category> = {

@@ -5,6 +5,7 @@ import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  accountMigrationStrategies,
   accountSchema,
   appSettingsMigrationStrategies,
   appSettingsSchema,
@@ -31,6 +32,7 @@ function seedAccount(overrides: Partial<Account> = {}): Account {
     needsReconnect: false,
     syncIssue: null,
     missing: false,
+    isManual: false,
     ...overrides,
   };
 }
@@ -50,7 +52,7 @@ describe('AccountsStore', () => {
       storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await fakeDb.addCollections({
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
       institutions: { schema: institutionSchema },
       appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
     });
@@ -150,6 +152,24 @@ describe('AccountsStore', () => {
     await store.unignore('CON-1:ext-ignored');
 
     expect(unignoreDiscoveredAccount).toHaveBeenCalledWith('CON-1:ext-ignored');
+  });
+
+  it('createManualAccount creates a synthetic institution and a manual account, then refreshes', async () => {
+    await store.createManualAccount('Local Credit Union', 'Stopgap Checking', 'bank');
+
+    expect(store.accounts()).toHaveLength(1);
+    const account = store.accounts()[0];
+    expect(account.name).toBe('Stopgap Checking');
+    expect(account.type).toBe('bank');
+    expect(account.isManual).toBe(true);
+    expect(account.balance).toBe(0);
+    expect(account.needsReconnect).toBe(false);
+    expect(account.missing).toBe(false);
+
+    expect(store.institutionName(account.institutionId)).toBe('Local Credit Union');
+    // Synthetic, unique to this account — never a real SimpleFIN identity.
+    expect(account.connId).toContain(account.id);
+    expect(account.externalAccountId).toBe(account.id);
   });
 
   it('addDiscovered delegates to the sync service and refreshes', async () => {

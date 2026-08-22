@@ -41,6 +41,7 @@ function account(overrides: Partial<Account> = {}): Account {
     needsReconnect: false,
     syncIssue: null,
     missing: false,
+    isManual: false,
     ...overrides,
   };
 }

@@ -98,7 +98,12 @@ export class SimplefinSyncService {
       const merged = mergeAccountSets(responseSets);
       this.lastMergedSet = merged;
 
-      const trackedAccounts = (await db.accounts.find().exec()).map((doc) => doc.toJSON());
+      // Manual accounts (issue #37) have no live SimpleFIN identity — excluding them here
+      // means planIngest never builds an outcome for one, so a sync run can't touch,
+      // error on, or flag needsReconnect/syncIssue/missing on it.
+      const trackedAccounts = (await db.accounts.find().exec())
+        .map((doc) => doc.toJSON())
+        .filter((account) => !account.isManual);
       const plan = planIngest(trackedAccounts, merged, settingsDoc?.ignoredExternalAccounts ?? []);
 
       for (const institution of plan.institutions) {
@@ -158,6 +163,7 @@ export class SimplefinSyncService {
         needsReconnect: false,
         syncIssue: null,
         missing: false,
+        isManual: false,
       });
 
       const response = this.lastMergedSet?.accounts.find(

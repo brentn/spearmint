@@ -42,6 +42,12 @@
   cursor: pointer;
 }
 
+.accounts__add-button--secondary {
+  background: transparent;
+  border: 1px solid var(--spearmint-border);
+  color: var(--spearmint-accent);
+}
+
 @keyframes accounts-spin {
   to {
     transform: rotate(360deg);
@@ -115,6 +121,15 @@
   cursor: pointer;
 }
 
+.accounts__empty-link {
+  border: none;
+  background: transparent;
+  color: var(--spearmint-accent);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .accounts__section {
   margin-bottom: 2rem;
 }
@@ -147,6 +162,13 @@
 .accounts__connect-form {
   display: flex;
   gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.accounts__manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   margin-top: 0.75rem;
 }
 
@@ -250,6 +272,19 @@
   margin: 0.1rem 0 0.6rem;
   font-size: 0.8rem;
   color: var(--spearmint-accent);
+}
+
+.account-card__manual-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--spearmint-radius);
+  background: var(--spearmint-border);
+  color: var(--spearmint-ink);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .account-card__row {

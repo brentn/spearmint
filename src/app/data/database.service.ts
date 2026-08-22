@@ -14,6 +14,7 @@ import type {
   Transaction,
 } from './models';
 import {
+  accountMigrationStrategies,
   accountSchema,
   appSettingsMigrationStrategies,
   appSettingsSchema,
@@ -131,7 +132,7 @@ export class DatabaseService {
       // surfaces — createRxDatabase() above succeeds regardless.
       await db.addCollections({
         institutions: { schema: institutionSchema },
-        accounts: { schema: accountSchema },
+        accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
         categories: { schema: categorySchema },
         transactions: { schema: transactionSchema },
         budgets: { schema: budgetSchema },

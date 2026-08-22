@@ -15,7 +15,7 @@ import {
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { accountSchema, appSettingsMigrationStrategies } from './schemas';
+import { accountMigrationStrategies, accountSchema, appSettingsMigrationStrategies } from './schemas';
 import { DatabaseService, RX_STORAGE } from './database.service';
 
 // DatabaseService defaults to the real Dexie/IndexedDB driver, which isn't
@@ -85,6 +85,58 @@ const staleAppSettingsSchemaV1: RxJsonSchema<{
   required: ['id', 'ignoredExternalAccounts', 'exportEncryptionDefault'],
 };
 
+// The pre-#37 shape of the account schema: same title, version 0, but without isManual
+// (issue #37, Manual Accounts).
+const staleAccountSchema: RxJsonSchema<{
+  id: string;
+  institutionId: string;
+  connId: string;
+  externalAccountId: string;
+  originalAccountName: string;
+  name: string;
+  type: string;
+  currencyCode: string;
+  balance: number;
+  balanceDate: string;
+  needsReconnect: boolean;
+  syncIssue: string | null;
+  missing: boolean;
+}> = {
+  title: 'account',
+  version: 0,
+  primaryKey: 'id',
+  type: 'object',
+  properties: {
+    id: { type: 'string', maxLength: 100 },
+    institutionId: { type: 'string', maxLength: 100 },
+    connId: { type: 'string', maxLength: 100 },
+    externalAccountId: { type: 'string', maxLength: 100 },
+    originalAccountName: { type: 'string' },
+    name: { type: 'string' },
+    type: { type: 'string', enum: ['bank', 'creditCard'] },
+    currencyCode: { type: 'string' },
+    balance: { type: 'number', minimum: -1000000000, maximum: 1000000000, multipleOf: 0.01 },
+    balanceDate: { type: 'string' },
+    needsReconnect: { type: 'boolean' },
+    syncIssue: { type: ['string', 'null'] },
+    missing: { type: 'boolean' },
+  },
+  required: [
+    'id',
+    'institutionId',
+    'connId',
+    'externalAccountId',
+    'originalAccountName',
+    'name',
+    'type',
+    'currencyCode',
+    'balance',
+    'balanceDate',
+    'needsReconnect',
+    'missing',
+  ],
+};
+
 describe('DatabaseService', () => {
   // RxDB's "database name already in use" guard (DB8) tracks open instances
   // process-wide by (name, storage.name), independent of which storage object
@@ -122,7 +174,7 @@ describe('DatabaseService', () => {
     });
     await staleDb.addCollections({
       appSettings: { schema: staleAppSettingsSchema },
-      accounts: { schema: accountSchema },
+      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
     });
     await staleDb['appSettings'].insert({
       id: 'settings',
@@ -145,6 +197,7 @@ describe('DatabaseService', () => {
       needsReconnect: false,
       syncIssue: null,
       missing: false,
+      isManual: false,
     });
     await staleDb.close();
 
@@ -164,6 +217,44 @@ describe('DatabaseService', () => {
     expect(settings?.ignoredExternalAccounts).toEqual([
       { key: 'CON-1:ext-ignored', name: 'CON-1:ext-ignored', institutionName: '' },
     ]);
+  });
+
+  it('migrates a local database from a stale Account schema without losing data', async () => {
+    // Simulate a browser that already has local data from before Manual Accounts
+    // (issue #37): same collection name, old version, no isManual field at all.
+    const staleDb = await createRxDatabase({
+      name: 'spearmint',
+      storage: wrappedValidateAjvStorage({ storage: currentStorage }),
+    });
+    await staleDb.addCollections({
+      accounts: { schema: staleAccountSchema },
+    });
+    await staleDb['accounts'].insert({
+      id: 'acc-1',
+      institutionId: 'org-1',
+      connId: 'CON-1',
+      externalAccountId: 'ext-1',
+      originalAccountName: 'Checking',
+      name: 'Checking',
+      type: 'bank',
+      currencyCode: 'USD',
+      balance: 42,
+      balanceDate: '2026-08-01',
+      needsReconnect: false,
+      syncIssue: null,
+      missing: false,
+    });
+    await staleDb.close();
+
+    const service = TestBed.inject(DatabaseService);
+    const db = await service.getDatabase();
+    openDb = db;
+
+    // Every pre-existing account defaults to not-manual, and keeps its other fields.
+    const account = await db.accounts.findOne('acc-1').exec();
+    expect(account?.isManual).toBe(false);
+    expect(account?.name).toBe('Checking');
+    expect(account?.balance).toBe(42);
   });
 
   it('turns biometricsEnabled on for a v1 doc that already has a webauthn credential', async () => {

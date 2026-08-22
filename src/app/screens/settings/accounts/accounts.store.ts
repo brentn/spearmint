@@ -2,6 +2,7 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 import { getAppSettingsDoc } from '../../../data/app-settings.util';
 import { DatabaseService } from '../../../data/database.service';
 import type { Account, AccountType, IgnoredExternalAccount, Institution } from '../../../data/models';
+import { todayDateOnlyUtc } from '../../../simplefin/date-only.util';
 import type { DiscoveredSimplefinAccount } from '../../../simplefin/simplefin-ingest-plan.util';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
@@ -109,6 +110,37 @@ export class AccountsStore {
 
   async unignore(key: string): Promise<void> {
     await this.syncService.unignoreDiscoveredAccount(key);
+    await this.refresh();
+  }
+
+  /** Creates a Manual Account (ADR-0016): a synthetic Institution row for the named bank,
+   * plus an Account with no live SimpleFIN identity — `connId`/`externalAccountId` are
+   * placeholders unique to this account, never real SimpleFIN ids, so the sync loop's
+   * matching logic can never accidentally claim them. Starts at a zero balance; both the
+   * balance and its transactions are populated later by a Statement Import. */
+  async createManualAccount(bankName: string, accountName: string, type: AccountType): Promise<void> {
+    const db = await this.databaseService.getDatabase();
+    const institutionId = crypto.randomUUID();
+    await db.institutions.insert({ id: institutionId, name: bankName, url: null });
+
+    const accountId = crypto.randomUUID();
+    await db.accounts.insert({
+      id: accountId,
+      institutionId,
+      connId: `manual:${accountId}`,
+      externalAccountId: accountId,
+      originalAccountName: accountName,
+      name: accountName,
+      type,
+      currencyCode: 'USD',
+      balance: 0,
+      balanceDate: todayDateOnlyUtc(),
+      needsReconnect: false,
+      syncIssue: null,
+      missing: false,
+      isManual: true,
+    });
+
     await this.refresh();
   }
 }
