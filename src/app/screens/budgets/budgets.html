@@ -1,196 +1,160 @@
 <div class="budgets">
-  <header class="budgets__hero">
-    <div class="budgets__hero-topline">
-      <div class="budgets__hero-month-nav">
-        <button
-          class="budgets__hero-icon-btn"
-          type="button"
-          [disabled]="!store.canGoToPreviousMonth()"
-          (click)="store.goToPreviousMonth()"
-          aria-label="Previous month"
-        >
-          <fa-icon [icon]="icons.previous"></fa-icon>
-        </button>
-        <h1 class="budgets__hero-label">{{ store.aggregate().monthName }} budget</h1>
-        <button
-          class="budgets__hero-icon-btn"
-          type="button"
-          [disabled]="!store.canGoToNextMonth()"
-          (click)="store.goToNextMonth()"
-          aria-label="Next month"
-        >
-          <fa-icon [icon]="icons.next"></fa-icon>
-        </button>
-      </div>
-      @if (store.isCurrentPeriod()) {
-        <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()" aria-label="Add a budget">
-          <fa-icon [icon]="icons.add"></fa-icon>
-        </button>
-      }
-    </div>
-    <div class="budgets__hero-value">
-      ${{ store.aggregate().totalSpent | number: '1.0-0' }}
-      <span class="budgets__hero-sub">of ${{ store.aggregate().totalBudget | number: '1.0-0' }}</span>
-    </div>
-    <p class="budgets__hero-note">{{ store.aggregate().message }}</p>
-  </header>
-
-  <div class="budgets__content">
-    @if (store.loading()) {
-      <p class="budgets__loading">Loading&hellip;</p>
-    } @else if (store.rows().length === 0) {
-      <div class="empty-state">
-        <h2 class="empty-state__title">No budgets yet</h2>
-        <p class="empty-state__body">Add a budget to start tracking spending by category.</p>
-      </div>
-    } @else {
-      <div class="budgets__card">
-        <div class="budgets__progress-label">Progress {{ store.monthPhrase() }}</div>
-        <app-flow-progress
-          [progress]="store.flowProgress()"
-          [showTodayTick]="store.isCurrentPeriod()"
-          [todayPercent]="store.aggregate().todayPercent"
-        />
-      </div>
-
-      <div class="budgets__card">
-        <div class="budgets__flow-label">{{ store.aggregate().monthName }} cash flow</div>
-        <div class="budgets__flow-net">${{ store.aggregate().cashFlowNet | number: '1.0-0' }}</div>
-        <div class="budgets__flow-bars">
-          <div class="budgets__flow-bar-group">
-            <div class="budgets__flow-bar-stack">
-              <div
-                class="budgets__flow-bar budgets__flow-bar--earned"
-                [style.height.px]="flowBarHeight(cashFlowData().earned)"
-              ></div>
+    <header class="budgets__hero">
+        <div class="budgets__hero-topline">
+            <div class="budgets__hero-month-nav">
+                <button class="budgets__hero-icon-btn" type="button" [disabled]="!store.canGoToPreviousMonth()"
+                    (click)="store.goToPreviousMonth()" aria-label="Previous month">
+                    <fa-icon [icon]="icons.previous"></fa-icon>
+                </button>
+                <h1 class="budgets__hero-label">{{ store.aggregate().monthName }} budget</h1>
+                <button class="budgets__hero-icon-btn" type="button" [disabled]="!store.canGoToNextMonth()"
+                    (click)="store.goToNextMonth()" aria-label="Next month">
+                    <fa-icon [icon]="icons.next"></fa-icon>
+                </button>
             </div>
-            <div class="budgets__flow-bar-caption">
-              <span>Earned</span>
-              <strong>${{ cashFlowData().earned | number: '1.0-0' }}</strong>
-            </div>
-          </div>
-          <div class="budgets__flow-bar-group">
-            <div class="budgets__flow-bar-stack">
-              <div
-                class="budgets__flow-bar budgets__flow-bar--spent"
-                [style.height.px]="flowBarHeight(cashFlowData().spent)"
-              ></div>
-            </div>
-            <div class="budgets__flow-bar-caption">
-              <span>Spent</span>
-              <strong>${{ cashFlowData().spent | number: '1.0-0' }}</strong>
-            </div>
-          </div>
-          <div class="budgets__flow-bar-pair budgets__flow-bar-pair--budgeted">
-            <span class="budgets__flow-bar-budgeted-label">Budgets</span>
-            <div class="budgets__flow-bar-group">
-              <div class="budgets__flow-bar-stack">
-                <div
-                  class="budgets__flow-bar budgets__flow-bar--income-overage"
-                  [style.height.px]="flowOverageHeight(incomeOverage())"
-                ></div>
-                <div
-                  class="budgets__flow-bar budgets__flow-bar--budgeted-income"
-                  [style.height.px]="flowBarHeight(cashFlowData().budgetedIncome)"
-                ></div>
-              </div>
-              <div class="budgets__flow-bar-caption">
-                <span>In</span>
-                <strong>${{ cashFlowData().budgetedIncome | number: '1.0-0' }}</strong>
-              </div>
-            </div>
-            <div class="budgets__flow-bar-group">
-              <div class="budgets__flow-bar-stack">
-                <div
-                  class="budgets__flow-bar budgets__flow-bar--expense-overage"
-                  [style.height.px]="flowOverageHeight(expenseOverage())"
-                ></div>
-                <div
-                  class="budgets__flow-bar budgets__flow-bar--budgeted-expense"
-                  [style.height.px]="flowBarHeight(cashFlowData().budgetedExpenses)"
-                ></div>
-              </div>
-              <div class="budgets__flow-bar-caption">
-                <span>Out</span>
-                <strong>${{ cashFlowData().budgetedExpenses | number: '1.0-0' }}</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      @if (incomeRows().length > 0) {
-        <div class="budgets__card">
-          <h2 class="budgets__section-title">Income</h2>
-          <ul class="budgets__rows">
-            @for (row of incomeRows(); track row.id) {
-              <app-budget-row [row]="row" [queryParams]="store.linkQueryParams()" />
+            @if (store.isCurrentPeriod()) {
+                <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()"
+                    aria-label="Add a budget">
+                    <fa-icon [icon]="icons.add"></fa-icon>
+                </button>
             }
-          </ul>
         </div>
-      }
-
-      <div class="budgets__card">
-        <app-flow-progress-bar [row]="store.flowProgress().expenses" label="Outgoing" />
-        <div class="budgets__section-header">
-          <h2 class="budgets__section-title">Spending by category</h2>
-          @if (hasChildExpenseBudgets()) {
-            <button type="button" class="budgets__toggle-children" (click)="showChildBudgets.set(!showChildBudgets())">
-              {{ showChildBudgets() ? 'Hide subcategories' : 'Show subcategories' }}
-            </button>
-          }
+        <div class="budgets__hero-value">
+            ${{ store.aggregate().totalSpent | number: '1.0-0' }}
+            <span class="budgets__hero-sub">of ${{ store.aggregate().totalBudget | number: '1.0-0' }}</span>
         </div>
-        <ul class="budgets__rows">
-          @for (row of visibleExpenseRows(); track row.id) {
-            <app-budget-row [row]="row" [indent]="!!row.parentCategoryId" [queryParams]="store.linkQueryParams()" />
-          }
-        </ul>
-      </div>
-    }
-  </div>
+        <p class="budgets__hero-note">{{ store.aggregate().message }}</p>
+    </header>
 
-  <dialog #addDialog class="budgets__dialog" (close)="onAddDialogClose()">
-    <h2 class="budgets__dialog-title">Add a budget</h2>
-    @if (store.error()) {
-      <p class="budgets__banner budgets__banner--error">{{ store.error() }}</p>
-    }
-    <div class="budgets__add-form">
-      <select
-        class="budgets__add-select"
-        [value]="newCategoryId()"
-        (change)="newCategoryId.set($any($event.target).value)"
-      >
-        <option value="" disabled>Select a category</option>
-        @for (category of store.categoriesWithoutCurrentBudget(); track category.id) {
-          <option [value]="category.id">{{ category.name }}</option>
+    <div class="budgets__content">
+        @if (store.loading()) {
+            <p class="budgets__loading">Loading&hellip;</p>
+        } @else if (store.rows().length === 0) {
+            <div class="empty-state">
+                <h2 class="empty-state__title">No budgets yet</h2>
+                <p class="empty-state__body">Add a budget to start tracking spending by category.</p>
+            </div>
+        } @else {
+            <div class="budgets__card">
+                <div class="budgets__progress-label">Progress {{ store.monthPhrase() }}</div>
+                <app-flow-progress [progress]="store.flowProgress()" [showTodayTick]="store.isCurrentPeriod()"
+                    [todayPercent]="store.aggregate().todayPercent" />
+            </div>
+
+            <div class="budgets__card">
+                <div class="budgets__flow-label">{{ store.aggregate().monthName }} cash flow</div>
+                <div class="budgets__flow-net">${{ store.aggregate().cashFlowNet | number: '1.0-0' }}</div>
+                <div class="budgets__flow-bars">
+                    <div class="budgets__flow-bar-group">
+                        <div class="budgets__flow-bar-stack">
+                            <div class="budgets__flow-bar budgets__flow-bar--earned"
+                                [style.height.px]="flowBarHeight(cashFlowData().earned)"></div>
+                        </div>
+                        <div class="budgets__flow-bar-caption">
+                            <span>Earned</span>
+                            <strong>${{ cashFlowData().earned | number: '1.0-0' }}</strong>
+                        </div>
+                    </div>
+                    <div class="budgets__flow-bar-group">
+                        <div class="budgets__flow-bar-stack">
+                            <div class="budgets__flow-bar budgets__flow-bar--spent"
+                                [style.height.px]="flowBarHeight(cashFlowData().spent)"></div>
+                        </div>
+                        <div class="budgets__flow-bar-caption">
+                            <span>Spent</span>
+                            <strong>${{ cashFlowData().spent | number: '1.0-0' }}</strong>
+                        </div>
+                    </div>
+                    <div class="budgets__flow-bar-pair budgets__flow-bar-pair--budgeted">
+                        <span class="budgets__flow-bar-budgeted-label">Budgets</span>
+                        <div class="budgets__flow-bar-group">
+                            <div class="budgets__flow-bar-stack">
+                                <div class="budgets__flow-bar budgets__flow-bar--income-overage"
+                                    [style.height.px]="flowOverageHeight(incomeOverage())"></div>
+                                <div class="budgets__flow-bar budgets__flow-bar--budgeted-income"
+                                    [style.height.px]="flowBarHeight(cashFlowData().budgetedIncome)"></div>
+                            </div>
+                            <div class="budgets__flow-bar-caption">
+                                <span>In</span>
+                                <strong>${{ cashFlowData().budgetedIncome | number: '1.0-0' }}</strong>
+                            </div>
+                        </div>
+                        <div class="budgets__flow-bar-group">
+                            <div class="budgets__flow-bar-stack">
+                                <div class="budgets__flow-bar budgets__flow-bar--expense-overage"
+                                    [style.height.px]="flowOverageHeight(expenseOverage())"></div>
+                                <div class="budgets__flow-bar budgets__flow-bar--budgeted-expense"
+                                    [style.height.px]="flowBarHeight(cashFlowData().budgetedExpenses)"></div>
+                            </div>
+                            <div class="budgets__flow-bar-caption">
+                                <span>Out</span>
+                                <strong>${{ cashFlowData().budgetedExpenses | number: '1.0-0' }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (incomeRows().length > 0) {
+                <div class="budgets__card">
+                    <h2 class="budgets__section-title">Income</h2>
+                    <ul class="budgets__rows">
+                        @for (row of incomeRows(); track row.id) {
+                            <app-budget-row [row]="row" [queryParams]="store.linkQueryParams()" />
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="budgets__card">
+                <div class="budgets__section-header">
+                    <h2 class="budgets__section-title">Spending by category</h2>
+                    @if (hasChildExpenseBudgets()) {
+                        <button type="button" class="budgets__toggle-children"
+                            (click)="showChildBudgets.set(!showChildBudgets())">
+                            {{ showChildBudgets() ? 'Hide subcategories' : 'Show subcategories' }}
+                        </button>
+                    }
+                </div>
+                <ul class="budgets__rows">
+                    @for (row of visibleExpenseRows(); track row.id) {
+                        <app-budget-row [row]="row" [indent]="!!row.parentCategoryId"
+                            [queryParams]="store.linkQueryParams()" />
+                    }
+                </ul>
+            </div>
         }
-      </select>
-      <input
-        class="budgets__add-input"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Amount"
-        [value]="newAmount() ?? ''"
-        (input)="newAmount.set($any($event.target).valueAsNumber)"
-      />
-      @if (newCategoryId() && selectedCategoryType() !== 'income') {
-        <label class="budgets__add-checkbox">
-          <input type="checkbox" [checked]="newRollOver()" (change)="newRollOver.set($any($event.target).checked)" />
-          Roll over unused amount into next month
-        </label>
-      }
-      <div class="budgets__add-actions">
-        <button
-          type="button"
-          class="budgets__add-button"
-          [disabled]="!newCategoryId() || newAmount() === null"
-          (click)="submitAdd()"
-        >
-          Add budget
-        </button>
-        <button type="button" class="budgets__add-cancel" (click)="closeAddDialog()">Cancel</button>
-      </div>
     </div>
-  </dialog>
+
+    <dialog #addDialog class="budgets__dialog" (close)="onAddDialogClose()">
+        <h2 class="budgets__dialog-title">Add a budget</h2>
+        @if (store.error()) {
+            <p class="budgets__banner budgets__banner--error">{{ store.error() }}</p>
+        }
+        <div class="budgets__add-form">
+            <select class="budgets__add-select" [value]="newCategoryId()"
+                (change)="newCategoryId.set($any($event.target).value)">
+                <option value="" disabled>Select a category</option>
+                @for (category of store.categoriesWithoutCurrentBudget(); track category.id) {
+                    <option [value]="category.id">{{ category.name }}</option>
+                }
+            </select>
+            <input class="budgets__add-input" type="number" min="0" step="0.01" placeholder="Amount"
+                [value]="newAmount() ?? ''" (input)="newAmount.set($any($event.target).valueAsNumber)" />
+            @if (newCategoryId() && selectedCategoryType() !== 'income') {
+                <label class="budgets__add-checkbox">
+                    <input type="checkbox" [checked]="newRollOver()"
+                        (change)="newRollOver.set($any($event.target).checked)" />
+                    Roll over unused amount into next month
+                </label>
+            }
+            <div class="budgets__add-actions">
+                <button type="button" class="budgets__add-button" [disabled]="!newCategoryId() || newAmount() === null"
+                    (click)="submitAdd()">
+                    Add budget
+                </button>
+                <button type="button" class="budgets__add-cancel" (click)="closeAddDialog()">Cancel</button>
+            </div>
+        </div>
+    </dialog>
 </div>
