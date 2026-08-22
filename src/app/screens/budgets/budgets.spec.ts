@@ -157,7 +157,7 @@ describe('Budgets', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[aria-label="Add a budget"]')).toBeNull();
-    expect(root.querySelector('.flow-progress__today-tick')).toBeNull();
+    expect(root.querySelector('.flow-progress-bar__today-tick')).toBeNull();
   });
 
   it('opens the add-budget dialog from the hero "+" button, closed by default', () => {

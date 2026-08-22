@@ -1,18 +1,28 @@
 <div class="flow-progress-bar">
-  <div class="bar-track bar-track--thin">
-    <div class="bar-fill-split" [style.width.%]="row().barPercent * 100">
-      <div [class]="'bar-segment bar-fill--' + row().state" [style.flex-grow]="segments().categorized"></div>
-      <div
-        [class]="'bar-segment bar-segment--uncategorized bar-fill--' + row().state"
-        [style.flex-grow]="segments().uncategorized"
-      ></div>
-    </div>
+  <div class="flow-progress-bar__amount-line">
+    <span class="flow-progress-bar__label">{{ label() }}</span>
+    <span>
+      @if (row().zeroBudget) {
+        ${{ row().totalActual | number: '1.0-0' }}
+      } @else {
+        ${{ row().totalActual | number: '1.0-0' }} of ${{ row().budget | number: '1.0-0' }}
+      }
+    </span>
   </div>
-  <div class="flow-progress-bar__text">
-    @if (row().zeroBudget) {
-      ${{ row().totalActual | number: '1.0-0' }}
-    } @else {
-      ${{ row().totalActual | number: '1.0-0' }} of ${{ row().budget | number: '1.0-0' }}
+  <div class="flow-progress-bar__track-wrap">
+    <div class="bar-track bar-track--thin">
+      <div class="bar-fill-split" [style.width.%]="row().barPercent * 100">
+        <div [class]="'bar-segment bar-fill--' + row().state" [style.flex-grow]="segments().categorized"></div>
+        <div
+          [class]="'bar-segment bar-segment--uncategorized bar-fill--' + row().state"
+          [style.flex-grow]="segments().uncategorized"
+        ></div>
+      </div>
+    </div>
+    @if (showTodayTick()) {
+      <div class="flow-progress-bar__today-tick" [style.left.%]="todayPercent()">
+        <span class="flow-progress-bar__today-label">&#9650; Today</span>
+      </div>
     }
   </div>
 </div>

@@ -1,29 +1,3 @@
 :host {
   display: block;
 }
-
-.flow-progress {
-  position: relative;
-}
-
-// Elapsed-month-fraction tick (Budgets hero only, issue #23) — anchored to the whole widget,
-// hovering above the income row since both rows share the same time axis.
-.flow-progress__today-tick {
-  position: absolute;
-  top: -0.4rem;
-  width: 2px;
-  height: 1rem;
-  background: var(--spearmint-ink);
-  transform: translateX(-50%);
-}
-
-.flow-progress__today-label {
-  position: absolute;
-  top: 0.9rem;
-  left: 0;
-  transform: translateX(-50%);
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--spearmint-ink);
-  white-space: nowrap;
-}

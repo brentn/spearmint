@@ -4,13 +4,49 @@
 
 .flow-progress-bar {
   &:not(:last-child) {
-    margin-bottom: 0.85rem;
+    margin-bottom: 1.1rem;
   }
 }
 
-.flow-progress-bar__text {
-  margin-top: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 700;
+// Matches BudgetRow's own .budget-row__amount-line/.budget-row__cat-name treatment: a bold/dark
+// label on the left, smaller/lighter amount text on the right, both above the bar.
+.flow-progress-bar__amount-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.75rem;
   color: var(--spearmint-muted);
+  margin-bottom: 0.25rem;
+}
+
+.flow-progress-bar__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--spearmint-ink);
+}
+
+.flow-progress-bar__track-wrap {
+  position: relative;
+}
+
+// Elapsed-month-fraction tick (Budgets hero only, issue #23) — anchored to this row's own
+// bar-track via the wrap above, unaffected by the label line's height.
+.flow-progress-bar__today-tick {
+  position: absolute;
+  top: -0.4rem;
+  width: 2px;
+  height: 1rem;
+  background: var(--spearmint-ink);
+  transform: translateX(-50%);
+}
+
+.flow-progress-bar__today-label {
+  position: absolute;
+  top: 0.9rem;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--spearmint-ink);
+  white-space: nowrap;
 }

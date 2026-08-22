@@ -1,9 +1,14 @@
 <div class="flow-progress">
-  <app-flow-progress-bar [row]="progress().income" />
-  <app-flow-progress-bar [row]="progress().expenses" />
-  @if (showTodayTick()) {
-    <div class="flow-progress__today-tick" [style.left.%]="todayPercent()">
-      <span class="flow-progress__today-label">&#9650; Today</span>
-    </div>
-  }
+  <app-flow-progress-bar
+    [row]="progress().income"
+    label="Incoming"
+    [showTodayTick]="showTodayTick()"
+    [todayPercent]="todayPercent()"
+  />
+  <app-flow-progress-bar
+    [row]="progress().expenses"
+    label="Outgoing"
+    [showTodayTick]="showTodayTick()"
+    [todayPercent]="todayPercent()"
+  />
 </div>

@@ -192,6 +192,14 @@
   margin-top: 0.6rem;
 }
 
+// A tappable card rendered as an <a> (the Budgets progress card) — strips the anchor's default
+// underline/color and makes it a block so it fills the same footprint as a plain .overview__card.
+.overview__card--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .overview__section-header {
   display: flex;
   align-items: center;

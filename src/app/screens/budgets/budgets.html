@@ -128,7 +128,7 @@
       }
 
       <div class="budgets__card">
-        <app-flow-progress-bar [row]="store.flowProgress().expenses" />
+        <app-flow-progress-bar [row]="store.flowProgress().expenses" label="Outgoing" />
         <div class="budgets__section-header">
           <h2 class="budgets__section-title">Spending by category</h2>
           @if (hasChildExpenseBudgets()) {
