@@ -319,16 +319,12 @@
   background: var(--spearmint-primary);
 }
 
-// A budgeted bar is dimmed (matching the implied-budget 50%-opacity treatment elsewhere on this
-// screen) so its own color still reads once the grey overage segment stacks on top of it.
 .budgets__flow-bar--budgeted-income {
   background: var(--spearmint-accent);
-  opacity: 0.4;
 }
 
 .budgets__flow-bar--budgeted-expense {
   background: var(--spearmint-primary);
-  opacity: 0.4;
 }
 
 // Unbudgeted actual — the portion of earned/spent that exceeds what was budgeted (issue #21),
