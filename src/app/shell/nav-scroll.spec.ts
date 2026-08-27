@@ -1,51 +1,79 @@
 import { describe, expect, it } from 'vitest';
-import { computeNavHidden } from './nav-scroll';
+import { computeNavScrollState, type NavScrollState } from './nav-scroll';
 
 // Far enough from both page edges that near-top/near-bottom rules never kick in,
-// isolating the direction-based cases from the two threshold rules.
+// isolating the dead-zone/direction cases from the two threshold rules.
 const FAR_FROM_BOTTOM = 10_000;
-const NAV_HEIGHT = 60;
 
-describe('computeNavHidden', () => {
+function state(hidden: boolean, accumulated: number): NavScrollState {
+  return { hidden, accumulated };
+}
+
+describe('computeNavScrollState', () => {
   it('stays visible near the top of the page even when scrolling down', () => {
-    expect(computeNavHidden(0, 5, false, FAR_FROM_BOTTOM, NAV_HEIGHT)).toBe(false);
+    expect(computeNavScrollState(0, 5, FAR_FROM_BOTTOM, state(false, 0))).toEqual(state(false, 0));
   });
 
-  it('hides once scrolling down past the near-top threshold', () => {
-    expect(computeNavHidden(50, 120, false, FAR_FROM_BOTTOM, NAV_HEIGHT)).toBe(true);
+  it('stays visible once within the near-bottom threshold of the true bottom', () => {
+    expect(computeNavScrollState(500, 560, 8, state(true, 20))).toEqual(state(false, 0));
   });
 
-  it('reveals when scrolling back up', () => {
-    expect(computeNavHidden(300, 250, true, FAR_FROM_BOTTOM, NAV_HEIGHT)).toBe(false);
+  it('hides normally just outside the near-bottom threshold', () => {
+    expect(computeNavScrollState(500, 560, 9, state(false, 0))).toEqual(state(true, 0));
   });
 
-  it('reveals immediately when scrolling up back near the top', () => {
-    expect(computeNavHidden(100, 4, true, FAR_FROM_BOTTOM, NAV_HEIGHT)).toBe(false);
+  it('does not hide on a small scroll-down delta below the dead zone', () => {
+    expect(computeNavScrollState(50, 60, FAR_FROM_BOTTOM, state(false, 0))).toEqual(state(false, 10));
+  });
+
+  it('hides once accumulated downward scrolling crosses the dead zone', () => {
+    expect(computeNavScrollState(50, 120, FAR_FROM_BOTTOM, state(false, 0))).toEqual(state(true, 0));
+  });
+
+  it('accumulates across multiple small deltas in the same direction before hiding', () => {
+    const afterFirst = computeNavScrollState(50, 60, FAR_FROM_BOTTOM, state(false, 0));
+    expect(afterFirst).toEqual(state(false, 10));
+
+    const afterSecond = computeNavScrollState(60, 75, FAR_FROM_BOTTOM, afterFirst);
+    expect(afterSecond).toEqual(state(true, 0));
+  });
+
+  it('resets the accumulator on a direction reversal instead of hiding/revealing', () => {
+    // 10px down, then 5px up: the reversal restarts the count rather than netting to 5.
+    const afterDown = computeNavScrollState(50, 60, FAR_FROM_BOTTOM, state(false, 0));
+    expect(afterDown).toEqual(state(false, 10));
+
+    const afterUp = computeNavScrollState(60, 55, FAR_FROM_BOTTOM, afterDown);
+    expect(afterUp).toEqual(state(false, -5));
+  });
+
+  it('reveals once accumulated upward scrolling crosses the dead zone', () => {
+    expect(computeNavScrollState(300, 250, FAR_FROM_BOTTOM, state(true, 0))).toEqual(state(false, 0));
   });
 
   it('keeps the current state when the scroll position is unchanged', () => {
-    expect(computeNavHidden(150, 150, true, FAR_FROM_BOTTOM, NAV_HEIGHT)).toBe(true);
-    expect(computeNavHidden(150, 150, false, FAR_FROM_BOTTOM, NAV_HEIGHT)).toBe(false);
+    expect(computeNavScrollState(150, 150, FAR_FROM_BOTTOM, state(true, 15))).toEqual(state(true, 15));
+    expect(computeNavScrollState(150, 150, FAR_FROM_BOTTOM, state(false, -3))).toEqual(state(false, -3));
   });
 
-  it('stays visible once within the nav-height-plus-margin band of the true bottom', () => {
-    expect(computeNavHidden(500, 560, false, NAV_HEIGHT + 24, NAV_HEIGHT)).toBe(false);
+  it('does not bounce while scroll noise oscillates near the bottom', () => {
+    // Simulates rubber-band overshoot perturbing distanceFromBottom around the boundary —
+    // every call must still resolve to visible with a cleared accumulator.
+    expect(computeNavScrollState(560, 540, 3, state(false, 0))).toEqual(state(false, 0));
+    expect(computeNavScrollState(540, 565, 1, state(false, 0))).toEqual(state(false, 0));
+    expect(computeNavScrollState(565, 550, 5, state(false, 0))).toEqual(state(false, 0));
   });
 
-  it('hides normally just outside the near-bottom band', () => {
-    expect(computeNavHidden(500, 560, false, NAV_HEIGHT + 25, NAV_HEIGHT)).toBe(true);
-  });
+  it('lets the dead zone absorb jitter just outside the near-bottom threshold', () => {
+    // distanceFromBottom stays in the 8-32px band, just past the always-visible zone but
+    // still close to the true end — small oscillating deltas here must not toggle the nav.
+    const afterDown = computeNavScrollState(560, 565, 20, state(false, 0));
+    expect(afterDown).toEqual(state(false, 5));
 
-  it('does not bounce while scroll noise oscillates inside the near-bottom band', () => {
-    // Simulates the nav's own collapse/expand transition perturbing distanceFromBottom
-    // and previousY/currentY around the boundary — every call must still resolve to visible.
-    expect(computeNavHidden(560, 540, false, 10, NAV_HEIGHT)).toBe(false);
-    expect(computeNavHidden(540, 565, false, 30, NAV_HEIGHT)).toBe(false);
-    expect(computeNavHidden(565, 550, false, 5, NAV_HEIGHT)).toBe(false);
-  });
+    const afterUp = computeNavScrollState(565, 561, 24, afterDown);
+    expect(afterUp).toEqual(state(false, -4));
 
-  it('treats a larger measured nav height as a wider near-bottom band', () => {
-    const tallNav = 120;
-    expect(computeNavHidden(500, 560, false, tallNav + 24, tallNav)).toBe(false);
+    const afterDownAgain = computeNavScrollState(561, 566, 19, afterUp);
+    expect(afterDownAgain).toEqual(state(false, 5));
   });
 });

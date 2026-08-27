@@ -21,9 +21,8 @@ describe('NavScrollService', () => {
     return TestBed.inject(NavScrollService);
   }
 
-  it('hides on scroll-down away from both page edges', () => {
+  it('hides once scrolling down away from both page edges crosses the dead zone', () => {
     const service = create();
-    service.setNavHeight(60);
     const element = makeElement(0, 2000, 800);
     service.attach(element);
 
@@ -32,36 +31,31 @@ describe('NavScrollService', () => {
     expect(service.hidden()).toBe(true);
   });
 
-  it('stays visible once scrolled within the measured nav height of the true bottom', () => {
+  it('does not hide on a single small scroll delta', () => {
     const service = create();
-    service.setNavHeight(60);
-    // scrollHeight - clientHeight = 1200, so scrollTop 1200 is the true end.
     const element = makeElement(0, 2000, 800);
     service.attach(element);
 
-    scrollTo(element, 400);
-    expect(service.hidden()).toBe(true);
+    scrollTo(element, 10);
 
-    scrollTo(element, 1150); // distanceFromBottom = 50, within 60 + 24 margin
     expect(service.hidden()).toBe(false);
   });
 
-  it('reacts to a larger measured nav height with a wider near-bottom band', () => {
-    const service = create();
-    service.setNavHeight(200);
+  it('stays visible once scrolled within the near-bottom threshold of the true end', () => {
+    // scrollHeight - clientHeight = 1200, so scrollTop 1200 is the true end.
     const element = makeElement(0, 2000, 800);
+    const service = create();
     service.attach(element);
 
     scrollTo(element, 400);
     expect(service.hidden()).toBe(true);
 
-    scrollTo(element, 990); // distanceFromBottom = 210, within 200 + 24 margin
+    scrollTo(element, 1195); // distanceFromBottom = 5
     expect(service.hidden()).toBe(false);
   });
 
   it('stops reacting to scroll events after detach', () => {
     const service = create();
-    service.setNavHeight(60);
     const element = makeElement(0, 2000, 800);
     service.attach(element);
     scrollTo(element, 400);
