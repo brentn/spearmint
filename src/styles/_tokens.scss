@@ -21,6 +21,13 @@ $spearmint-font-family:    'Inter', system-ui, -apple-system, 'Segoe UI', sans-s
 // Full-bleed hero gradient used on the bottom-nav shell and every screen's header band.
 $spearmint-hero-gradient: linear-gradient(165deg, #0D2A20 0%, #0F5E44 35%, #12A85A 70%, #00D639 100%);
 
+// A single source of truth for the bottom nav's reserved height, shared between nav-shell.scss
+// (which the nav bar itself never exceeds — see its comment) and app.scss (which pads scrollable
+// content by this same amount so it's never covered by the nav while overlaid on top of it).
+// Deliberately a bit above the bar's actual rendered height (padding + tab content) as a buffer
+// for cross-browser font-metric differences.
+$spearmint-nav-height: calc(4.5rem + env(safe-area-inset-bottom));
+
 :root {
   --spearmint-primary: #{$spearmint-primary};
   --spearmint-primary-rgb: #{$spearmint-primary-rgb};
@@ -41,4 +48,5 @@ $spearmint-hero-gradient: linear-gradient(165deg, #0D2A20 0%, #0F5E44 35%, #12A8
   --spearmint-radius: #{$spearmint-radius};
   --spearmint-font-family: #{$spearmint-font-family};
   --spearmint-hero-gradient: #{$spearmint-hero-gradient};
+  --spearmint-nav-height: #{$spearmint-nav-height};
 }

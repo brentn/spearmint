@@ -34,7 +34,7 @@ describe('computeNavScrollState', () => {
     const afterFirst = computeNavScrollState(50, 60, FAR_FROM_BOTTOM, state(false, 0));
     expect(afterFirst).toEqual(state(false, 10));
 
-    const afterSecond = computeNavScrollState(60, 75, FAR_FROM_BOTTOM, afterFirst);
+    const afterSecond = computeNavScrollState(60, 90, FAR_FROM_BOTTOM, afterFirst);
     expect(afterSecond).toEqual(state(true, 0));
   });
 
@@ -65,8 +65,8 @@ describe('computeNavScrollState', () => {
   });
 
   it('lets the dead zone absorb jitter just outside the near-bottom threshold', () => {
-    // distanceFromBottom stays in the 8-32px band, just past the always-visible zone but
-    // still close to the true end — small oscillating deltas here must not toggle the nav.
+    // distanceFromBottom stays just past the always-visible zone but still close to the
+    // true end — small oscillating deltas here must not toggle the nav.
     const afterDown = computeNavScrollState(560, 565, 20, state(false, 0));
     expect(afterDown).toEqual(state(false, 5));
 

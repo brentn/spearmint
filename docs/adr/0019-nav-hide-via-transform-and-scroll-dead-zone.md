@@ -31,6 +31,8 @@ bottom.
 - Velocity-coupled transition duration (matching animation speed to scroll speed) was considered
   and explicitly dropped as not worth the added state and edge cases for a cosmetic effect.
 
-Tradeoff accepted: hiding the nav no longer reclaims its screen space for `.app-scroll` — the
-row stays reserved, just visually empty. Issue #43 didn't ask for that space back, only for the
-hide/show behavior itself to stop misbehaving.
+Tradeoff accepted at the time: hiding the nav no longer reclaimed its screen space for
+`.app-scroll` — the row stayed reserved, just visually empty. Issue #43 didn't ask for that space
+back, only for the hide/show behavior itself to stop misbehaving — but live testing showed the
+empty space read as a defect anyway, so ADR 0020 revisits the nav's positioning (not this hide
+mechanism, which is unchanged) to reclaim it without reintroducing the reflow this ADR fixes.

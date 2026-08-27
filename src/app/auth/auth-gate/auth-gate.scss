@@ -3,7 +3,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  height: 100vh; // fallback
+  height: 100dvh;
+  // html/body no longer scroll (styles.scss) — this screen needs its own scroll container for
+  // content that can grow taller than the viewport (an expanded error/hint on a small screen).
+  overflow-y: auto;
   padding: 2rem;
   text-align: center;
   background: var(--spearmint-hero-gradient);

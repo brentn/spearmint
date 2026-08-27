@@ -1,6 +1,15 @@
 @use 'bootstrap/scss/bootstrap';
 @use './styles/tokens';
 
+// Without this, nothing above .app-shell (100dvh, app.scss) constrains the document's own
+// height, so on screens short enough that .app-scroll has no internal overflow to capture the
+// touch gesture, iOS falls back to scrolling/bouncing the document itself — dragging the whole
+// fixed-height shell, nav included, as one unit (issue #43 follow-up).
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   font-family: var(--spearmint-font-family);

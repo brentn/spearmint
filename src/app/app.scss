@@ -1,6 +1,9 @@
 .app-shell {
   height: 100vh; // fallback
   height: 100dvh; // tracks iOS Safari's dynamic viewport as chrome animates
+  // Positions <app-nav-shell> below, without exposing it to iOS's fixed-position
+  // visual-viewport compensation (issue #22) the way `position: fixed` would.
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -20,6 +23,10 @@
   // Fills leftover vertical space so short screens still push the nav to the
   // true bottom edge instead of it sitting mid-screen right under the content.
   flex: 1 0 auto;
+  // Reserves room for <app-nav-shell>, which overlays the bottom of .app-scroll rather than
+  // sharing its flex row (issue #43 follow-up) — without this, content would render underneath
+  // the nav whenever it's visible.
+  padding-bottom: var(--spearmint-nav-height);
 }
 
 .rotate-overlay {

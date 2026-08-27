@@ -15,7 +15,7 @@ const NEAR_BOTTOM_THRESHOLD = 8;
  * momentum/rubber-band scrolling generates, which is what caused rapid
  * open/close during slow scrolling (issue #43).
  */
-const SCROLL_DEAD_ZONE_PX = 24;
+const SCROLL_DEAD_ZONE_PX = 40;
 
 export interface NavScrollState {
   hidden: boolean;

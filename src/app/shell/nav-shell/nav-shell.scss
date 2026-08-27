@@ -1,17 +1,20 @@
-// A plain flex item at the bottom of .app-shell's column (sibling of the scrollable
-// .app-scroll, not nested inside it) — not position:fixed/sticky. This is what makes it
-// immune to iOS Safari's chrome-animation compensation for fixed-position elements
-// (issue #22), and, unlike `position: sticky` nested inside the scroll container, it stays
-// visible at every scroll position instead of only pinning once you scroll near the end
-// of the content.
+// Overlays the bottom of .app-scroll (positioned against .app-shell, its nearest positioned
+// ancestor — see app.scss) rather than sharing its flex row. Not position:fixed/sticky: fixed
+// would expose it to iOS Safari's chrome-animation compensation against the visual viewport
+// (issue #22), which `absolute` against a normal positioned ancestor doesn't trigger; sticky
+// nested inside the scroll container only pins once you scroll near the end of the content.
 //
-// Hiding is a `transform`, not a box-size change: the bar keeps its normal flex row
-// permanently reserved, so `.app-scroll` never reflows as the bar hides/shows. Reflowing it
-// (the pre-#43 approach) fed synthetic scroll events back into the auto-hide logic — the
-// direct cause of the bar "grabbing the page" mid-scroll. `translateY(100%)` moves the bar by
-// its own rendered height automatically, so there's no height constant to keep in sync either.
+// Hiding is a `transform`, not a box-size change: overlaying (instead of reserving a flex row)
+// means .app-content's own padding-bottom (app.scss) — not this element's box — is what keeps
+// content from rendering underneath it, so `.app-scroll` never reflows as the bar hides/shows.
+// Reflowing it (the pre-#43 approach) fed synthetic scroll events back into the auto-hide logic
+// — the direct cause of the bar "grabbing the page" mid-scroll. `translateY(100%)` moves the bar
+// by its own rendered height automatically, so there's no height constant to keep in sync here.
 .nav-shell {
-  flex-shrink: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 100;
   display: flex;
   justify-content: space-around;
@@ -19,7 +22,7 @@
   padding: 0.5rem 0.25rem calc(0.5rem + env(safe-area-inset-bottom));
   background: var(--spearmint-hero-gradient);
   box-shadow: var(--spearmint-shadow-strong);
-  transition: transform 0.2s ease;
+  transition: transform 0.3s ease;
 
   &--hidden {
     transform: translateY(100%);
