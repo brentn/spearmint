@@ -121,7 +121,7 @@ describe('BudgetsStore', () => {
     const row = store.rows()[0];
     expect(row.categoryName).toBe('Groceries');
     expect(row.spent).toBe(85);
-    expect(row.state).toBe('warning'); // 85%
+    expect(row.state).toBe('normal'); // 85%, below the 101% green ceiling
   });
 
   it('carries a row\'s parentCategoryId from its category, null for top-level categories', async () => {

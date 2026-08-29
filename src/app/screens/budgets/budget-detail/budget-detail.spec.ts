@@ -26,6 +26,7 @@ function row(overrides: Partial<BudgetRowViewModel> = {}): BudgetRowViewModel {
     barPercent: 0,
     pctLabelOnFill: false,
     state: 'normal',
+    reversed: false,
     implied: false,
     ...overrides,
   };

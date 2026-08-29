@@ -26,12 +26,14 @@ export class FlowProgressBar {
 
   /** flex-grow values for the two segments — both amounts when there's actual activity to
    * split, otherwise a full solid segment so a $0-budget/$0-actual row still renders a visible
-   * bar rather than nothing at all. */
+   * bar rather than nothing at all. Magnitude only: CSS drops a negative flex-grow declaration
+   * entirely (leaving both segments at their flex-basis of 0, i.e. invisible), so a reversed row
+   * (negative totalActual) needs the absolute values here — same proportions either direction. */
   protected readonly segments = computed(() => {
     const row = this.row();
     if (row.totalActual === 0) {
       return { categorized: 1, uncategorized: 0 };
     }
-    return { categorized: row.categorizedActual, uncategorized: row.uncategorizedActual };
+    return { categorized: Math.abs(row.categorizedActual), uncategorized: Math.abs(row.uncategorizedActual) };
   });
 }

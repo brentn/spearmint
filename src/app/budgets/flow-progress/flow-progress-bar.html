@@ -11,7 +11,11 @@
   </div>
   <div class="flow-progress-bar__track-wrap">
     <div class="bar-track bar-track--thin">
-      <div class="bar-fill-split" [style.width.%]="row().barPercent * 100">
+      <div
+        class="bar-fill-split"
+        [class.bar-fill--reversed]="row().reversed"
+        [style.width.%]="row().barPercent * 100"
+      >
         <div [class]="'bar-segment bar-fill--' + row().state" [style.flex-grow]="segments().categorized"></div>
         <div
           [class]="'bar-segment bar-segment--uncategorized bar-fill--' + row().state"

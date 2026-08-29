@@ -66,6 +66,13 @@ body {
   transition: width 0.2s;
 }
 
+// A negative total (e.g. a refund/reversal) fills from the opposite edge, so the bar always
+// grows outward from zero rather than getting clamped to an invisible 0% width.
+.bar-fill--reversed {
+  left: auto;
+  right: 0;
+}
+
 .bar-fill--normal {
   background: var(--spearmint-primary);
 }

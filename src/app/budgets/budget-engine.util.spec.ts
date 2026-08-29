@@ -262,26 +262,27 @@ describe('getCombinedBudgetAmounts (unified amount rule)', () => {
 });
 
 describe('computeBudgetStatus', () => {
-  it('expense: green below 85%', () => {
+  it('expense: green up to and including 101%', () => {
     expect(computeBudgetStatus('expense', 410, 500, 40).state).toBe('normal'); // 82%
+    expect(computeBudgetStatus('expense', 101, 100, 0).state).toBe('normal'); // exactly 101%
   });
 
-  it('expense: amber from 85% up to and including 100%', () => {
-    expect(computeBudgetStatus('expense', 233, 250, 0).state).toBe('warning'); // 93.2%
-    expect(computeBudgetStatus('expense', 100, 100, 0).state).toBe('warning'); // exactly 100%
+  it('expense: amber from just above 101% up to and including 110%', () => {
+    expect(computeBudgetStatus('expense', 105, 100, 0).state).toBe('warning'); // 105%
+    expect(computeBudgetStatus('expense', 110, 100, 0).state).toBe('warning'); // exactly 110%
   });
 
-  it('expense: red over 100%', () => {
+  it('expense: red above 110%', () => {
     expect(computeBudgetStatus('expense', 138, 100, 0).state).toBe('over'); // 138%
   });
 
   it('rollover counts toward the available-budget denominator', () => {
-    // 410 / (500 + 40) = 75.9% -> normal, whereas 410/500 alone would be 82% (still normal here,
+    // 430 / (500 + 40) = 79.6% -> normal, whereas 430/500 alone would be 86% (still normal here,
     // so use a case where rollover changes the bucket)
-    const withoutRollover = computeBudgetStatus('expense', 430, 500, 0);
-    const withRollover = computeBudgetStatus('expense', 430, 400, 100); // 430/500 = 86%
-    expect(withoutRollover.percent).toBeCloseTo(0.86, 3);
-    expect(withRollover.percent).toBeCloseTo(0.86, 3);
+    const withoutRollover = computeBudgetStatus('expense', 540, 500, 0); // 108% -> warning
+    const withRollover = computeBudgetStatus('expense', 540, 400, 100); // 540/500 = 108% -> warning
+    expect(withoutRollover.percent).toBeCloseTo(1.08, 3);
+    expect(withRollover.percent).toBeCloseTo(1.08, 3);
     expect(withRollover.state).toBe('warning');
   });
 
@@ -300,6 +301,45 @@ describe('computeBudgetStatus', () => {
 
   it('barPercent clamps to 1 even when percent exceeds it', () => {
     expect(computeBudgetStatus('expense', 138, 100, 0).barPercent).toBe(1);
+  });
+
+  it('positive percent is never reversed', () => {
+    expect(computeBudgetStatus('expense', 50, 100, 0).reversed).toBe(false);
+  });
+
+  it('expense: a refund (negative spent) reverses the bar, sized by magnitude, still green', () => {
+    const status = computeBudgetStatus('expense', -20, 100, 0);
+    expect(status.percent).toBeCloseTo(-0.2, 5);
+    expect(status.reversed).toBe(true);
+    expect(status.barPercent).toBeCloseTo(0.2, 5);
+    expect(status.state).toBe('normal');
+  });
+
+  it('income: a reversal (negative spent) reverses the bar, sized by magnitude, still red', () => {
+    const status = computeBudgetStatus('income', -20, 100, 0);
+    expect(status.reversed).toBe(true);
+    expect(status.barPercent).toBeCloseTo(0.2, 5);
+    expect(status.state).toBe('over');
+  });
+
+  it('reversed barPercent clamps to 1 for a refund larger than the available amount', () => {
+    const status = computeBudgetStatus('expense', -150, 100, 0);
+    expect(status.reversed).toBe(true);
+    expect(status.barPercent).toBe(1);
+  });
+
+  it('a $0-budget expense category with a refund (negative spent, no budget at all) still reverses instead of showing 0%', () => {
+    const status = computeBudgetStatus('expense', -20, 0, 0);
+    expect(status.reversed).toBe(true);
+    expect(status.barPercent).toBe(1);
+    expect(status.state).toBe('normal');
+  });
+
+  it('a $0-budget income category with a reversal (negative spent, no budget at all) still reverses instead of showing 0%', () => {
+    const status = computeBudgetStatus('income', -20, 0, 0);
+    expect(status.reversed).toBe(true);
+    expect(status.barPercent).toBe(1);
+    expect(status.state).toBe('over');
   });
 });
 
@@ -355,7 +395,7 @@ describe('buildFlowProgressRow', () => {
 
   it('expenses use the normal/warning/over three-state against the combined actual', () => {
     expect(buildFlowProgressRow('expense', 400, 0, 500).state).toBe('normal'); // 80%
-    expect(buildFlowProgressRow('expense', 400, 60, 500).state).toBe('warning'); // 92%
+    expect(buildFlowProgressRow('expense', 400, 120, 500).state).toBe('warning'); // 104%
     expect(buildFlowProgressRow('expense', 400, 200, 500).state).toBe('over'); // 120%
   });
 
@@ -380,6 +420,25 @@ describe('buildFlowProgressRow', () => {
   it('a non-zero budget clamps barPercent to 1 even over 100%', () => {
     const row = buildFlowProgressRow('expense', 600, 0, 500);
     expect(row.zeroBudget).toBe(false);
+    expect(row.barPercent).toBe(1);
+  });
+
+  it('threads reversed through for a negative combined actual (expense)', () => {
+    const row = buildFlowProgressRow('expense', -30, 0, 100);
+    expect(row.reversed).toBe(true);
+    expect(row.barPercent).toBeCloseTo(0.3, 5);
+  });
+
+  it('threads reversed through for income too, even though color stays info', () => {
+    const row = buildFlowProgressRow('income', -30, 0, 100);
+    expect(row.reversed).toBe(true);
+    expect(row.state).toBe('info');
+  });
+
+  it('a zero-budget row with a negative total still reverses instead of rendering a full forward bar', () => {
+    const row = buildFlowProgressRow('expense', -20, 0, 0);
+    expect(row.zeroBudget).toBe(true);
+    expect(row.reversed).toBe(true);
     expect(row.barPercent).toBe(1);
   });
 });

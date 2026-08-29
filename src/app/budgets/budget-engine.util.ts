@@ -9,7 +9,8 @@ import { nextYearMonth, previousYearMonth } from './period.util';
  * and must be negated to get a positive "amount spent" for budget math.
  */
 
-const EXPENSE_WARNING_THRESHOLD = 0.85;
+const EXPENSE_WARNING_THRESHOLD = 1.01;
+const EXPENSE_OVER_THRESHOLD = 1.1;
 const INCOME_WARNING_THRESHOLD = 0.7;
 
 /** 'info' is a presentation-only override applied above this engine (BudgetsStore) for income
@@ -19,8 +20,13 @@ export type BudgetState = 'normal' | 'warning' | 'over' | 'info';
 export interface BudgetStatus {
   /** spent / (amount + rolloverAmount) — uncapped, can exceed 1. */
   percent: number;
-  /** `percent` clamped to [0, 1], for rendering bar fill width. */
+  /** `percent` clamped to [0, 1] (or its magnitude, clamped to [0, 1], when `reversed`), for
+   * rendering bar fill width. */
   barPercent: number;
+  /** True when `percent` is negative — e.g. a refund/reversal pushed the category's actual past
+   * zero the other way. The bar should fill from the opposite edge in this case; `state`'s color
+   * already lands correctly (green for expense, red for income) with no change needed there. */
+  reversed: boolean;
   state: BudgetState;
 }
 
@@ -179,12 +185,14 @@ export function getCombinedBudgetAmounts(
 }
 
 /**
- * Three-state progress status (spec §4): fixed 85% global warning threshold for
- * expense/transfer categories (green/amber/red ascending), inverted for income (a target to
- * meet/exceed). Rollover counts toward the denominator. Spending exactly the full budget (100%)
- * is still amber, not red — red is reserved for actually going over. A $0-budget row with any
- * spend has no "100%" to land on (percent is hard-coded to 1), so it stays red per the existing
- * $0-budget convention (issue #21).
+ * Three-state progress status (spec §4): expense/transfer categories are green up to and
+ * including 101% of budget, amber from there through 110%, red beyond that — a small overspend
+ * cushion before the bar turns alarming. Income is inverted (a target to meet/exceed, unaffected
+ * by the expense thresholds above). Rollover counts toward the denominator. A $0-budget row has
+ * no meaningful percent to bucket (nothing to divide by): positive spend stays red per the
+ * existing $0-budget convention (issue #21) via an explicit state override below; negative spend
+ * (a refund/reversal with no budget at all) still reverses at full magnitude rather than the
+ * two effectively canceling out to an invisible 0%.
  */
 export function computeBudgetStatus(
   categoryType: CategoryType,
@@ -193,8 +201,9 @@ export function computeBudgetStatus(
   rolloverAmount: number,
 ): BudgetStatus {
   const available = amount + rolloverAmount;
-  const percent = available > 0 ? spent / available : spent > 0 ? 1 : 0;
-  const barPercent = Math.max(0, Math.min(1, percent));
+  const percent = available > 0 ? spent / available : spent > 0 ? 1 : spent < 0 ? -1 : 0;
+  const reversed = percent < 0;
+  const barPercent = reversed ? Math.min(1, Math.abs(percent)) : Math.max(0, Math.min(1, percent));
 
   let state: BudgetState;
   if (categoryType === 'income') {
@@ -205,17 +214,22 @@ export function computeBudgetStatus(
     } else {
       state = 'over';
     }
+  } else if (available <= 0 && spent > 0) {
+    // No "% over" to land on when there's nothing budgeted at all — stays red per the existing
+    // $0-budget convention (issue #21) regardless of where percent (hard-coded to 1) would
+    // otherwise fall among the thresholds below.
+    state = 'over';
   } else {
-    if (percent < EXPENSE_WARNING_THRESHOLD) {
+    if (percent <= EXPENSE_WARNING_THRESHOLD) {
       state = 'normal';
-    } else if (available > 0 ? percent <= 1 : percent < 1) {
+    } else if (percent <= EXPENSE_OVER_THRESHOLD) {
       state = 'warning';
     } else {
       state = 'over';
     }
   }
 
-  return { percent, barPercent, state };
+  return { percent, barPercent, reversed, state };
 }
 
 export interface UncategorizedTotals {
@@ -267,6 +281,9 @@ export interface FlowProgressRow {
   /** Income is always 'info' (blue) regardless of percent — a fixed color, not a judgment on
    * progress toward target (unlike the per-category income row's pre-final-week 'info' state). */
   state: BudgetState;
+  /** True when the combined actual went negative — the bar fills from the opposite edge.
+   * Direction only; color is unaffected (income stays 'info' either way). */
+  reversed: boolean;
   /** True when `budget` is 0 — the view renders actual-only text instead of "$actual of $budget". */
   zeroBudget: boolean;
 }
@@ -299,6 +316,7 @@ export function buildFlowProgressRow(
     budget,
     barPercent: zeroBudget ? 1 : status.barPercent,
     state: categoryType === 'income' ? 'info' : status.state,
+    reversed: status.reversed,
     zeroBudget,
   };
 }

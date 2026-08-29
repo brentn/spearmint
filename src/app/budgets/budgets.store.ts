@@ -46,9 +46,16 @@ export interface BudgetRowViewModel {
   percent: number;
   pctRounded: number;
   barPercent: number;
-  /** Whether the percentage label sits on top of the filled portion of the bar (vs. beside it). */
+  /** Whether the percentage label sits on top of the filled portion of the bar (vs. beside it).
+   * Direction-agnostic by construction, not by coincidence: the templates anchor the on-fill
+   * label at the track's right edge regardless of `reversed`, and a reversed fill is itself
+   * anchored flush to that same right edge, so once the fill is large enough to trigger this the
+   * label always lands on colored area either direction. */
   pctLabelOnFill: boolean;
   state: BudgetState;
+  /** True when the category's actual went negative (e.g. a refund/reversal) — the bar fills from
+   * the opposite edge. Direction only; `state`'s color already lands correctly either way. */
+  reversed: boolean;
   /** True for a synthetic row: no explicit budget of its own, computed from budgeted descendants
    * (issue #15). `id` is a stable synthetic identifier in this case, not a real Budget id. */
   implied: boolean;
@@ -307,6 +314,7 @@ export class BudgetsStore {
         pctRounded: Math.round(status.percent * 100),
         barPercent: status.barPercent,
         pctLabelOnFill: status.barPercent > 0.22,
+        reversed: status.reversed,
         // Neutral "too early to judge" color for an income target (issue #21) — the real
         // green/amber/red state resumes once the final week gives "behind target" real meaning.
         state: category.type === 'income' && isIncomeInfoPeriod ? 'info' : status.state,
