@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { AuthService } from '../auth.service';
 import { MIN_PASSWORD_LENGTH, PASSWORD_LENGTH_HINT } from '../password-policy';
 import { ResetDeviceDialog } from '../../data/reset-device-dialog/reset-device-dialog';
@@ -14,8 +14,16 @@ export class AuthGate {
 
   readonly stage = this.authService.stage;
   readonly startupError = this.authService.startupError;
+  readonly biometricsEnabled = this.authService.biometricsEnabled;
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
+  /** True once the unlock stage's auto-fired biometric prompt has come back unsuccessful
+   * (declined, cancelled, or failed) — only then does the password field appear, so a
+   * biometrics-enabled device isn't shown a redundant password box up front. */
+  readonly biometricFailed = signal(false);
+  /** Steady-state unlock stage: password field is the fallback, not the default, when
+   * biometrics are enabled — hidden until there's nothing else to fall back on. */
+  readonly showPassword = computed(() => !this.biometricsEnabled() || this.biometricFailed());
   /** True once the migrate stage's mandatory WebAuthn unlock has succeeded — switches
    * that stage from the "Welcome back" prompt to the password-creation form. */
   readonly migrationVerified = signal(false);
@@ -30,13 +38,17 @@ export class AuthGate {
 
   constructor() {
     // Auto-fires once, right when the steady-state unlock stage loads with biometrics
-    // enabled. The password field renders unconditionally alongside this (see the
-    // template), so a declined/cancelled/failed prompt never blocks entry — it just
-    // leaves the password field there, exactly as if biometrics weren't offered.
+    // enabled. The password field stays hidden (see showPassword/the template) until this
+    // comes back unsuccessful, so a declined/cancelled/failed prompt falls back to the
+    // password field rather than blocking entry.
     effect(() => {
-      if (this.authService.stage() === 'unlock' && this.authService.biometricsEnabled() && !this.biometricAttempted) {
+      if (this.authService.stage() === 'unlock' && this.biometricsEnabled() && !this.biometricAttempted) {
         this.biometricAttempted = true;
-        void this.authService.authenticate();
+        void this.authService.authenticate().then((ok) => {
+          if (!ok) {
+            this.biometricFailed.set(true);
+          }
+        });
       }
     });
   }

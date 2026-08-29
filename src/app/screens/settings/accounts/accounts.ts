@@ -25,7 +25,7 @@ import { SettingsHeader } from '../settings-header/settings-header';
  * host itself (parsed from the access URL at claim time isn't stored per-account, so this
  * uses the well-known Bridge dashboard) is where a user manages and re-authenticates
  * connections. Also used as the "don't have a token yet" link-out on the connect form. */
-const SIMPLEFIN_BRIDGE_URL = 'https://bridge.simplefin.org/auth/login';
+const SIMPLEFIN_BRIDGE_URL = 'https://beta-bridge.simplefin.org/auth/login';
 
 @Component({
   selector: 'app-accounts',

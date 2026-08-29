@@ -1,4 +1,5 @@
 <div class="auth-gate">
+  <img class="auth-gate__logo" src="icons/icon-192x192.png" alt="Spearmint" width="72" height="72" />
   @if (stage() === 'loading') {
     <p class="auth-gate__loading">Loading&hellip;</p>
   } @else if (stage() === 'error') {
@@ -56,17 +57,21 @@
     </button>
   } @else {
     <h1 class="auth-gate__title">Welcome back</h1>
-    <p class="auth-gate__body">Unlock Spearmint to continue.</p>
-    <input
-      class="auth-gate__input"
-      type="password"
-      placeholder="Password"
-      [disabled]="busy()"
-      (input)="password.set($any($event.target).value)"
-    />
-    <button class="auth-gate__button" type="button" [disabled]="busy() || !password()" (click)="unlockWithPassword()">
-      {{ busy() ? 'Unlocking…' : 'Unlock' }}
-    </button>
+    @if (showPassword()) {
+      <p class="auth-gate__body">Unlock Spearmint to continue.</p>
+      <input
+        class="auth-gate__input"
+        type="password"
+        placeholder="Password"
+        [disabled]="busy()"
+        (input)="password.set($any($event.target).value)"
+      />
+      <button class="auth-gate__button" type="button" [disabled]="busy() || !password()" (click)="unlockWithPassword()">
+        {{ busy() ? 'Unlocking…' : 'Unlock' }}
+      </button>
+    } @else {
+      <p class="auth-gate__body">Waiting for biometric verification&hellip;</p>
+    }
     <details class="auth-gate__trouble">
       <summary>Trouble unlocking?</summary>
       <button class="auth-gate__reset-link" type="button" (click)="resetDialog.open()">Reset this device</button>

@@ -103,21 +103,40 @@ describe('AuthGate', () => {
     expect(verifyPassword).toHaveBeenCalledWith('my password');
   });
 
-  it('auto-fires biometric authentication once when biometrics are enabled in the unlock stage', async () => {
+  it('auto-fires biometric authentication once when biometrics are enabled, keeping the password field hidden until it resolves', async () => {
     stage.set('unlock');
     biometricsEnabled.set(true);
     configure();
     const fixture = TestBed.createComponent(AuthGate);
     fixture.detectChanges();
+
+    // Hidden while the biometric prompt is in flight — it's the primary path, not a fallback.
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('input[placeholder="Password"]')).toBeFalsy();
+
     await fixture.whenStable();
+    fixture.detectChanges();
 
     expect(authenticate).toHaveBeenCalledTimes(1);
-    // A declined/failed prompt must not block the password field.
-    const compiled = fixture.nativeElement as HTMLElement;
+    // A declined/failed prompt falls back to the password field rather than blocking entry.
     expect(compiled.querySelector('input[placeholder="Password"]')).toBeTruthy();
   });
 
-  it('does not auto-fire biometrics when disabled', async () => {
+  it('keeps the password field hidden when biometrics succeed', async () => {
+    stage.set('unlock');
+    biometricsEnabled.set(true);
+    authenticate.mockResolvedValue(true);
+    configure();
+    const fixture = TestBed.createComponent(AuthGate);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('input[placeholder="Password"]')).toBeFalsy();
+  });
+
+  it('does not auto-fire biometrics when disabled, and shows the password field immediately', async () => {
     stage.set('unlock');
     biometricsEnabled.set(false);
     configure();
@@ -126,6 +145,18 @@ describe('AuthGate', () => {
     await fixture.whenStable();
 
     expect(authenticate).not.toHaveBeenCalled();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('input[placeholder="Password"]')).toBeTruthy();
+  });
+
+  it('shows the Spearmint logo', () => {
+    stage.set('unlock');
+    configure();
+    const fixture = TestBed.createComponent(AuthGate);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('img.auth-gate__logo')).toBeTruthy();
   });
 
   it('migrate stage shows the WebAuthn "Welcome back" unlock before a password can be created', async () => {
