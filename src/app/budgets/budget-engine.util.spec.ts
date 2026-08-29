@@ -322,23 +322,40 @@ describe('computeBudgetStatus', () => {
     expect(status.state).toBe('over');
   });
 
-  it('reversed barPercent clamps to 1 for a refund larger than the available amount', () => {
+  it('reversed barPercent caps at 90% (not 100%) for a refund larger than the available amount, and flags reversedCapped', () => {
     const status = computeBudgetStatus('expense', -150, 100, 0);
     expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBe(1);
+    expect(status.barPercent).toBe(0.9);
+    expect(status.reversedCapped).toBe(true);
   });
 
-  it('a $0-budget expense category with a refund (negative spent, no budget at all) still reverses instead of showing 0%', () => {
+  it('a reversed bar at exactly 90% magnitude is not capped — the boundary itself still reads as uncapped', () => {
+    const status = computeBudgetStatus('expense', -90, 100, 0);
+    expect(status.barPercent).toBeCloseTo(0.9, 5);
+    expect(status.reversedCapped).toBe(false);
+  });
+
+  it('a modest reversed bar (well under the cap) is not flagged as capped', () => {
+    expect(computeBudgetStatus('expense', -20, 100, 0).reversedCapped).toBe(false);
+  });
+
+  it('reversedCapped is always false when not reversed, regardless of magnitude', () => {
+    expect(computeBudgetStatus('expense', 500, 100, 0).reversedCapped).toBe(false);
+  });
+
+  it('a $0-budget expense category with a refund (negative spent, no budget at all) still reverses instead of showing 0%, capped at 90%', () => {
     const status = computeBudgetStatus('expense', -20, 0, 0);
     expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBe(1);
+    expect(status.barPercent).toBe(0.9);
+    expect(status.reversedCapped).toBe(true);
     expect(status.state).toBe('normal');
   });
 
-  it('a $0-budget income category with a reversal (negative spent, no budget at all) still reverses instead of showing 0%', () => {
+  it('a $0-budget income category with a reversal (negative spent, no budget at all) still reverses instead of showing 0%, capped at 90%', () => {
     const status = computeBudgetStatus('income', -20, 0, 0);
     expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBe(1);
+    expect(status.barPercent).toBe(0.9);
+    expect(status.reversedCapped).toBe(true);
     expect(status.state).toBe('over');
   });
 });
@@ -435,11 +452,12 @@ describe('buildFlowProgressRow', () => {
     expect(row.state).toBe('info');
   });
 
-  it('a zero-budget row with a negative total still reverses instead of rendering a full forward bar', () => {
+  it('a zero-budget row with a negative total still reverses instead of rendering a full forward bar, keeping the reversed cap', () => {
     const row = buildFlowProgressRow('expense', -20, 0, 0);
     expect(row.zeroBudget).toBe(true);
     expect(row.reversed).toBe(true);
-    expect(row.barPercent).toBe(1);
+    expect(row.reversedCapped).toBe(true);
+    expect(row.barPercent).toBe(0.9);
   });
 });
 

@@ -49,14 +49,21 @@
             [class.bar-fill--reversed]="row.reversed"
             [style.width.%]="row.barPercent * 100"
           ></div>
-          <span
-            class="bar-pct"
-            [class.bar-pct--on-fill]="row.pctLabelOnFill"
-            [style.left]="row.pctLabelOnFill || row.reversed ? null : row.barPercent * 100 + 4 + '%'"
-            [style.right]="!row.pctLabelOnFill && row.reversed ? row.barPercent * 100 + 4 + '%' : null"
-          >
-            {{ row.pctRounded }}%
-          </span>
+          @if (row.reversedCapped) {
+            <div class="bar-overflow-indicator">
+              <span [class]="'bar-chevron bar-chevron--' + row.state"></span>
+              <span class="bar-pct">{{ row.pctRounded }}%</span>
+            </div>
+          } @else {
+            <span
+              class="bar-pct"
+              [class.bar-pct--on-fill]="row.pctLabelOnFill"
+              [style.left]="row.pctLabelOnFill || row.reversed ? null : row.barPercent * 100 + 4 + '%'"
+              [style.right]="!row.pctLabelOnFill && row.reversed ? row.barPercent * 100 + 4 + '%' : null"
+            >
+              {{ row.pctRounded }}%
+            </span>
+          }
         </div>
         <p class="budget-detail__explainer">
           @if (row.categoryType === 'income') {
@@ -88,6 +95,9 @@
                       [class.bar-fill--reversed]="subRow.reversed"
                       [style.width.%]="subRow.barPercent * 100"
                     ></div>
+                    @if (subRow.reversedCapped) {
+                      <span [class]="'bar-chevron bar-chevron--' + subRow.state"></span>
+                    }
                   </div>
                 </a>
               </li>

@@ -27,6 +27,7 @@ function row(overrides: Partial<BudgetRowViewModel> = {}): BudgetRowViewModel {
     pctLabelOnFill: false,
     state: 'normal',
     reversed: false,
+    reversedCapped: false,
     implied: false,
     ...overrides,
   };
@@ -56,6 +57,7 @@ const emptyFlowProgressRow: FlowProgressRow = {
   barPercent: 0,
   state: 'normal',
   reversed: false,
+  reversedCapped: false,
   zeroBudget: true,
 };
 

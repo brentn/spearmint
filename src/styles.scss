@@ -107,6 +107,65 @@ body {
   color: var(--spearmint-ink);
 }
 
+// A reversed bar's true magnitude can exceed the 90% cap it renders at (REVERSED_CAP in
+// budget-engine.util.ts) — the bar itself has no more room to show "how far past the cap", so
+// this chevron (standalone, or plus a label where one exists) renders in the guaranteed-empty
+// sliver of track instead, pointing further in the direction the bar would keep growing.
+.bar-chevron {
+  position: absolute;
+  left: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-right: 6px solid currentColor;
+}
+
+// Groups the chevron with a percentage label (rows that show one) — same positioning as a
+// standalone .bar-chevron, but as a flex row so the label lays out beside it instead of the two
+// competing for the same absolute position.
+.bar-overflow-indicator {
+  position: absolute;
+  left: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+
+  // Reset the standalone positioning above — this group's own absolute position handles it.
+  .bar-chevron {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+  }
+
+  .bar-pct {
+    position: static;
+    transform: none;
+  }
+}
+
+.bar-chevron--normal {
+  color: var(--spearmint-primary);
+}
+
+.bar-chevron--warning {
+  color: var(--spearmint-warning);
+}
+
+.bar-chevron--over {
+  color: var(--spearmint-danger);
+}
+
+// flow-progress-bar's income row is always 'info' (blue), never normal/over — see
+// buildFlowProgressRow — so a reversed-capped income row needs its own chevron color too.
+.bar-chevron--info {
+  color: var(--spearmint-accent);
+}
+
 // Split-fill primitives for the income/expenses progress widget (issue #42): a categorized
 // solid segment and a dim/crosshatched uncategorized segment, sized by flex-grow so their
 // relative widths track the two dollar amounts directly with no percentage math required.

@@ -12,6 +12,11 @@ import { nextYearMonth, previousYearMonth } from './period.util';
 const EXPENSE_WARNING_THRESHOLD = 1.01;
 const EXPENSE_OVER_THRESHOLD = 1.1;
 const INCOME_WARNING_THRESHOLD = 0.7;
+/** A reversed (negative-total) bar is capped short of full width — a -100% reversed bar would
+ * otherwise be pixel-identical to a +100% forward one, since a fully-filled track shows no bare
+ * pixel to reveal which edge it grew from. The gap this leaves is also where the overflow
+ * chevron/label render once the true magnitude exceeds it. */
+const REVERSED_CAP = 0.9;
 
 /** 'info' is a presentation-only override applied above this engine (BudgetsStore) for income
  * rows before the final week of the month (issue #21) — never produced by computeBudgetStatus. */
@@ -27,6 +32,10 @@ export interface BudgetStatus {
    * zero the other way. The bar should fill from the opposite edge in this case; `state`'s color
    * already lands correctly (green for expense, red for income) with no change needed there. */
   reversed: boolean;
+  /** True when a reversed bar's true magnitude exceeds the `REVERSED_CAP` it renders at — the bar
+   * itself can no longer show "how far past the cap", so the UI shows a directional chevron (and
+   * moves the percentage label next to it) instead. Always false when `reversed` is false. */
+  reversedCapped: boolean;
   state: BudgetState;
 }
 
@@ -203,7 +212,10 @@ export function computeBudgetStatus(
   const available = amount + rolloverAmount;
   const percent = available > 0 ? spent / available : spent > 0 ? 1 : spent < 0 ? -1 : 0;
   const reversed = percent < 0;
-  const barPercent = reversed ? Math.min(1, Math.abs(percent)) : Math.max(0, Math.min(1, percent));
+  const reversedCapped = reversed && Math.abs(percent) > REVERSED_CAP;
+  const barPercent = reversed
+    ? Math.min(REVERSED_CAP, Math.abs(percent))
+    : Math.max(0, Math.min(1, percent));
 
   let state: BudgetState;
   if (categoryType === 'income') {
@@ -229,7 +241,7 @@ export function computeBudgetStatus(
     }
   }
 
-  return { percent, barPercent, reversed, state };
+  return { percent, barPercent, reversed, reversedCapped, state };
 }
 
 export interface UncategorizedTotals {
@@ -276,7 +288,8 @@ export interface FlowProgressRow {
   /** categorizedActual + uncategorizedActual — the bar's combined fill total. */
   totalActual: number;
   budget: number;
-  /** Fraction of the track this row's bar should fill — 1 (full width) when `budget` is 0. */
+  /** Fraction of the track this row's bar should fill — 1 (full width) when `budget` is 0,
+   * unless `reversed`, which keeps its own lower cap regardless of `zeroBudget`. */
   barPercent: number;
   /** Income is always 'info' (blue) regardless of percent — a fixed color, not a judgment on
    * progress toward target (unlike the per-category income row's pre-final-week 'info' state). */
@@ -284,6 +297,8 @@ export interface FlowProgressRow {
   /** True when the combined actual went negative — the bar fills from the opposite edge.
    * Direction only; color is unaffected (income stays 'info' either way). */
   reversed: boolean;
+  /** True when a reversed bar's true magnitude exceeds the rendering cap — see `BudgetStatus.reversedCapped`. */
+  reversedCapped: boolean;
   /** True when `budget` is 0 — the view renders actual-only text instead of "$actual of $budget". */
   zeroBudget: boolean;
 }
@@ -314,9 +329,12 @@ export function buildFlowProgressRow(
     uncategorizedActual,
     totalActual,
     budget,
-    barPercent: zeroBudget ? 1 : status.barPercent,
+    // A reversed bar must keep its cap even for a zero-budget row — forcing it to a full 1 here
+    // like the forward case would recreate the exact "looks identical either direction" bug.
+    barPercent: zeroBudget && !status.reversed ? 1 : status.barPercent,
     state: categoryType === 'income' ? 'info' : status.state,
     reversed: status.reversed,
+    reversedCapped: status.reversedCapped,
     zeroBudget,
   };
 }
