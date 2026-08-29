@@ -266,11 +266,12 @@ describe('computeBudgetStatus', () => {
     expect(computeBudgetStatus('expense', 410, 500, 40).state).toBe('normal'); // 82%
   });
 
-  it('expense: amber from 85% up to (not including) 100%', () => {
+  it('expense: amber from 85% up to and including 100%', () => {
     expect(computeBudgetStatus('expense', 233, 250, 0).state).toBe('warning'); // 93.2%
+    expect(computeBudgetStatus('expense', 100, 100, 0).state).toBe('warning'); // exactly 100%
   });
 
-  it('expense: red at/over 100%', () => {
+  it('expense: red over 100%', () => {
     expect(computeBudgetStatus('expense', 138, 100, 0).state).toBe('over'); // 138%
   });
 

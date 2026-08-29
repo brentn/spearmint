@@ -181,7 +181,10 @@ export function getCombinedBudgetAmounts(
 /**
  * Three-state progress status (spec §4): fixed 85% global warning threshold for
  * expense/transfer categories (green/amber/red ascending), inverted for income (a target to
- * meet/exceed). Rollover counts toward the denominator.
+ * meet/exceed). Rollover counts toward the denominator. Spending exactly the full budget (100%)
+ * is still amber, not red — red is reserved for actually going over. A $0-budget row with any
+ * spend has no "100%" to land on (percent is hard-coded to 1), so it stays red per the existing
+ * $0-budget convention (issue #21).
  */
 export function computeBudgetStatus(
   categoryType: CategoryType,
@@ -205,7 +208,7 @@ export function computeBudgetStatus(
   } else {
     if (percent < EXPENSE_WARNING_THRESHOLD) {
       state = 'normal';
-    } else if (percent < 1) {
+    } else if (available > 0 ? percent <= 1 : percent < 1) {
       state = 'warning';
     } else {
       state = 'over';
