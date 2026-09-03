@@ -5,6 +5,10 @@ import { todayDateOnlyUtc } from '../simplefin/date-only.util';
 import type { AccountSyncOutcome, DiscoveredSimplefinAccount } from '../simplefin/simplefin-ingest-plan.util';
 import { epochSecondsToDateOnly, parseDecimalAmount } from '../simplefin/simplefin-mapping.util';
 
+/** Every new Account starts here regardless of which creation path produced it, so a future
+ * third path can't forget to zero these. */
+const CLEAN_SYNC_STATUS = { needsReconnect: false, syncIssue: null, missing: false } as const;
+
 /**
  * Owns every Account/Institution RxDB write: SimplefinSyncService, the Settings Accounts
  * screen, and AccountDeletionService all route their creates/renames/type-changes/removals
@@ -16,9 +20,13 @@ import { epochSecondsToDateOnly, parseDecimalAmount } from '../simplefin/simplef
 export class AccountsService {
   private readonly databaseService = inject(DatabaseService);
 
-  async findById(accountId: string): Promise<Account | undefined> {
+  private async findAccountDoc(accountId: string) {
     const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(accountId).exec();
+    return db.accounts.findOne(accountId).exec();
+  }
+
+  async findById(accountId: string): Promise<Account | undefined> {
+    const doc = await this.findAccountDoc(accountId);
     return doc?.toJSON();
   }
 
@@ -55,9 +63,7 @@ export class AccountsService {
       currencyCode: 'USD',
       balance: 0,
       balanceDate: todayDateOnlyUtc(),
-      needsReconnect: false,
-      syncIssue: null,
-      missing: false,
+      ...CLEAN_SYNC_STATUS,
       isManual: true,
     };
     await db.accounts.insert(account);
@@ -83,9 +89,7 @@ export class AccountsService {
       currencyCode: discovered.currencyCode,
       balance: parseDecimalAmount(discovered.balance),
       balanceDate: epochSecondsToDateOnly(discovered.balanceDateEpoch),
-      needsReconnect: false,
-      syncIssue: null,
-      missing: false,
+      ...CLEAN_SYNC_STATUS,
       isManual: false,
     };
     await db.accounts.insert(account);
@@ -93,14 +97,12 @@ export class AccountsService {
   }
 
   async rename(accountId: string, name: string): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(accountId).exec();
+    const doc = await this.findAccountDoc(accountId);
     await doc?.incrementalPatch({ name });
   }
 
   async setType(accountId: string, type: AccountType): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(accountId).exec();
+    const doc = await this.findAccountDoc(accountId);
     await doc?.incrementalPatch({ type });
   }
 
@@ -109,8 +111,7 @@ export class AccountsService {
    * only when the outcome matched a response account this run. Returns false without writing
    * if the account no longer exists. */
   async applySyncOutcome(outcome: AccountSyncOutcome): Promise<boolean> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(outcome.accountId).exec();
+    const doc = await this.findAccountDoc(outcome.accountId);
     if (!doc) {
       return false;
     }
@@ -131,8 +132,7 @@ export class AccountsService {
   }
 
   async remove(accountId: string): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(accountId).exec();
+    const doc = await this.findAccountDoc(accountId);
     await doc?.remove();
   }
 }
