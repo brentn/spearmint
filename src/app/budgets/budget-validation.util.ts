@@ -1,14 +1,17 @@
 import type { Category } from '../data/models';
 
-export interface BudgetWriteDraft {
+/** The shape of a budget create/update, shared by BudgetsService.setForPeriod and its
+ * validation here — one write shape for both "add" and "edit," any period. */
+export interface BudgetWrite {
   amount: number;
   rollOver: boolean;
-  /** Present only when manually overriding this period's rollover amount — requires `rollOver`. */
+  /** Present only to set a sticky manual rollover override for this exact period (requires
+   * `rollOver`) — see recomputeRollovers' doc for what "sticky" means. */
   rolloverAmount?: number;
 }
 
 /** Validates a budget create/update against its category — no rollover toggle for Income. */
-export function validateBudgetWrite(category: Category, draft: BudgetWriteDraft): string | null {
+export function validateBudgetWrite(category: Category, draft: BudgetWrite): string | null {
   if (draft.rollOver && category.type === 'income') {
     return 'Income budgets cannot roll over.';
   }

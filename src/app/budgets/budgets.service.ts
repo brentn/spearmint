@@ -1,17 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../data/database.service';
 import type { Budget, YearMonth } from '../data/models';
-import { validateBudgetWrite } from './budget-validation.util';
+import { type BudgetWrite, validateBudgetWrite } from './budget-validation.util';
 import { recomputeRollovers } from './budget-engine.util';
 import { currentYearMonth } from './period.util';
-
-export interface BudgetPatch {
-  amount: number;
-  rollOver: boolean;
-  /** Present only to set a sticky manual rollover override for this exact period (requires
-   * `rollOver`) — see recomputeRollovers' doc for what "sticky" means. */
-  rolloverAmount?: number;
-}
 
 /**
  * Budget CRUD scoped to {categoryId, periodType, period}. `setForPeriod` is the one write
@@ -69,7 +61,7 @@ export class BudgetsService {
    * or edits that row in place if one already does — the one write path for both "add" and
    * "edit," for any period. A manual `rolloverAmount` marks the row `rolloverManual: true`.
    */
-  async setForPeriod(categoryId: string, period: YearMonth, patch: BudgetPatch): Promise<Budget> {
+  async setForPeriod(categoryId: string, period: YearMonth, patch: BudgetWrite): Promise<Budget> {
     const db = await this.databaseService.getDatabase();
     const category = await db.categories.findOne(categoryId).exec();
     if (!category) {
