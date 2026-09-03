@@ -4,7 +4,11 @@ import type { ExtendedAuthenticatorTransport, NamedAlgo } from '@passwordless-id
 
 export type DateOnly = string; // YYYY-MM-DD
 export type UtcTimestamp = string; // ISO 8601
-export type PeriodType = 'month' | 'year';
+/** Every real budget is monthly — nothing ever creates or queries a 'year' one. Pinned to this
+ * single value rather than dropped: the field is RxDB-persisted on `Budget`, and removing it
+ * from the schema would need a version bump + migration (see budgetSchema), not just a type
+ * change. The schema's `periodType` enum still allows 'year' to match. */
+export type PeriodType = 'month';
 export type YearMonth = string; // YYYY-MM
 
 export interface Institution {

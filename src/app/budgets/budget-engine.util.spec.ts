@@ -94,14 +94,14 @@ describe('getBudgetForExactPeriod / getEffectiveBudgetForScope', () => {
   ];
 
   it('getBudgetForExactPeriod only matches an exact period', () => {
-    expect(getBudgetForExactPeriod(budgets, 'cat-1', 'month', '2026-03')?.id).toBe('b-mar');
-    expect(getBudgetForExactPeriod(budgets, 'cat-1', 'month', '2026-02')).toBeNull();
+    expect(getBudgetForExactPeriod(budgets, 'cat-1', '2026-03')?.id).toBe('b-mar');
+    expect(getBudgetForExactPeriod(budgets, 'cat-1', '2026-02')).toBeNull();
   });
 
   it('getEffectiveBudgetForScope returns the most recent budget at or before the target period', () => {
-    expect(getEffectiveBudgetForScope(budgets, 'cat-1', 'month', '2026-02')?.id).toBe('b-jan');
-    expect(getEffectiveBudgetForScope(budgets, 'cat-1', 'month', '2026-06')?.id).toBe('b-mar');
-    expect(getEffectiveBudgetForScope(budgets, 'cat-1', 'month', '2025-12')).toBeNull();
+    expect(getEffectiveBudgetForScope(budgets, 'cat-1', '2026-02')?.id).toBe('b-jan');
+    expect(getEffectiveBudgetForScope(budgets, 'cat-1', '2026-06')?.id).toBe('b-mar');
+    expect(getEffectiveBudgetForScope(budgets, 'cat-1', '2025-12')).toBeNull();
   });
 });
 

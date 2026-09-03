@@ -1,4 +1,4 @@
-import type { Budget, Category, CategoryType, PeriodType, Transaction, YearMonth } from '../data/models';
+import type { Budget, Category, CategoryType, Transaction, YearMonth } from '../data/models';
 import { nextYearMonth, previousYearMonth } from './period.util';
 
 /**
@@ -67,26 +67,14 @@ export function buildSignedActualsMap(transactions: Transaction[], categories: C
   return map;
 }
 
-export function getBudgetForExactPeriod(
-  budgets: Budget[],
-  categoryId: string,
-  periodType: PeriodType,
-  period: YearMonth,
-): Budget | null {
-  return (
-    budgets.find((b) => b.categoryId === categoryId && b.periodType === periodType && b.period === period) ?? null
-  );
+export function getBudgetForExactPeriod(budgets: Budget[], categoryId: string, period: YearMonth): Budget | null {
+  return budgets.find((b) => b.categoryId === categoryId && b.periodType === 'month' && b.period === period) ?? null;
 }
 
-/** Most recent budget at or before `period` for this category/periodType scope. */
-export function getEffectiveBudgetForScope(
-  budgets: Budget[],
-  categoryId: string,
-  periodType: PeriodType,
-  period: YearMonth,
-): Budget | null {
+/** Most recent monthly budget at or before `period` for this category. */
+export function getEffectiveBudgetForScope(budgets: Budget[], categoryId: string, period: YearMonth): Budget | null {
   const candidate = budgets
-    .filter((b) => b.categoryId === categoryId && b.periodType === periodType && b.period <= period)
+    .filter((b) => b.categoryId === categoryId && b.periodType === 'month' && b.period <= period)
     .sort((a, b) => b.period.localeCompare(a.period))[0];
   return candidate ?? null;
 }
@@ -111,7 +99,7 @@ export function getEnvelopeActualAmount(
   const children = categories.filter((c) => c.parentCategoryId === categoryId);
 
   const childContribution = children.reduce((sum, child) => {
-    const childIsBudgetedThisPeriod = getEffectiveBudgetForScope(budgets, child.id, 'month', period) !== null;
+    const childIsBudgetedThisPeriod = getEffectiveBudgetForScope(budgets, child.id, period) !== null;
 
     return (
       sum +
@@ -179,7 +167,7 @@ export function getCombinedBudgetAmounts(
   budgets: Budget[],
   period: YearMonth,
 ): CombinedBudgetAmounts {
-  const ownBudget = getEffectiveBudgetForScope(budgets, categoryId, 'month', period);
+  const ownBudget = getEffectiveBudgetForScope(budgets, categoryId, period);
   const descendants = getDescendantCategories(categoryId, categories);
 
   let amount = ownBudget?.amount ?? 0;
@@ -187,7 +175,7 @@ export function getCombinedBudgetAmounts(
   let hasBudgetedDescendant = false;
 
   for (const descendant of descendants) {
-    const descendantBudget = getEffectiveBudgetForScope(budgets, descendant.id, 'month', period);
+    const descendantBudget = getEffectiveBudgetForScope(budgets, descendant.id, period);
     if (descendantBudget) {
       amount += descendantBudget.amount;
       rolloverAmount += descendantBudget.rolloverAmount ?? 0;
@@ -408,8 +396,8 @@ export function recomputeRollovers(
     const previousPeriod = previousYearMonth(periodCursor);
 
     for (const categoryId of scopeCategoryIds) {
-      const previousEffectiveBudget = getEffectiveBudgetForScope(workingBudgets, categoryId, 'month', previousPeriod);
-      const existingCurrent = getBudgetForExactPeriod(workingBudgets, categoryId, 'month', periodCursor);
+      const previousEffectiveBudget = getEffectiveBudgetForScope(workingBudgets, categoryId, previousPeriod);
+      const existingCurrent = getBudgetForExactPeriod(workingBudgets, categoryId, periodCursor);
 
       if (existingCurrent !== null && existingCurrent.rolloverManual) {
         // Hand-edited — never recomputed, but its stored value still feeds the next period

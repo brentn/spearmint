@@ -288,7 +288,7 @@ export class BudgetsStore {
       if (!combined.hasOwnBudget && !combined.hasBudgetedDescendant && !hasUnbudgetedExpenseActivity) {
         continue;
       }
-      const ownBudget = getEffectiveBudgetForScope(budgets, category.id, 'month', period);
+      const ownBudget = getEffectiveBudgetForScope(budgets, category.id, period);
       const status = computeBudgetStatus(category.type, spent, combined.amount, combined.rolloverAmount);
 
       rows.push({
