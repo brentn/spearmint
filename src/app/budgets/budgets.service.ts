@@ -1,26 +1,23 @@
 import { Injectable, inject } from '@angular/core';
 import { DatabaseService } from '../data/database.service';
-import type { Budget } from '../data/models';
+import type { Budget, YearMonth } from '../data/models';
 import { validateBudgetWrite } from './budget-validation.util';
 import { recomputeRollovers } from './budget-engine.util';
 import { currentYearMonth } from './period.util';
 
-export interface BudgetDraft {
-  categoryId: string;
-  amount: number;
-  rollOver: boolean;
-}
-
 export interface BudgetPatch {
   amount: number;
   rollOver: boolean;
+  /** Present only to set a sticky manual rollover override for this exact period (requires
+   * `rollOver`) — see recomputeRollovers' doc for what "sticky" means. */
+  rolloverAmount?: number;
 }
 
 /**
- * Budget CRUD scoped to {categoryId, periodType, period} (spec §4). The CRUD surface only
- * ever creates/edits `periodType: 'month'` budgets for the current period — the UI never
- * offers a period picker, matching "no period-closing UI" (rollover is purely computed,
- * never manually entered).
+ * Budget CRUD scoped to {categoryId, periodType, period}. `setForPeriod` is the one write
+ * path behind both "add a budget" and "edit a budget" — any period may be targeted directly,
+ * current or historical, so setting a category's first-ever budget starting several months
+ * back works the same way as editing this month's amount.
  */
 @Injectable({ providedIn: 'root' })
 export class BudgetsService {
@@ -67,47 +64,14 @@ export class BudgetsService {
     return result.budgets;
   }
 
-  async create(draft: BudgetDraft): Promise<Budget> {
+  /**
+   * Creates the `month` budget for `categoryId` at exactly `period` if none exists there yet,
+   * or edits that row in place if one already does — the one write path for both "add" and
+   * "edit," for any period. A manual `rolloverAmount` marks the row `rolloverManual: true`.
+   */
+  async setForPeriod(categoryId: string, period: YearMonth, patch: BudgetPatch): Promise<Budget> {
     const db = await this.databaseService.getDatabase();
-    const category = await db.categories.findOne(draft.categoryId).exec();
-    if (!category) {
-      throw new Error('Category not found.');
-    }
-    const draftError = validateBudgetWrite(category, draft);
-    if (draftError) {
-      throw new Error(draftError);
-    }
-
-    const period = currentYearMonth();
-    const existing = await db.budgets
-      .findOne({ selector: { categoryId: draft.categoryId, periodType: 'month', period } })
-      .exec();
-    if (existing) {
-      throw new Error('A budget already exists for this category this month.');
-    }
-
-    const budget: Budget = {
-      id: crypto.randomUUID(),
-      categoryId: draft.categoryId,
-      periodType: 'month',
-      period,
-      rollOver: draft.rollOver,
-      rolloverAmount: 0,
-      amount: draft.amount,
-    };
-    await db.budgets.insert(budget);
-    return budget;
-  }
-
-  /** Edits the current period's row in place; edits to a historical row create a fresh
-   * current-period version instead, leaving history untouched (mirrors Peppermint). */
-  async update(id: string, patch: BudgetPatch): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.budgets.findOne(id).exec();
-    if (!doc) {
-      throw new Error('Budget not found.');
-    }
-    const category = await db.categories.findOne(doc.categoryId).exec();
+    const category = await db.categories.findOne(categoryId).exec();
     if (!category) {
       throw new Error('Category not found.');
     }
@@ -116,30 +80,36 @@ export class BudgetsService {
       throw new Error(patchError);
     }
 
-    const period = currentYearMonth();
-    if (doc.period === period) {
-      await doc.incrementalPatch({ amount: patch.amount, rollOver: patch.rollOver });
-      return;
+    // Turning rollOver off always clears any stored rollover state — a non-rolling budget
+    // carrying a stale rolloverAmount would otherwise still nudge its bar/status.
+    const rolloverPatch = !patch.rollOver
+      ? { rolloverAmount: 0, rolloverManual: false }
+      : patch.rolloverAmount !== undefined
+        ? { rolloverAmount: patch.rolloverAmount, rolloverManual: true }
+        : {};
+
+    const existing = await db.budgets.findOne({ selector: { categoryId, periodType: 'month', period } }).exec();
+    if (existing) {
+      const updated = await existing.incrementalPatch({
+        amount: patch.amount,
+        rollOver: patch.rollOver,
+        ...rolloverPatch,
+      });
+      return updated.toJSON();
     }
 
-    const existingCurrent = await db.budgets
-      .findOne({ selector: { categoryId: doc.categoryId, periodType: doc.periodType, period } })
-      .exec();
-    if (existingCurrent) {
-      await existingCurrent.incrementalPatch({ amount: patch.amount, rollOver: patch.rollOver });
-      return;
-    }
-
-    const newBudget: Budget = {
+    const budget: Budget = {
       id: crypto.randomUUID(),
-      categoryId: doc.categoryId,
-      periodType: doc.periodType,
+      categoryId,
+      periodType: 'month',
       period,
       rollOver: patch.rollOver,
-      rolloverAmount: 0,
+      rolloverAmount: patch.rolloverAmount ?? 0,
+      rolloverManual: patch.rolloverAmount !== undefined,
       amount: patch.amount,
     };
-    await db.budgets.insert(newBudget);
+    await db.budgets.insert(budget);
+    return budget;
   }
 
   async delete(id: string): Promise<void> {

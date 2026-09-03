@@ -30,4 +30,14 @@ describe('validateBudgetWrite', () => {
   it('allows a zero amount', () => {
     expect(validateBudgetWrite(category(), { amount: 0, rollOver: false })).toBeNull();
   });
+
+  it('allows a negative rolloverAmount when rollOver is on', () => {
+    expect(validateBudgetWrite(category(), { amount: 500, rollOver: true, rolloverAmount: -40 })).toBeNull();
+  });
+
+  it('rejects a rolloverAmount when rollOver is off', () => {
+    expect(validateBudgetWrite(category(), { amount: 500, rollOver: false, rolloverAmount: -40 })).toBe(
+      'Turn on rollover before setting a rollover amount.',
+    );
+  });
 });

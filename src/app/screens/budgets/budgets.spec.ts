@@ -19,6 +19,7 @@ function row(overrides: Partial<BudgetRowViewModel> = {}): BudgetRowViewModel {
     ownAmount: 400,
     rollOver: false,
     rolloverAmount: 0,
+    rolloverManual: false,
     available: 400,
     spent: 0,
     percent: 0,
@@ -78,11 +79,13 @@ class FakeBudgetsStore {
   readonly linkQueryParams = computed(() => (this.isCurrentPeriod() ? undefined : { period: this.period() }));
   categoriesForAdd: Category[] = [];
 
-  categoriesWithoutCurrentBudget(): Category[] {
+  categoriesWithoutBudgetThisPeriod(): Category[] {
     return this.categoriesForAdd;
   }
 
-  readonly addBudget = vi.fn(async (_categoryId: string, _amount: number, _rollOver: boolean) => {});
+  readonly setBudget = vi.fn(
+    async (_categoryId: string, _amount: number, _rollOver: boolean, _rolloverAmount?: number) => {},
+  );
   readonly goToPreviousMonth = vi.fn(() => {});
   readonly goToNextMonth = vi.fn(() => {});
 }
@@ -153,14 +156,14 @@ describe('Budgets', () => {
     expect(fakeStore.goToPreviousMonth).toHaveBeenCalled();
   });
 
-  it('hides the "Add a budget" button and the Today tick when viewing a past month (issue #23)', () => {
+  it('hides the Today tick, but keeps the "Add a budget" button available, when viewing a past month (backdating)', () => {
     const { fixture, fakeStore } = createFixture();
     fakeStore.rows.set([row()]);
     fakeStore.isCurrentPeriod.set(false);
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[aria-label="Add a budget"]')).toBeNull();
+    expect(root.querySelector('[aria-label="Add a budget"]')).toBeTruthy();
     expect(root.querySelector('.flow-progress-bar__today-tick')).toBeNull();
   });
 
@@ -178,7 +181,7 @@ describe('Budgets', () => {
     expect(dialog?.hasAttribute('open')).toBe(true);
   });
 
-  it('submitting the add-budget dialog calls addBudget with the selected category and amount, then closes the dialog', async () => {
+  it('submitting the add-budget dialog calls setBudget with the selected category and amount, then closes the dialog', async () => {
     const { fixture, fakeStore } = createFixture();
     fakeStore.categoriesForAdd = [{ id: 'cat-groceries', name: 'Groceries', parentCategoryId: null, type: 'expense' }];
     fixture.detectChanges();
@@ -198,10 +201,33 @@ describe('Budgets', () => {
     fixture.detectChanges();
 
     root.querySelector<HTMLButtonElement>('.budgets__add-button')?.click();
-    await vi.waitFor(() => expect(fakeStore.addBudget).toHaveBeenCalledWith('cat-groceries', 300, false));
+    await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('cat-groceries', 300, false));
 
     const dialog = root.querySelector<HTMLDialogElement>('.budgets__dialog');
     await vi.waitFor(() => expect(dialog?.hasAttribute('open')).toBe(false));
+  });
+
+  it('adding a budget while viewing a past month still just calls setBudget (the store targets the viewed period internally)', async () => {
+    const { fixture, fakeStore } = createFixture();
+    fakeStore.isCurrentPeriod.set(false);
+    fakeStore.period.set('2026-06');
+    fakeStore.categoriesForAdd = [{ id: 'cat-groceries', name: 'Groceries', parentCategoryId: null, type: 'expense' }];
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    root.querySelector<HTMLButtonElement>('[aria-label="Add a budget"]')?.click();
+    fixture.detectChanges();
+
+    const select = root.querySelector<HTMLSelectElement>('.budgets__add-select');
+    select!.value = 'cat-groceries';
+    select!.dispatchEvent(new Event('change'));
+    const amountInput = root.querySelector<HTMLInputElement>('.budgets__add-input');
+    amountInput!.value = '90';
+    amountInput!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    root.querySelector<HTMLButtonElement>('.budgets__add-button')?.click();
+    await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('cat-groceries', 90, false));
   });
 
   describe('period-aware navigation (issue #23 follow-up)', () => {

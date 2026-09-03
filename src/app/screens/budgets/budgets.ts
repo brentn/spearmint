@@ -75,7 +75,7 @@ export class Budgets {
     if (!categoryId) {
       return null;
     }
-    return this.store.categoriesWithoutCurrentBudget().find((c) => c.id === categoryId)?.type ?? null;
+    return this.store.categoriesWithoutBudgetThisPeriod().find((c) => c.id === categoryId)?.type ?? null;
   }
 
   protected openAddDialog(): void {
@@ -99,7 +99,7 @@ export class Budgets {
       return;
     }
     const rollOver = this.selectedCategoryType() === 'income' ? false : this.newRollOver();
-    await this.store.addBudget(categoryId, amount, rollOver);
+    await this.store.setBudget(categoryId, amount, rollOver);
     if (!this.store.error()) {
       this.closeAddDialog();
     }

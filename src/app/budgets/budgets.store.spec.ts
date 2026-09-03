@@ -197,41 +197,66 @@ describe('BudgetsStore', () => {
     expect(rentRow?.spent).toBe(1500);
   });
 
-  it('categoriesWithoutCurrentBudget excludes already-budgeted categories', async () => {
+  it('categoriesWithoutBudgetThisPeriod excludes already-budgeted categories', async () => {
     await fakeDb['categories'].bulkInsert([seedCategory({ id: 'cat-1' }), seedCategory({ id: 'cat-2', name: 'Dining' })]);
     await fakeDb['budgets'].insert(seedBudget({ categoryId: 'cat-1' }));
 
     await store.refresh();
 
-    const available = store.categoriesWithoutCurrentBudget();
+    const available = store.categoriesWithoutBudgetThisPeriod();
     expect(available.map((c) => c.id)).toEqual(['cat-2']);
   });
 
-  it('addBudget creates a budget and refreshes rows', async () => {
+  it('setBudget creates a budget and refreshes rows', async () => {
     await fakeDb['categories'].insert(seedCategory());
 
-    await store.addBudget('cat-1', 300, true);
+    await store.setBudget('cat-1', 300, true);
 
     expect(store.rows()).toHaveLength(1);
     expect(store.rows()[0].amount).toBe(300);
   });
 
-  it('addBudget surfaces a validation error without throwing', async () => {
-    await store.addBudget('missing-category', 300, false);
+  it('setBudget surfaces a validation error without throwing', async () => {
+    await store.setBudget('missing-category', 300, false);
 
     expect(store.error()).toBe('Category not found.');
     expect(store.rows()).toHaveLength(0);
   });
 
-  it('updateBudget patches an existing budget and refreshes', async () => {
+  it('setBudget patches an existing budget in place and refreshes', async () => {
     await fakeDb['categories'].insert(seedCategory());
     await fakeDb['budgets'].insert(seedBudget({ amount: 100 }));
     await store.refresh();
-    const id = store.rows()[0].id;
 
-    await store.updateBudget(id, 250, false);
+    await store.setBudget('cat-1', 250, false);
 
+    expect(store.rows()).toHaveLength(1);
     expect(store.rows()[0].amount).toBe(250);
+  });
+
+  it('setBudget targets whichever period is currently being viewed, not always the current month', async () => {
+    const prevPeriod = previousYearMonth(currentYearMonth());
+    await fakeDb['categories'].insert(seedCategory());
+    await fakeDb['transactions'].insert(seedTransaction({ date: `${prevPeriod}-05` }));
+    await store.refresh();
+    store.goToPreviousMonth();
+
+    await store.setBudget('cat-1', 150, false);
+
+    expect(store.rows()[0].amount).toBe(150);
+    const all = await fakeDb['budgets'].find().exec();
+    expect(all.map((d: { period: string }) => d.period)).toEqual([prevPeriod]);
+  });
+
+  it('setBudget with a rolloverAmount marks the row as a sticky manual override', async () => {
+    await fakeDb['categories'].insert(seedCategory());
+    await fakeDb['budgets'].insert(seedBudget({ amount: 100, rollOver: true, rolloverAmount: 20 }));
+    await store.refresh();
+
+    await store.setBudget('cat-1', 100, true, -40);
+
+    expect(store.rows()[0].rolloverAmount).toBe(-40);
+    expect(store.rows()[0].rolloverManual).toBe(true);
   });
 
   it('deleteBudget removes a budget and refreshes', async () => {
@@ -309,7 +334,7 @@ describe('BudgetsStore', () => {
       expect(store.rows()).toHaveLength(0);
     });
 
-    it('categoriesWithoutCurrentBudget keeps an implied-only category selectable', async () => {
+    it('categoriesWithoutBudgetThisPeriod keeps an implied-only category selectable', async () => {
       await fakeDb['categories'].bulkInsert([
         seedCategory({ id: 'transportation', name: 'Transportation' }),
         seedCategory({ id: 'auto-payment', name: 'Auto Payment', parentCategoryId: 'transportation' }),
@@ -318,7 +343,7 @@ describe('BudgetsStore', () => {
 
       await store.refresh();
 
-      expect(store.categoriesWithoutCurrentBudget().map((c) => c.id)).toEqual(['transportation']);
+      expect(store.categoriesWithoutBudgetThisPeriod().map((c) => c.id)).toEqual(['transportation']);
     });
 
     it('transactionsForCategoryTree spans a category and all of its descendants', async () => {

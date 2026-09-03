@@ -85,6 +85,11 @@ export class BudgetDetail {
   protected readonly formMode = signal<'edit' | 'add' | null>(null);
   protected readonly formAmount = signal<number | null>(null);
   protected readonly formRollOver = signal(false);
+  /** Whether the "manually set rollover" field is shown/active — separate from formRollOver so
+   * a routine amount edit never accidentally overwrites an unrelated rollover value (rollover is
+   * only sent to the store when this is checked; see BudgetsStore.setBudget). */
+  protected readonly formRolloverOverride = signal(false);
+  protected readonly formRolloverAmount = signal<number | null>(null);
 
   protected openEditDialog(): void {
     const row = this.row();
@@ -96,6 +101,8 @@ export class BudgetDetail {
     // silently inflate it by the children's amounts on every edit.
     this.formAmount.set(row.ownAmount);
     this.formRollOver.set(row.rollOver);
+    this.formRolloverOverride.set(row.rolloverManual);
+    this.formRolloverAmount.set(row.rolloverAmount);
     this.formMode.set('edit');
     this.formDialog()?.nativeElement.showModal();
   }
@@ -103,6 +110,8 @@ export class BudgetDetail {
   protected openAddDialog(): void {
     this.formAmount.set(null);
     this.formRollOver.set(false);
+    this.formRolloverOverride.set(false);
+    this.formRolloverAmount.set(null);
     this.formMode.set('add');
     this.formDialog()?.nativeElement.showModal();
   }
@@ -125,9 +134,11 @@ export class BudgetDetail {
       return;
     }
     const rollOver = row.categoryType === 'income' ? false : this.formRollOver();
+    const rolloverAmount =
+      rollOver && this.formRolloverOverride() ? (this.formRolloverAmount() ?? undefined) : undefined;
 
     if (mode === 'edit') {
-      await this.store.updateBudget(row.id, amount, rollOver);
+      await this.store.setBudget(row.categoryId, amount, rollOver, rolloverAmount);
       if (!this.store.error()) {
         this.closeFormDialog();
       }
@@ -138,9 +149,9 @@ export class BudgetDetail {
     // (issue #15's "reverts to edit/delete on a later visit") — this screen's `id` input would
     // otherwise point at an id that no longer resolves to any row, so navigate back to the list
     // rather than leave the user on a stale "Budget not found" detail screen.
-    await this.store.addBudget(row.categoryId, amount, rollOver);
+    await this.store.setBudget(row.categoryId, amount, rollOver, rolloverAmount);
     if (!this.store.error()) {
-      await this.router.navigate(['/budgets']);
+      await this.router.navigate(['/budgets'], { queryParams: this.store.linkQueryParams() });
     }
   }
 

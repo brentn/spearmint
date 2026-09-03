@@ -63,6 +63,10 @@ export interface Budget {
   period: YearMonth;
   rollOver: boolean;
   rolloverAmount?: number;
+  /** True once a user has directly typed a `rolloverAmount` for this period — the rollover
+   * engine never recomputes this row again, though later periods still carry this value
+   * forward as their own starting point. Permanent: there's no "reset to calculated" path. */
+  rolloverManual?: boolean;
   amount: number;
 }
 

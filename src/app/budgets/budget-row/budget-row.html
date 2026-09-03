@@ -2,7 +2,7 @@
   <a class="budget-row__link" [routerLink]="['/budgets', row().id]" [queryParams]="queryParams()">
     <div class="budget-row__amount-line">
       <span class="budget-row__cat-name">{{ row().categoryName }}</span>
-      <span>${{ row().spent | number: '1.0-0' }} of ${{ row().available | number: '1.0-0' }}</span>
+      <span>${{ row().spent | number: '1.0-0' }} of ${{ row().amount | number: '1.0-0' }}</span>
     </div>
     <div class="bar-track" [class.bar-track--implied]="row().implied">
       <div

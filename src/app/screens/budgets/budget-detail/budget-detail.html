@@ -14,11 +14,15 @@
       </h1>
       <div class="budget-detail__hero-value">
         ${{ row.spent | number: '1.0-0' }}
-        <span class="budget-detail__hero-sub">of ${{ row.available | number: '1.0-0' }}</span>
+        <span class="budget-detail__hero-sub">of ${{ row.amount | number: '1.0-0' }}</span>
       </div>
       @if (row.rolloverAmount > 0) {
-        <div class="budget-detail__rollover-pill">
+        <div class="budget-detail__rollover-pill budget-detail__rollover-pill--credit">
           +${{ row.rolloverAmount | number: '1.0-0' }} rolled over from last month
+        </div>
+      } @else if (row.rolloverAmount < 0) {
+        <div class="budget-detail__rollover-pill budget-detail__rollover-pill--debt">
+          ${{ -row.rolloverAmount | number: '1.0-0' }} over budget, carried in from last month
         </div>
       }
     </header>
@@ -26,21 +30,19 @@
     <div class="budget-detail__content">
       <div class="budget-detail__card">
         <div class="budget-detail__bar-header">
-          @if (store.isCurrentPeriod()) {
-            @if (row.implied) {
-              <button
-                type="button"
-                class="budget-detail__icon-btn"
-                aria-label="Add a budget for this category"
-                (click)="openAddDialog()"
-              >
-                <fa-icon [icon]="icons.add"></fa-icon>
-              </button>
-            } @else {
-              <button type="button" class="budget-detail__icon-btn" aria-label="Edit budget" (click)="openEditDialog()">
-                <fa-icon [icon]="icons.edit"></fa-icon>
-              </button>
-            }
+          @if (row.implied) {
+            <button
+              type="button"
+              class="budget-detail__icon-btn"
+              aria-label="Add a budget for this category"
+              (click)="openAddDialog()"
+            >
+              <fa-icon [icon]="icons.add"></fa-icon>
+            </button>
+          } @else {
+            <button type="button" class="budget-detail__icon-btn" aria-label="Edit budget" (click)="openEditDialog()">
+              <fa-icon [icon]="icons.edit"></fa-icon>
+            </button>
           }
         </div>
         <div class="bar-track bar-track--large">
@@ -87,7 +89,7 @@
                 >
                   <div class="budget-detail__subcat-line">
                     <span class="budget-detail__subcat-name">{{ subRow.categoryName }}</span>
-                    <span>${{ subRow.spent | number: '1.0-0' }} of ${{ subRow.available | number: '1.0-0' }}</span>
+                    <span>${{ subRow.spent | number: '1.0-0' }} of ${{ subRow.amount | number: '1.0-0' }}</span>
                   </div>
                   <div class="bar-track">
                     <div
@@ -155,8 +157,33 @@
                 [checked]="formRollOver()"
                 (change)="formRollOver.set($any($event.target).checked)"
               />
-              Roll over unused amount into next month
+              Roll over unused (or overspent) amount into next month
             </label>
+          }
+          @if (row.categoryType !== 'income' && formRollOver()) {
+            <label class="budget-detail__edit-checkbox">
+              <input
+                type="checkbox"
+                [checked]="formRolloverOverride()"
+                (change)="formRolloverOverride.set($any($event.target).checked)"
+              />
+              Manually set the rollover amount
+            </label>
+            @if (formRolloverOverride()) {
+              <label class="budget-detail__edit-label">
+                Rollover amount
+                <input
+                  type="number"
+                  step="0.01"
+                  [value]="formRolloverAmount() ?? ''"
+                  (input)="formRolloverAmount.set($any($event.target).valueAsNumber)"
+                />
+              </label>
+              <p class="budget-detail__edit-hint">
+                Positive rolls over as credit, negative as debt. This stays fixed — it won't be
+                recalculated automatically again.
+              </p>
+            }
           }
           <div class="budget-detail__edit-actions">
             <button type="button" class="budget-detail__save" (click)="submitForm()">

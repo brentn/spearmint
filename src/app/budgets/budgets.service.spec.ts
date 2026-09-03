@@ -56,11 +56,11 @@ describe('BudgetsService', () => {
     await fakeDb.remove();
   });
 
-  describe('create', () => {
-    it('creates a monthly budget for the current period', async () => {
+  describe('setForPeriod', () => {
+    it('creates a monthly budget for the given period', async () => {
       await fakeDb['categories'].insert(seedCategory());
 
-      const budget = await service.create({ categoryId: 'cat-1', amount: 500, rollOver: true });
+      const budget = await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: true });
 
       expect(budget.periodType).toBe('month');
       expect(budget.period).toBe(currentYearMonth());
@@ -69,50 +69,52 @@ describe('BudgetsService', () => {
       expect(all).toHaveLength(1);
     });
 
+    it('creates a budget dated to a past period directly, for a category with no prior budget at all', async () => {
+      await fakeDb['categories'].insert(seedCategory());
+      const historicalPeriod = previousYearMonth(previousYearMonth(currentYearMonth()));
+
+      const budget = await service.setForPeriod('cat-1', historicalPeriod, { amount: 300, rollOver: false });
+
+      expect(budget.period).toBe(historicalPeriod);
+      const all = await service.list();
+      expect(all).toHaveLength(1);
+      expect(all[0].period).toBe(historicalPeriod);
+    });
+
     it('rejects a missing category', async () => {
-      await expect(service.create({ categoryId: 'missing', amount: 100, rollOver: false })).rejects.toThrow(
-        'Category not found.',
-      );
+      await expect(
+        service.setForPeriod('missing', currentYearMonth(), { amount: 100, rollOver: false }),
+      ).rejects.toThrow('Category not found.');
     });
 
     it('rejects a negative amount', async () => {
       await fakeDb['categories'].insert(seedCategory());
-      await expect(service.create({ categoryId: 'cat-1', amount: -5, rollOver: false })).rejects.toThrow(
-        'Budget amount must be greater than or equal to 0.',
-      );
+      await expect(
+        service.setForPeriod('cat-1', currentYearMonth(), { amount: -5, rollOver: false }),
+      ).rejects.toThrow('Budget amount must be greater than or equal to 0.');
     });
 
     it('rejects rollOver on an income category (no rollover toggle for Income budgets)', async () => {
       await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', type: 'income' }));
-      await expect(service.create({ categoryId: 'paycheck', amount: 4000, rollOver: true })).rejects.toThrow(
-        'Income budgets cannot roll over.',
-      );
+      await expect(
+        service.setForPeriod('paycheck', currentYearMonth(), { amount: 4000, rollOver: true }),
+      ).rejects.toThrow('Income budgets cannot roll over.');
     });
 
-    it('rejects a duplicate budget for the same category this period', async () => {
+    it('edits the existing row for that exact period in place, rather than creating a duplicate', async () => {
       await fakeDb['categories'].insert(seedCategory());
-      await service.create({ categoryId: 'cat-1', amount: 500, rollOver: false });
+      const created = await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: false });
 
-      await expect(service.create({ categoryId: 'cat-1', amount: 100, rollOver: false })).rejects.toThrow(
-        'A budget already exists for this category this month.',
-      );
-    });
-  });
+      const updated = await service.setForPeriod('cat-1', currentYearMonth(), { amount: 600, rollOver: true });
 
-  describe('update', () => {
-    it('patches a current-period budget in place', async () => {
-      await fakeDb['categories'].insert(seedCategory());
-      const budget = await service.create({ categoryId: 'cat-1', amount: 500, rollOver: false });
-
-      await service.update(budget.id, { amount: 600, rollOver: true });
-
+      expect(updated.id).toBe(created.id);
       const all = await service.list();
       expect(all).toHaveLength(1);
       expect(all[0].amount).toBe(600);
       expect(all[0].rollOver).toBe(true);
     });
 
-    it('creates a new current-period version rather than rewriting a historical row', async () => {
+    it('edits a historical row in place, leaving other periods untouched', async () => {
       await fakeDb['categories'].insert(seedCategory());
       const historicalPeriod = previousYearMonth(previousYearMonth(currentYearMonth()));
       const historical: Budget = {
@@ -126,38 +128,70 @@ describe('BudgetsService', () => {
       };
       await fakeDb['budgets'].insert(historical);
 
-      await service.update('historical-1', { amount: 450, rollOver: false });
+      await service.setForPeriod('cat-1', historicalPeriod, { amount: 450, rollOver: false });
 
       const all = await service.list();
-      expect(all).toHaveLength(2);
-      const original = all.find((b) => b.id === 'historical-1');
-      const current = all.find((b) => b.id !== 'historical-1');
-      expect(original?.amount).toBe(300); // untouched
-      expect(current?.period).toBe(currentYearMonth());
-      expect(current?.amount).toBe(450);
+      expect(all).toHaveLength(1);
+      expect(all[0].id).toBe('historical-1');
+      expect(all[0].amount).toBe(450);
     });
 
-    it('rejects a negative amount', async () => {
+    it('rejects a negative amount on an existing row', async () => {
       await fakeDb['categories'].insert(seedCategory());
-      const budget = await service.create({ categoryId: 'cat-1', amount: 500, rollOver: false });
-      await expect(service.update(budget.id, { amount: -1, rollOver: false })).rejects.toThrow(
-        'Budget amount must be greater than or equal to 0.',
-      );
+      await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: false });
+      await expect(
+        service.setForPeriod('cat-1', currentYearMonth(), { amount: -1, rollOver: false }),
+      ).rejects.toThrow('Budget amount must be greater than or equal to 0.');
     });
 
     it('rejects turning on rollOver for an income budget', async () => {
       await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', type: 'income' }));
-      const budget = await service.create({ categoryId: 'paycheck', amount: 4000, rollOver: false });
-      await expect(service.update(budget.id, { amount: 4000, rollOver: true })).rejects.toThrow(
-        'Income budgets cannot roll over.',
-      );
+      await service.setForPeriod('paycheck', currentYearMonth(), { amount: 4000, rollOver: false });
+      await expect(
+        service.setForPeriod('paycheck', currentYearMonth(), { amount: 4000, rollOver: true }),
+      ).rejects.toThrow('Income budgets cannot roll over.');
+    });
+
+    it('rejects a rolloverAmount without rollOver enabled', async () => {
+      await fakeDb['categories'].insert(seedCategory());
+      await expect(
+        service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: false, rolloverAmount: 20 }),
+      ).rejects.toThrow('Turn on rollover before setting a rollover amount.');
+    });
+
+    it('setting a rolloverAmount marks the row rolloverManual, permanently sticky', async () => {
+      await fakeDb['categories'].insert(seedCategory());
+      await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: true });
+
+      const budget = await service.setForPeriod('cat-1', currentYearMonth(), {
+        amount: 500,
+        rollOver: true,
+        rolloverAmount: -75,
+      });
+
+      expect(budget.rolloverAmount).toBe(-75);
+      expect(budget.rolloverManual).toBe(true);
+    });
+
+    it('turning rollOver off clears any previously-manual rollover state', async () => {
+      await fakeDb['categories'].insert(seedCategory());
+      await service.setForPeriod('cat-1', currentYearMonth(), {
+        amount: 500,
+        rollOver: true,
+        rolloverAmount: -75,
+      });
+
+      const budget = await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: false });
+
+      expect(budget.rolloverAmount).toBe(0);
+      expect(budget.rolloverManual).toBe(false);
     });
   });
 
   describe('delete', () => {
     it('removes a budget', async () => {
       await fakeDb['categories'].insert(seedCategory());
-      const budget = await service.create({ categoryId: 'cat-1', amount: 500, rollOver: false });
+      const budget = await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: false });
 
       await service.delete(budget.id);
 
@@ -193,7 +227,7 @@ describe('BudgetsService', () => {
 
     it('is a no-op when there are no rollOver-enabled monthly budgets', async () => {
       await fakeDb['categories'].insert(seedCategory());
-      await service.create({ categoryId: 'cat-1', amount: 500, rollOver: false });
+      await service.setForPeriod('cat-1', currentYearMonth(), { amount: 500, rollOver: false });
 
       const result = await service.reconcileAndList();
 

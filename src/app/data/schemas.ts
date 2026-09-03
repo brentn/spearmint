@@ -116,7 +116,7 @@ export const transactionSchema: RxJsonSchema<Transaction> = {
 
 export const budgetSchema: RxJsonSchema<Budget> = {
   title: 'budget',
-  version: 0,
+  version: 1,
   primaryKey: 'id',
   type: 'object',
   properties: {
@@ -125,11 +125,21 @@ export const budgetSchema: RxJsonSchema<Budget> = {
     periodType: { type: 'string', enum: ['month', 'year'] },
     period: { type: 'string', maxLength: 7 },
     rollOver: { type: 'boolean' },
-    rolloverAmount: { type: 'number', minimum: 0, maximum: 1000000000, multipleOf: 0.01 },
+    // Negative allowed (issue TBD): an overspent, rollOver-enabled budget carries its deficit
+    // into the next period instead of flooring at zero.
+    rolloverAmount: { type: 'number', minimum: -1000000000, maximum: 1000000000, multipleOf: 0.01 },
+    rolloverManual: { type: 'boolean' },
     amount: { type: 'number', minimum: 0, maximum: 1000000000, multipleOf: 0.01 },
   },
   required: ['id', 'categoryId', 'periodType', 'period', 'rollOver', 'amount'],
   indexes: ['categoryId', 'period'],
+};
+
+export const budgetMigrationStrategies: MigrationStrategies = {
+  1: (oldDoc: Record<string, unknown>) => ({
+    ...oldDoc,
+    rolloverManual: false,
+  }),
 };
 
 export const categorizationRuleSchema: RxJsonSchema<CategorizationRule> = {

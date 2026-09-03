@@ -2,11 +2,9 @@ import type { Budget, Category, CategoryType, PeriodType, Transaction, YearMonth
 import { nextYearMonth, previousYearMonth } from './period.util';
 
 /**
- * Peppermint's rollover engine (spec §4), ported with the carry-forward rollup fix and
- * generalized for Spearmint's SimpleFIN sign convention: unlike Peppermint's transactions
- * (expense amounts stored positive), Spearmint's `Transaction.amount` follows SimpleFIN's
- * "positive = deposit" convention, so expense/transfer spend arrives as negative numbers
- * and must be negated to get a positive "amount spent" for budget math.
+ * The rollover engine. `Transaction.amount` follows SimpleFIN's "positive = deposit"
+ * convention, so expense/transfer spend arrives as negative numbers and must be negated
+ * to get a positive "amount spent" for budget math.
  */
 
 const EXPENSE_WARNING_THRESHOLD = 1.01;
@@ -23,7 +21,9 @@ const REVERSED_CAP = 0.9;
 export type BudgetState = 'normal' | 'warning' | 'over' | 'info';
 
 export interface BudgetStatus {
-  /** spent / (amount + rolloverAmount) — uncapped, can exceed 1. */
+  /** (spent − rolloverAmount) / amount — uncapped, can exceed 1. The bar's capacity is always
+   * this period's own `amount`; a rollover deficit shows up as pre-spent progress instead of
+   * shrinking the bar, and a rollover credit can push progress negative (reversed fill). */
   percent: number;
   /** `percent` clamped to [0, 1] (or its magnitude, clamped to [0, 1], when `reversed`), for
    * rendering bar fill width. */
@@ -194,14 +194,17 @@ export function getCombinedBudgetAmounts(
 }
 
 /**
- * Three-state progress status (spec §4): expense/transfer categories are green up to and
- * including 101% of budget, amber from there through 110%, red beyond that — a small overspend
- * cushion before the bar turns alarming. Income is inverted (a target to meet/exceed, unaffected
- * by the expense thresholds above). Rollover counts toward the denominator. A $0-budget row has
- * no meaningful percent to bucket (nothing to divide by): positive spend stays red per the
- * existing $0-budget convention (issue #21) via an explicit state override below; negative spend
- * (a refund/reversal with no budget at all) still reverses at full magnitude rather than the
- * two effectively canceling out to an invisible 0%.
+ * Three-state progress status: expense/transfer categories are green up to and including 101%
+ * of budget, amber from there through 110%, red beyond that — a small overspend cushion before
+ * the bar turns alarming. Income is inverted (a target to meet/exceed, unaffected by the expense
+ * thresholds above). The bar's capacity is always this period's own `amount` — never adjusted by
+ * rollover; instead a rollover deficit (`rolloverAmount < 0`) is added into `spent` as if already
+ * spent, and a rollover credit (`rolloverAmount > 0`) is subtracted, which can push `percent`
+ * negative and reuses the reversed-bar rendering below. A $0-budget row has no meaningful percent
+ * to bucket (nothing to divide by): positive spend stays red per the existing $0-budget convention
+ * (issue #21) via an explicit state override below; negative spend (a refund/reversal with no
+ * budget at all) still reverses at full magnitude rather than the two effectively canceling out
+ * to an invisible 0%.
  */
 export function computeBudgetStatus(
   categoryType: CategoryType,
@@ -209,8 +212,8 @@ export function computeBudgetStatus(
   amount: number,
   rolloverAmount: number,
 ): BudgetStatus {
-  const available = amount + rolloverAmount;
-  const percent = available > 0 ? spent / available : spent > 0 ? 1 : spent < 0 ? -1 : 0;
+  const progress = spent - rolloverAmount;
+  const percent = amount > 0 ? progress / amount : progress > 0 ? 1 : progress < 0 ? -1 : 0;
   const reversed = percent < 0;
   const reversedCapped = reversed && Math.abs(percent) > REVERSED_CAP;
   const barPercent = reversed
@@ -226,7 +229,7 @@ export function computeBudgetStatus(
     } else {
       state = 'over';
     }
-  } else if (available <= 0 && spent > 0) {
+  } else if (amount <= 0 && progress > 0) {
     // No "% over" to land on when there's nothing budgeted at all — stays red per the existing
     // $0-budget convention (issue #21) regardless of where percent (hard-coded to 1) would
     // otherwise fall among the thresholds below.
@@ -353,7 +356,15 @@ export interface RecomputeRolloversResult {
  * the earliest such budget's period through `currentPeriod`. Walking from the earliest
  * period (not just one step back) means a gap of several unopened months still compounds
  * correctly in a single call — "the rolled-over amount is just visible state on next read"
- * (spec §4) has to hold no matter how long between reads.
+ * has to hold no matter how long between reads.
+ *
+ * Signed: an overspent month carries a negative `rolloverAmount` into the next one (no
+ * floor at zero) rather than only ever carrying forward unused budget.
+ *
+ * A period whose `rolloverManual` flag is set was hand-edited by the user and is never
+ * recomputed here — its stored `rolloverAmount` is left exactly as-is, but still read as
+ * the starting point (`previousAvailable`) when computing the period after it, so a manual
+ * correction propagates forward exactly like an auto-computed one would.
  */
 export function recomputeRollovers(
   budgets: Budget[],
@@ -393,9 +404,15 @@ export function recomputeRollovers(
 
     for (const categoryId of scopeCategoryIds) {
       const previousEffectiveBudget = getEffectiveBudgetForScope(workingBudgets, categoryId, 'month', previousPeriod);
+      const existingCurrent = getBudgetForExactPeriod(workingBudgets, categoryId, 'month', periodCursor);
+
+      if (existingCurrent !== null && existingCurrent.rolloverManual) {
+        // Hand-edited — never recomputed, but its stored value still feeds the next period
+        // forward via `previousEffectiveBudget` on the next loop iteration.
+        continue;
+      }
 
       if (previousEffectiveBudget === null || !previousEffectiveBudget.rollOver) {
-        const existingCurrent = getBudgetForExactPeriod(workingBudgets, categoryId, 'month', periodCursor);
         if (existingCurrent !== null && (existingCurrent.rolloverAmount ?? 0) !== 0) {
           existingCurrent.rolloverAmount = 0;
           if (!createdIds.has(existingCurrent.id)) {
@@ -413,9 +430,9 @@ export function recomputeRollovers(
         actualsByPeriodAndCategory,
         workingBudgets,
       );
-      const nextRolloverAmount = Math.max(0, previousAvailable - previousActual);
+      const nextRolloverAmount = previousAvailable - previousActual;
 
-      let currentPeriodBudget = getBudgetForExactPeriod(workingBudgets, categoryId, 'month', periodCursor);
+      let currentPeriodBudget = existingCurrent;
       if (currentPeriodBudget === null) {
         currentPeriodBudget = {
           id: createId(),

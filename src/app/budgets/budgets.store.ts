@@ -41,6 +41,9 @@ export interface BudgetRowViewModel {
   ownAmount: number;
   rollOver: boolean;
   rolloverAmount: number;
+  /** True when this period's rolloverAmount was manually set (see Budget.rolloverManual) — the
+   * engine never recomputes it. Always false for an implied row. */
+  rolloverManual: boolean;
   available: number;
   spent: number;
   percent: number;
@@ -88,10 +91,11 @@ export interface BudgetsAggregate {
 /**
  * Screen-scoped store for the Budgets tab and Budget detail, following this codebase's
  * plain-signals-refreshed-imperatively convention (TransactionsStore/AccountsStore).
- * `period` (issue #23) lets the Budgets screen browse prior months read-only; creating/editing
- * budgets stays locked to the current period regardless of `period` (spec §4's no-period-closing-UI
- * rule) — rollover is purely computed on read via BudgetsService.reconcileAndList(), never entered
- * or confirmed by the user.
+ * `period` (issue #23) lets the Budgets screen browse any month, past or current — creating and
+ * editing a budget always targets whichever period is currently being viewed, so backdating a
+ * category's first budget or correcting an old month's amount both just mean browsing there
+ * first. Rollover is normally computed on read via BudgetsService.reconcileAndList(), except for
+ * a period a user has manually overridden (`rolloverManual`), which is never recomputed.
  */
 @Injectable()
 export class BudgetsStore {
@@ -193,8 +197,9 @@ export class BudgetsStore {
   }
 
   /** A category whose only row is implied (computed from budgeted descendants) still counts as
-   * "not yet budgeted" here — it must stay selectable in the Add-budget picker (issue #15). */
-  categoriesWithoutCurrentBudget(): Category[] {
+   * "not yet budgeted" here — it must stay selectable in the Add-budget picker (issue #15).
+   * Scoped to the currently-viewed period, not necessarily the real current month. */
+  categoriesWithoutBudgetThisPeriod(): Category[] {
     const budgetedCategoryIds = new Set(
       this.rows()
         .filter((row) => !row.implied)
@@ -250,23 +255,18 @@ export class BudgetsStore {
     await this.refresh();
   }
 
-  async addBudget(categoryId: string, amount: number, rollOver: boolean): Promise<void> {
+  /** Sets category's budget for whichever period is currently being viewed (`this.period()`) —
+   * creates it if it doesn't exist yet there, edits in place if it does. `rolloverAmount`
+   * manually (and permanently) overrides the computed rollover for that period; omit it to
+   * leave rollover computed as usual. Refreshing afterward re-runs reconcileAndList(), so any
+   * later period's rollover reflects the change immediately, not just on next load. */
+  async setBudget(categoryId: string, amount: number, rollOver: boolean, rolloverAmount?: number): Promise<void> {
     this.error.set(null);
     try {
-      await this.budgetsService.create({ categoryId, amount, rollOver });
+      await this.budgetsService.setForPeriod(categoryId, this.period(), { amount, rollOver, rolloverAmount });
       await this.refresh();
     } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Could not add that budget.');
-    }
-  }
-
-  async updateBudget(id: string, amount: number, rollOver: boolean): Promise<void> {
-    this.error.set(null);
-    try {
-      await this.budgetsService.update(id, { amount, rollOver });
-      await this.refresh();
-    } catch (err) {
-      this.error.set(err instanceof Error ? err.message : 'Could not update that budget.');
+      this.error.set(err instanceof Error ? err.message : 'Could not save that budget.');
     }
   }
 
@@ -311,6 +311,7 @@ export class BudgetsStore {
         ownAmount: ownBudget?.amount ?? 0,
         rollOver: ownBudget?.rollOver ?? false,
         rolloverAmount: combined.rolloverAmount,
+        rolloverManual: ownBudget?.rolloverManual ?? false,
         available: combined.amount + combined.rolloverAmount,
         spent,
         percent: status.percent,

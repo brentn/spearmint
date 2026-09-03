@@ -19,6 +19,7 @@ function row(overrides: Partial<BudgetRowViewModel> = {}): BudgetRowViewModel {
     ownAmount: 400,
     rollOver: false,
     rolloverAmount: 0,
+    rolloverManual: false,
     available: 400,
     spent: 0,
     percent: 0,
@@ -96,8 +97,9 @@ class FakeBudgetsStore {
     return 'Checking';
   }
 
-  readonly addBudget = vi.fn(async (_categoryId: string, _amount: number, _rollOver: boolean) => {});
-  readonly updateBudget = vi.fn(async (_id: string, _amount: number, _rollOver: boolean) => {});
+  readonly setBudget = vi.fn(
+    async (_categoryId: string, _amount: number, _rollOver: boolean, _rolloverAmount?: number) => {},
+  );
   readonly deleteBudget = vi.fn(async (_id: string) => {});
   readonly refresh = vi.fn(async () => {});
 }
@@ -182,7 +184,7 @@ describe('BudgetDetail', () => {
     expect(root.querySelector('button[aria-label="Edit budget"]')).toBeNull();
   });
 
-  it('submitting the implied-parent add-budget dialog calls addBudget and, once it succeeds, returns to the Budgets list', async () => {
+  it('submitting the implied-parent add-budget dialog calls setBudget and, once it succeeds, returns to the Budgets list', async () => {
     const fixture = createFixture('implied:transportation');
     fakeStore.rows.set([
       row({
@@ -210,8 +212,8 @@ describe('BudgetDetail', () => {
     fixture.detectChanges();
 
     root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
-    await vi.waitFor(() => expect(fakeStore.addBudget).toHaveBeenCalledWith('transportation', 250, false));
-    await vi.waitFor(() => expect(navigateSpy).toHaveBeenCalledWith(['/budgets']));
+    await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('transportation', 250, false, undefined));
+    await vi.waitFor(() => expect(navigateSpy).toHaveBeenCalledWith(['/budgets'], { queryParams: undefined }));
   });
 
   it('for a real budget with a budgeted child, lists the child in Subcategories, shows the combined transaction list, and offers an edit icon (no add icon)', () => {
@@ -283,7 +285,7 @@ describe('BudgetDetail', () => {
     expect(amountInput!.value).toBe('300'); // prefilled with ownAmount, not the combined 1800
 
     root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
-    await vi.waitFor(() => expect(fakeStore.updateBudget).toHaveBeenCalledWith('b-housing', 300, false));
+    await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 300, false, undefined));
   });
 
   it("for a leaf child's own detail screen, shows no subcategories section and only its own transactions", () => {
@@ -352,6 +354,85 @@ describe('BudgetDetail', () => {
     expect(depositAmt?.classList.contains('budget-detail__txn-amt--positive')).toBe(true);
   });
 
+  describe('manual rollover override', () => {
+    it('shows the override checkbox only once rollOver is checked, and hides income entirely', () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([
+        row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false, rollOver: false }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
+      fixture.detectChanges();
+
+      const checkboxes = () => [...root.querySelectorAll('.budget-detail__edit-checkbox')];
+      expect(checkboxes()).toHaveLength(1); // just "roll over" — no override checkbox yet
+
+      const rollOverCheckbox = root.querySelector<HTMLInputElement>('.budget-detail__edit-checkbox input');
+      rollOverCheckbox!.checked = true;
+      rollOverCheckbox!.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      expect(checkboxes()).toHaveLength(2);
+    });
+
+    it('submitting with the override checked and a value passes rolloverAmount through to setBudget', async () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([
+        row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false, rollOver: true }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
+      fixture.detectChanges();
+
+      const overrideCheckbox = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-checkbox input')][1];
+      overrideCheckbox.checked = true;
+      overrideCheckbox.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      const rolloverInput = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-label input')][1];
+      rolloverInput.value = '-60';
+      rolloverInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
+      await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 400, true, -60));
+    });
+
+    it('leaving the override unchecked never sends a rolloverAmount, even for an already-manual row', async () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([
+        row({
+          id: 'b-housing',
+          categoryId: 'housing',
+          categoryName: 'Housing',
+          implied: false,
+          rollOver: true,
+          rolloverAmount: -60,
+          rolloverManual: true,
+        }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
+      fixture.detectChanges();
+
+      // Prefilled as already-checked since this row is already manual (Q11: sticky, permanent).
+      const overrideCheckbox = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-checkbox input')][1];
+      expect(overrideCheckbox.checked).toBe(true);
+      overrideCheckbox.checked = false;
+      overrideCheckbox.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
+      await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 400, true, undefined));
+    });
+  });
+
   describe('period-aware navigation (issue #23 follow-up)', () => {
     it('seeds the store\'s period from an incoming ?period= query param', () => {
       createFixture('b-housing', '2026-06');
@@ -363,15 +444,56 @@ describe('BudgetDetail', () => {
       expect(fakeStore.period()).toBe('2026-08');
     });
 
-    it('hides the edit/add-budget controls while viewing a non-current period', () => {
+    it('keeps the edit/add-budget controls available while viewing a non-current period (backdating)', () => {
       const fixture = createFixture('b-housing', '2026-06');
       fakeStore.isCurrentPeriod.set(false);
       fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
       fixture.detectChanges();
 
       const root = fixture.nativeElement as HTMLElement;
-      expect(root.querySelector('button[aria-label="Edit budget"]')).toBeNull();
-      expect(root.querySelector('button[aria-label="Add a budget for this category"]')).toBeNull();
+      expect(root.querySelector('button[aria-label="Edit budget"]')).toBeTruthy();
+    });
+
+    it('editing a budget while viewing a past period saves against that viewed period, not the current one', async () => {
+      const fixture = createFixture('b-housing', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.rows.set([
+        row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false, ownAmount: 200 }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
+      fixture.detectChanges();
+      root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
+
+      // The store's setBudget targets whichever period it's currently viewing internally —
+      // this screen never passes a period explicitly, it just calls through.
+      await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 200, false, undefined));
+    });
+
+    it('adding a backdated budget for a never-budgeted category navigates back carrying the viewed period', async () => {
+      const fixture = createFixture('implied:transportation', '2026-06');
+      fakeStore.isCurrentPeriod.set(false);
+      fakeStore.rows.set([
+        row({ id: 'implied:transportation', categoryId: 'transportation', categoryName: 'Transportation', implied: true }),
+      ]);
+      fixture.detectChanges();
+      const router = TestBed.inject(Router);
+      const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLButtonElement>('button[aria-label="Add a budget for this category"]')?.click();
+      fixture.detectChanges();
+      const amountInput = root.querySelector<HTMLInputElement>('.budget-detail__edit-label input[type="number"]');
+      amountInput!.value = '150';
+      amountInput!.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
+
+      await vi.waitFor(() =>
+        expect(navigateSpy).toHaveBeenCalledWith(['/budgets'], { queryParams: { period: '2026-06' } }),
+      );
     });
 
     it('names the viewed month instead of always saying "this month" once it\'s not the current period', () => {

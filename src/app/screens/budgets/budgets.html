@@ -12,12 +12,10 @@
                     <fa-icon [icon]="icons.next"></fa-icon>
                 </button>
             </div>
-            @if (store.isCurrentPeriod()) {
-                <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()"
-                    aria-label="Add a budget">
-                    <fa-icon [icon]="icons.add"></fa-icon>
-                </button>
-            }
+            <button class="budgets__hero-icon-btn" type="button" (click)="openAddDialog()"
+                aria-label="Add a budget">
+                <fa-icon [icon]="icons.add"></fa-icon>
+            </button>
         </div>
         <div class="budgets__hero-value">
             ${{ store.aggregate().totalSpent | number: '1.0-0' }}
@@ -127,7 +125,7 @@
     </div>
 
     <dialog #addDialog class="budgets__dialog" (close)="onAddDialogClose()">
-        <h2 class="budgets__dialog-title">Add a budget</h2>
+        <h2 class="budgets__dialog-title">Add a budget {{ store.monthPhrase() }}</h2>
         @if (store.error()) {
             <p class="budgets__banner budgets__banner--error">{{ store.error() }}</p>
         }
@@ -135,7 +133,7 @@
             <select class="budgets__add-select" [value]="newCategoryId()"
                 (change)="newCategoryId.set($any($event.target).value)">
                 <option value="" disabled>Select a category</option>
-                @for (category of store.categoriesWithoutCurrentBudget(); track category.id) {
+                @for (category of store.categoriesWithoutBudgetThisPeriod(); track category.id) {
                     <option [value]="category.id">{{ category.name }}</option>
                 }
             </select>

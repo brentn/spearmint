@@ -276,14 +276,33 @@ describe('computeBudgetStatus', () => {
     expect(computeBudgetStatus('expense', 138, 100, 0).state).toBe('over'); // 138%
   });
 
-  it('rollover counts toward the available-budget denominator', () => {
-    // 430 / (500 + 40) = 79.6% -> normal, whereas 430/500 alone would be 86% (still normal here,
-    // so use a case where rollover changes the bucket)
-    const withoutRollover = computeBudgetStatus('expense', 540, 500, 0); // 108% -> warning
-    const withRollover = computeBudgetStatus('expense', 540, 400, 100); // 540/500 = 108% -> warning
-    expect(withoutRollover.percent).toBeCloseTo(1.08, 3);
-    expect(withRollover.percent).toBeCloseTo(1.08, 3);
-    expect(withRollover.state).toBe('warning');
+  describe('rollover adjusts progress, never capacity', () => {
+    it('a positive rollover (credit) reduces progress against the unchanged capacity', () => {
+      // $100 budget, $60 spent, $50 credit rolled in -> only $10 counts as new progress
+      const status = computeBudgetStatus('expense', 60, 100, 50);
+      expect(status.percent).toBeCloseTo(0.1, 5);
+      expect(status.state).toBe('normal');
+    });
+
+    it('a large positive rollover can push progress negative, reusing the reversed-bar rendering', () => {
+      const status = computeBudgetStatus('expense', 0, 100, 50);
+      expect(status.percent).toBeCloseTo(-0.5, 5);
+      expect(status.reversed).toBe(true);
+      expect(status.barPercent).toBeCloseTo(0.5, 5);
+    });
+
+    it('a negative rollover (debt) adds to progress as if already spent, against the unchanged capacity', () => {
+      // $100 budget, nothing spent yet, $30 debt carried in -> 30% filled before a dollar spent
+      const status = computeBudgetStatus('expense', 0, 100, -30);
+      expect(status.percent).toBeCloseTo(0.3, 5);
+      expect(status.state).toBe('normal');
+    });
+
+    it('a debt larger than this month\'s budget crosses into "over" through the normal threshold, not a hard override', () => {
+      const status = computeBudgetStatus('expense', 0, 100, -150);
+      expect(status.percent).toBeCloseTo(1.5, 5);
+      expect(status.state).toBe('over');
+    });
   });
 
   it('income: inverted logic — green at/above target', () => {
@@ -545,6 +564,75 @@ describe('recomputeRollovers', () => {
     // Housing had no direct spend of its own and Rent manages its own envelope, so all $200 rolls forward.
     const housingAugust = result.createdBudgets.find((b) => b.categoryId === 'housing');
     expect(housingAugust?.rolloverAmount).toBe(200);
+  });
+
+  it('carries a negative rollover forward when overspent, with no floor at zero', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [budget({ id: 'b-jul', period: '2026-07', amount: 500, rollOver: true, rolloverAmount: 0 })];
+    const transactions = [txn({ categoryId: 'cat-1', amount: -650, date: '2026-07-10' })];
+
+    const result = recomputeRollovers(budgets, transactions, categories, '2026-08');
+
+    expect(result.createdBudgets).toHaveLength(1);
+    expect(result.createdBudgets[0].rolloverAmount).toBe(-150); // 500 - 650
+  });
+
+  it('compounds a growing deficit across multiple overspent months', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [budget({ id: 'b-jun', period: '2026-06', amount: 200, rollOver: true, rolloverAmount: 0 })];
+    const transactions = [
+      txn({ id: 't-jun', categoryId: 'cat-1', amount: -300, date: '2026-06-10' }), // -> Jul rollover: -100
+      txn({ id: 't-jul', categoryId: 'cat-1', amount: -150, date: '2026-07-10' }), // available Jul = 100, actual 150 -> Aug: -50
+    ];
+
+    const result = recomputeRollovers(budgets, transactions, categories, '2026-08');
+
+    const julyBudget = result.budgets.find((b) => b.period === '2026-07');
+    const augustBudget = result.budgets.find((b) => b.period === '2026-08');
+    expect(julyBudget?.rolloverAmount).toBe(-100);
+    expect(augustBudget?.rolloverAmount).toBe(-50);
+  });
+
+  it('never recomputes a period whose rolloverAmount was manually set', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [
+      budget({ id: 'b-jul', period: '2026-07', amount: 500, rollOver: true, rolloverAmount: 0 }),
+      budget({
+        id: 'b-aug',
+        period: '2026-08',
+        amount: 500,
+        rollOver: true,
+        rolloverAmount: 999,
+        rolloverManual: true,
+      }),
+    ];
+    const transactions = [txn({ categoryId: 'cat-1', amount: -300, date: '2026-07-10' })]; // would auto-compute to 200
+
+    const result = recomputeRollovers(budgets, transactions, categories, '2026-08');
+
+    expect(result.changedBudgetIds.has('b-aug')).toBe(false);
+    expect(result.budgets.find((b) => b.id === 'b-aug')?.rolloverAmount).toBe(999);
+  });
+
+  it('still carries a manual override forward as the base for the next period', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [
+      budget({
+        id: 'b-jul',
+        period: '2026-07',
+        amount: 500,
+        rollOver: true,
+        rolloverAmount: 300,
+        rolloverManual: true,
+      }),
+    ];
+    const transactions = [txn({ categoryId: 'cat-1', amount: -100, date: '2026-07-10' })];
+
+    const result = recomputeRollovers(budgets, transactions, categories, '2026-08');
+
+    // August is computed fresh from July's manual override: (500 + 300) - 100 = 700
+    const augustBudget = result.createdBudgets.find((b) => b.period === '2026-08');
+    expect(augustBudget?.rolloverAmount).toBe(700);
   });
 
   it('is idempotent when run twice with the same inputs', () => {
