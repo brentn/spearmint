@@ -9,3 +9,10 @@ A reversed bar's rendered width caps at 90% rather than 100%, regardless of true
 Rollup is a full-tree recursive combine: every category's spent/amount/rollover always includes all of its descendants', regardless of whether those descendants have their own budget. A parent category with no explicit budget but at least one budgeted descendant gets a synthesized `Implied Budget` row. The Budgets screen's overall month total sums only top-level rows, real or implied, to avoid double-counting a child's spend under both its own row and its parent's.
 
 This supersedes the original rebuild-era design, which stopped rollup at the first budgeted descendant specifically to avoid double-counting. That version shipped, then GitHub issue #15 replaced it with the current full-tree combine once the parent-only default view (issue #12) exposed a problem: a budgeted child with no budgeted parent would vanish from the default "Spending by category" list entirely, since no row existed for it to roll up into.
+
+The superseded stop-at-budgeted-descendant rule didn't disappear, though — it still governs a second, narrower concept the rollover engine needs and the display doesn't: a `Rollover` carry-forward is per-category envelope math, and a budgeted descendant already carries its own overspend/underspend into its own next `Rollover` independently. Folding that descendant's actual into its budgeted ancestor's carry-forward too would double-count the same spend into two envelopes. So `budget-engine.util.ts` keeps both, under names chosen to keep them apart:
+
+- `getCombinedActualAmount` — the full-tree rule above, always includes every descendant regardless of whether it's separately budgeted. Feeds a row's displayed `spent`.
+- `getEnvelopeActualAmount` — the pre-#15 stop-at-budgeted-descendant rule, scoped to `recomputeRollovers` only. Feeds what a category's *own* `Rollover` is computed from.
+
+A category with a budgeted child will show a different "actual" for these two purposes at once, on purpose: its displayed spend (combined) includes the child's; its own rollover math (envelope) doesn't, because the child's rollover math already accounts for it.

@@ -10,7 +10,7 @@ import {
   getCombinedBudgetAmounts,
   getDescendantCategories,
   getEffectiveBudgetForScope,
-  getRollupActualAmount,
+  getEnvelopeActualAmount,
   recomputeRollovers,
 } from './budget-engine.util';
 
@@ -105,7 +105,7 @@ describe('getBudgetForExactPeriod / getEffectiveBudgetForScope', () => {
   });
 });
 
-describe('getRollupActualAmount (carry-forward rollup fix)', () => {
+describe('getEnvelopeActualAmount (rollover engine own-envelope math)', () => {
   it('rolls an unbudgeted child\'s spend up into its budgeted parent', () => {
     const categories = [
       category({ id: 'housing', name: 'Housing', parentCategoryId: null }),
@@ -118,7 +118,7 @@ describe('getRollupActualAmount (carry-forward rollup fix)', () => {
     ]);
     const budgets = [budget({ id: 'b-housing', categoryId: 'housing', period: '2026-08' })];
 
-    expect(getRollupActualAmount('2026-08', 'housing', categories, actuals, budgets)).toBe(1350);
+    expect(getEnvelopeActualAmount('2026-08', 'housing', categories, actuals, budgets)).toBe(1350);
   });
 
   it('stops at a budgeted descendant instead of double-counting its own envelope', () => {
@@ -137,8 +137,8 @@ describe('getRollupActualAmount (carry-forward rollup fix)', () => {
     ];
 
     // Housing's rollup should only pick up Utilities (unbudgeted) — Rent's 1200 stays in Rent's own row.
-    expect(getRollupActualAmount('2026-08', 'housing', categories, actuals, budgets)).toBe(150);
-    expect(getRollupActualAmount('2026-08', 'rent', categories, actuals, budgets)).toBe(1200);
+    expect(getEnvelopeActualAmount('2026-08', 'housing', categories, actuals, budgets)).toBe(150);
+    expect(getEnvelopeActualAmount('2026-08', 'rent', categories, actuals, budgets)).toBe(1200);
   });
 
   it('uses the effective-as-of-that-period budgeted check, not "ever budgeted"', () => {
@@ -153,7 +153,7 @@ describe('getRollupActualAmount (carry-forward rollup fix)', () => {
       budget({ id: 'b-rent', categoryId: 'rent', period: '2026-08' }),
     ];
 
-    expect(getRollupActualAmount('2026-06', 'housing', categories, actuals, budgets)).toBe(1200);
+    expect(getEnvelopeActualAmount('2026-06', 'housing', categories, actuals, budgets)).toBe(1200);
   });
 
   it('recurses through multiple levels of unbudgeted descendants', () => {
@@ -165,7 +165,7 @@ describe('getRollupActualAmount (carry-forward rollup fix)', () => {
     const actuals = new Map([['2026-08:c', 75]]);
     const budgets = [budget({ id: 'b-a', categoryId: 'a', period: '2026-08' })];
 
-    expect(getRollupActualAmount('2026-08', 'a', categories, actuals, budgets)).toBe(75);
+    expect(getEnvelopeActualAmount('2026-08', 'a', categories, actuals, budgets)).toBe(75);
   });
 });
 
@@ -183,7 +183,7 @@ describe('getDescendantCategories', () => {
 });
 
 describe('getCombinedActualAmount (unified rollup rule)', () => {
-  it('includes a budgeted descendant\'s spend too, unlike getRollupActualAmount', () => {
+  it('includes a budgeted descendant\'s spend too, unlike getEnvelopeActualAmount', () => {
     const categories = [
       category({ id: 'housing', name: 'Housing', parentCategoryId: null }),
       category({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),

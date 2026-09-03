@@ -92,12 +92,15 @@ export function getEffectiveBudgetForScope(
 }
 
 /**
- * Carry-forward rollup fix (spec §4): a budgeted parent's actual spend includes unbudgeted
- * descendants' spend, stopping at the first budgeted descendant so a budgeted child's own
- * envelope is never double-counted into its parent's. "Budgeted" is the effective-as-of-that-
- * period lookup, not "has a budget ever".
+ * A category's own envelope actual (spec §4) — distinct from the full-tree "combined actual"
+ * below (see `getCombinedActualAmount`'s doc for the contrast). Used only by the rollover
+ * engine: a budgeted descendant manages its own `Rollover` chain independently, so its spend
+ * must NOT flow up into an ancestor's envelope too, or it would be carried forward twice —
+ * once in the descendant's own rollover, once in the ancestor's. So this sums direct spend plus
+ * every *unbudgeted* descendant's spend, stopping the recursion the moment a descendant has its
+ * own effective-as-of-that-period budget (not "has a budget ever").
  */
-export function getRollupActualAmount(
+export function getEnvelopeActualAmount(
   period: YearMonth,
   categoryId: string,
   categories: Category[],
@@ -114,7 +117,7 @@ export function getRollupActualAmount(
       sum +
       (childIsBudgetedThisPeriod
         ? 0 // child manages its own envelope — already carried in its own rollover chain
-        : getRollupActualAmount(period, child.id, categories, actualsByPeriodAndCategory, budgets))
+        : getEnvelopeActualAmount(period, child.id, categories, actualsByPeriodAndCategory, budgets))
     );
   }, 0);
 
@@ -130,10 +133,12 @@ export function getDescendantCategories(categoryId: string, categories: Category
 }
 
 /**
- * Full-subtree actual amount (issue #15's unified rollup rule): unlike `getRollupActualAmount`
- * (which stops at a budgeted descendant for the rollover engine's own-envelope math), this
- * always includes every descendant's spend regardless of whether that descendant has its own
- * budget — the basis for a combined row's displayed `spent`.
+ * Full-subtree "combined actual" (issue #15's unified rollup rule) — the basis for a combined
+ * row's displayed `spent`. Unlike `getEnvelopeActualAmount` (the rollover engine's own-envelope
+ * math, which stops at a budgeted descendant so that descendant's spend isn't carried forward
+ * twice), this always includes every descendant's spend regardless of whether that descendant
+ * has its own budget: a display total should read as "everything under this category," not
+ * "just what this category's own envelope is on the hook for."
  */
 export function getCombinedActualAmount(
   period: YearMonth,
@@ -423,7 +428,7 @@ export function recomputeRollovers(
       }
 
       const previousAvailable = previousEffectiveBudget.amount + (previousEffectiveBudget.rolloverAmount ?? 0);
-      const previousActual = getRollupActualAmount(
+      const previousActual = getEnvelopeActualAmount(
         previousPeriod,
         categoryId,
         categories,
