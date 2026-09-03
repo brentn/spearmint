@@ -1,102 +1,95 @@
 <div class="transactions">
-  <header class="transactions__hero">
-    <div class="transactions__hero-topline">
-      <h1 class="transactions__hero-label">Transactions</h1>
-      @if (filterBadgeLabel(); as label) {
-        <a class="transactions__filter-badge" routerLink="/transactions">{{ label }} &times;</a>
-      }
-    </div>
-    <div class="transactions__hero-value">
-      ${{ totalSpentThisMonth() | number: '1.0-0' }}
-      <span class="transactions__hero-sub">spent this month</span>
-    </div>
-    <p class="transactions__hero-note">Across {{ transactionCountThisMonth() }} transactions</p>
-  </header>
-
-  <div class="transactions__content">
-    @if (hasAnyTransactions()) {
-      <div class="transactions__search">
-        <fa-icon class="transactions__search-icon" [icon]="icons.search" />
-        <input
-          class="transactions__search-input"
-          type="search"
-          placeholder="Search description, amount, date, notes, category"
-          [value]="searchQuery()"
-          (input)="searchQuery.set($any($event.target).value)"
-          aria-label="Search transactions"
-        />
-      </div>
-    }
-
-    @if (store.loading()) {
-      <p class="transactions__loading">Loading&hellip;</p>
-    } @else if (dayGroups().length === 0) {
-      <div class="empty-state">
-        @if (searchQuery().trim()) {
-          <h2 class="empty-state__title">No matching transactions</h2>
-          <p class="empty-state__body">Try a different search term.</p>
-        } @else {
-          <h2 class="empty-state__title">No transactions yet</h2>
-          <p class="empty-state__body">Your synced transactions will show up here.</p>
-        }
-      </div>
-    } @else {
-      <section class="transactions__list">
-        @for (group of dayGroups(); track group.date) {
-          <h2 class="transactions__day-heading">{{ group.heading }}</h2>
-          <ul class="transactions__group">
-            @for (transaction of group.transactions; track transaction.id) {
-              <li class="transactions__row" animate.leave="transactions__row--leaving" (click)="openEditDialog(transaction)">
-                <span class="transactions__icon">{{ transaction.description.charAt(0).toUpperCase() }}</span>
-                <div class="transactions__mid">
-                  <div class="transactions__top-line">
-                    <div class="transactions__desc">
-                      {{ transaction.description }}
-                      @if (transaction.pending) {
-                        <span class="transactions__pending-badge">PENDING</span>
-                      }
-                    </div>
-                    <span class="transactions__amt" [class.transactions__amt--positive]="transaction.amount > 0">
-                      {{ transaction.amount < 0 ? '-' : '' }}${{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2' }}
-                    </span>
-                  </div>
-                  <div class="transactions__account">{{ store.accountName(transaction.accountId) }}</div>
-                  @if (transaction.categoryId) {
-                    <span class="transactions__category">{{ store.categoryName(transaction.categoryId) }}</span>
-                  } @else {
-                    <app-category-picker
-                      [categories]="store.categories()"
-                      [selectedId]="transaction.categoryId"
-                      [disabled]="transaction.pending"
-                      [emphasize]="true"
-                      (categoryChange)="assignCategory(transaction.id, $event)"
-                      (click)="$event.stopPropagation()"
-                    />
-                  }
-                  @if (!transaction.pending && !transaction.categoryId && store.suggestionFor(transaction.id); as suggestion) {
-                    <div class="transactions__suggestion" (click)="$event.stopPropagation()">
-                      <span class="transactions__suggestion-label">Suggested: {{ suggestion.categoryName }}</span>
-                      <button type="button" class="transactions__suggestion-accept" (click)="acceptSuggestion(transaction.id)">
-                        Apply
-                      </button>
-                    </div>
-                  }
-                </div>
-              </li>
+    <header class="transactions__hero">
+        <div class="transactions__hero-topline">
+            <h1 class="transactions__hero-label">Transactions</h1>
+            @if (filterBadgeLabel(); as label) {
+                <a class="transactions__filter-badge" routerLink="/transactions">{{ label }} &times;</a>
             }
-          </ul>
-        }
-      </section>
-    }
-  </div>
+        </div>
+        <div class="transactions__hero-value">
+            ${{ totalSpentThisMonth() | number: '1.0-0' }}
+            <span class="transactions__hero-sub">spent this month</span>
+        </div>
+        <p class="transactions__hero-note">Across {{ transactionCountThisMonth() }} transactions</p>
+    </header>
 
-  @if (editingTransaction(); as t) {
-    <app-transaction-edit-dialog
-      [transaction]="t"
-      [categories]="store.categories()"
-      [accountName]="store.accountName(t.accountId)"
-      (save)="saveEdit(t.id, $event)"
-      (close)="closeEditDialog()"
-    />
-  }
+    <div class="transactions__content">
+        @if (hasAnyTransactions()) {
+            <div class="transactions__search">
+                <fa-icon class="transactions__search-icon" [icon]="icons.search" />
+                <input class="transactions__search-input" type="search" placeholder="Search" [value]="searchQuery()"
+                    (input)="searchQuery.set($any($event.target).value)" aria-label="Search transactions" />
+            </div>
+        }
+
+        @if (store.loading()) {
+            <p class="transactions__loading">Loading&hellip;</p>
+        } @else if (dayGroups().length === 0) {
+            <div class="empty-state">
+                @if (searchQuery().trim()) {
+                    <h2 class="empty-state__title">No matching transactions</h2>
+                    <p class="empty-state__body">Try a different search term.</p>
+                } @else {
+                    <h2 class="empty-state__title">No transactions yet</h2>
+                    <p class="empty-state__body">Your synced transactions will show up here.</p>
+                }
+            </div>
+        } @else {
+            <section class="transactions__list">
+                @for (group of dayGroups(); track group.date) {
+                    <h2 class="transactions__day-heading">{{ group.heading }}</h2>
+                    <ul class="transactions__group">
+                        @for (transaction of group.transactions; track transaction.id) {
+                            <li class="transactions__row" animate.leave="transactions__row--leaving"
+                                (click)="openEditDialog(transaction)">
+                                <span
+                                    class="transactions__icon">{{ transaction.description.charAt(0).toUpperCase() }}</span>
+                                <div class="transactions__mid">
+                                    <div class="transactions__top-line">
+                                        <div class="transactions__desc">
+                                            {{ transaction.description }}
+                                            @if (transaction.pending) {
+                                                <span class="transactions__pending-badge">PENDING</span>
+                                            }
+                                        </div>
+                                        <span class="transactions__amt"
+                                            [class.transactions__amt--positive]="transaction.amount > 0">
+                                            {{ transaction.amount < 0 ? '-' : '' }}${{ (transaction.amount < 0 ? -transaction.amount : transaction.amount) | number: '1.2-2' }}
+                                        </span>
+                                    </div>
+                                    <div class="transactions__account">{{ store.accountName(transaction.accountId) }}
+                                    </div>
+                                    @if (transaction.categoryId) {
+                                        <span
+                                            class="transactions__category">{{ store.categoryName(transaction.categoryId) }}</span>
+                                    } @else {
+                                        <app-category-picker [categories]="store.categories()"
+                                            [selectedId]="transaction.categoryId" [disabled]="transaction.pending"
+                                            [emphasize]="true" (categoryChange)="assignCategory(transaction.id, $event)"
+                                            (click)="$event.stopPropagation()" />
+                                    }
+                                    @if (!transaction.pending && !transaction.categoryId && store.suggestionFor(transaction.id); as suggestion) {
+                                        <div class="transactions__suggestion" (click)="$event.stopPropagation()">
+                                            <span class="transactions__suggestion-label">Suggested:
+                                                {{ suggestion.categoryName }}</span>
+                                            <button type="button" class="transactions__suggestion-accept"
+                                                (click)="acceptSuggestion(transaction.id)">
+                                                Apply
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+    </div>
+
+    @if (editingTransaction(); as t) {
+        <app-transaction-edit-dialog [transaction]="t" [categories]="store.categories()"
+            [accountName]="store.accountName(t.accountId)" (save)="saveEdit(t.id, $event)"
+            (close)="closeEditDialog()" />
+    }
 </div>
