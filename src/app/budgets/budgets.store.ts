@@ -392,7 +392,7 @@ export class BudgetsStore {
       overallState: overallStatus.state,
       message:
         remaining >= 0
-          ? `Keep it up! You can save $${Math.round(remaining)} more ${monthPhrase}`
+          ? `$${Math.round(remaining)} remaining ${monthPhrase}`
           : `You're $${Math.round(Math.abs(remaining))} over budget ${monthPhrase}`,
       todayPercent: elapsedMonthFraction(period) * 100,
       earned,
