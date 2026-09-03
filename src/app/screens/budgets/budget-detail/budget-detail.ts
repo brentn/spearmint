@@ -85,10 +85,9 @@ export class BudgetDetail {
   protected readonly formMode = signal<'edit' | 'add' | null>(null);
   protected readonly formAmount = signal<number | null>(null);
   protected readonly formRollOver = signal(false);
-  /** Whether the "manually set rollover" field is shown/active — separate from formRollOver so
-   * a routine amount edit never accidentally overwrites an unrelated rollover value (rollover is
-   * only sent to the store when this is checked; see BudgetsStore.setBudget). */
-  protected readonly formRolloverOverride = signal(false);
+  /** The manual rollover override, if any — null means "keep it calculated automatically."
+   * Once a value is saved here it's sticky (see BudgetsService.setForPeriod): there's no UI path
+   * back to automatic for a period that's already been manually set. */
   protected readonly formRolloverAmount = signal<number | null>(null);
 
   protected openEditDialog(): void {
@@ -101,8 +100,7 @@ export class BudgetDetail {
     // silently inflate it by the children's amounts on every edit.
     this.formAmount.set(row.ownAmount);
     this.formRollOver.set(row.rollOver);
-    this.formRolloverOverride.set(row.rolloverManual);
-    this.formRolloverAmount.set(row.rolloverAmount);
+    this.formRolloverAmount.set(row.rolloverManual ? row.rolloverAmount : null);
     this.formMode.set('edit');
     this.formDialog()?.nativeElement.showModal();
   }
@@ -110,7 +108,6 @@ export class BudgetDetail {
   protected openAddDialog(): void {
     this.formAmount.set(null);
     this.formRollOver.set(false);
-    this.formRolloverOverride.set(false);
     this.formRolloverAmount.set(null);
     this.formMode.set('add');
     this.formDialog()?.nativeElement.showModal();
@@ -134,8 +131,7 @@ export class BudgetDetail {
       return;
     }
     const rollOver = row.categoryType === 'income' ? false : this.formRollOver();
-    const rolloverAmount =
-      rollOver && this.formRolloverOverride() ? (this.formRolloverAmount() ?? undefined) : undefined;
+    const rolloverAmount = rollOver ? (this.formRolloverAmount() ?? undefined) : undefined;
 
     if (mode === 'edit') {
       await this.store.setBudget(row.categoryId, amount, rollOver, rolloverAmount);

@@ -161,29 +161,20 @@
             </label>
           }
           @if (row.categoryType !== 'income' && formRollOver()) {
-            <label class="budget-detail__edit-checkbox">
+            <label class="budget-detail__edit-label">
+              Rollover amount override (optional)
               <input
-                type="checkbox"
-                [checked]="formRolloverOverride()"
-                (change)="formRolloverOverride.set($any($event.target).checked)"
+                type="number"
+                step="0.01"
+                placeholder="Calculated automatically"
+                [value]="formRolloverAmount() ?? ''"
+                (input)="formRolloverAmount.set($any($event.target).valueAsNumber)"
               />
-              Manually set the rollover amount
             </label>
-            @if (formRolloverOverride()) {
-              <label class="budget-detail__edit-label">
-                Rollover amount
-                <input
-                  type="number"
-                  step="0.01"
-                  [value]="formRolloverAmount() ?? ''"
-                  (input)="formRolloverAmount.set($any($event.target).valueAsNumber)"
-                />
-              </label>
-              <p class="budget-detail__edit-hint">
-                Positive rolls over as credit, negative as debt. This stays fixed — it won't be
-                recalculated automatically again.
-              </p>
-            }
+            <p class="budget-detail__edit-hint">
+              Leave blank to keep this calculated automatically. Positive rolls over as credit,
+              negative as debt — once set, it stays fixed here permanently.
+            </p>
           }
           <div class="budget-detail__edit-actions">
             <button type="button" class="budget-detail__save" (click)="submitForm()">

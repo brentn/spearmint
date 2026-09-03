@@ -355,7 +355,7 @@ describe('BudgetDetail', () => {
   });
 
   describe('manual rollover override', () => {
-    it('shows the override checkbox only once rollOver is checked, and hides income entirely', () => {
+    it('shows the rollover amount field only once rollOver is checked, and hides income entirely', () => {
       const fixture = createFixture('b-housing');
       fakeStore.rows.set([
         row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false, rollOver: false }),
@@ -366,18 +366,18 @@ describe('BudgetDetail', () => {
       root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
       fixture.detectChanges();
 
-      const checkboxes = () => [...root.querySelectorAll('.budget-detail__edit-checkbox')];
-      expect(checkboxes()).toHaveLength(1); // just "roll over" — no override checkbox yet
+      const labels = () => [...root.querySelectorAll('.budget-detail__edit-label')];
+      expect(labels()).toHaveLength(1); // just "Amount" — no rollover override field yet
 
       const rollOverCheckbox = root.querySelector<HTMLInputElement>('.budget-detail__edit-checkbox input');
       rollOverCheckbox!.checked = true;
       rollOverCheckbox!.dispatchEvent(new Event('change'));
       fixture.detectChanges();
 
-      expect(checkboxes()).toHaveLength(2);
+      expect(labels()).toHaveLength(2);
     });
 
-    it('submitting with the override checked and a value passes rolloverAmount through to setBudget', async () => {
+    it('typing a rollover amount passes it through to setBudget', async () => {
       const fixture = createFixture('b-housing');
       fakeStore.rows.set([
         row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false, rollOver: true }),
@@ -386,11 +386,6 @@ describe('BudgetDetail', () => {
 
       const root = fixture.nativeElement as HTMLElement;
       root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
-      fixture.detectChanges();
-
-      const overrideCheckbox = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-checkbox input')][1];
-      overrideCheckbox.checked = true;
-      overrideCheckbox.dispatchEvent(new Event('change'));
       fixture.detectChanges();
 
       const rolloverInput = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-label input')][1];
@@ -402,7 +397,22 @@ describe('BudgetDetail', () => {
       await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 400, true, -60));
     });
 
-    it('leaving the override unchecked never sends a rolloverAmount, even for an already-manual row', async () => {
+    it('leaving the rollover amount blank never sends a rolloverAmount for a not-yet-manual row', async () => {
+      const fixture = createFixture('b-housing');
+      fakeStore.rows.set([
+        row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false, rollOver: true }),
+      ]);
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
+      fixture.detectChanges();
+
+      root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
+      await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 400, true, undefined));
+    });
+
+    it('prefills the rollover amount for an already-manual row, and resaving it unchanged keeps it manual', async () => {
       const fixture = createFixture('b-housing');
       fakeStore.rows.set([
         row({
@@ -421,15 +431,13 @@ describe('BudgetDetail', () => {
       root.querySelector<HTMLButtonElement>('button[aria-label="Edit budget"]')?.click();
       fixture.detectChanges();
 
-      // Prefilled as already-checked since this row is already manual (Q11: sticky, permanent).
-      const overrideCheckbox = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-checkbox input')][1];
-      expect(overrideCheckbox.checked).toBe(true);
-      overrideCheckbox.checked = false;
-      overrideCheckbox.dispatchEvent(new Event('change'));
-      fixture.detectChanges();
+      // Prefilled with the existing manual value — there's no field to uncheck back to
+      // automatic (Q11: sticky, permanent) once a period has been manually set.
+      const rolloverInput = [...root.querySelectorAll<HTMLInputElement>('.budget-detail__edit-label input')][1];
+      expect(rolloverInput.value).toBe('-60');
 
       root.querySelector<HTMLButtonElement>('.budget-detail__save')?.click();
-      await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 400, true, undefined));
+      await vi.waitFor(() => expect(fakeStore.setBudget).toHaveBeenCalledWith('housing', 400, true, -60));
     });
   });
 
