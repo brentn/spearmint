@@ -3,7 +3,7 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { budgetSchema, categorySchema, transactionSchema } from '../data/schemas';
+import { budgetMigrationStrategies, budgetSchema, categorySchema, transactionSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
 import type { Budget, Category, Transaction } from '../data/models';
 import { currentYearMonth, previousYearMonth } from './period.util';
@@ -38,7 +38,7 @@ describe('BudgetsService', () => {
       storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await fakeDb.addCollections({
-      budgets: { schema: budgetSchema },
+      budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
       categories: { schema: categorySchema },
       transactions: { schema: transactionSchema },
     });

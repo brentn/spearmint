@@ -3,7 +3,14 @@ import { createRxDatabase, type RxDatabase } from 'rxdb';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountMigrationStrategies, accountSchema, budgetSchema, categorySchema, transactionSchema } from '../data/schemas';
+import {
+  accountMigrationStrategies,
+  accountSchema,
+  budgetMigrationStrategies,
+  budgetSchema,
+  categorySchema,
+  transactionSchema,
+} from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
 import type { Account, Budget, Category, Transaction } from '../data/models';
 import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
@@ -78,7 +85,7 @@ describe('BudgetsStore', () => {
       storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
     });
     await fakeDb.addCollections({
-      budgets: { schema: budgetSchema },
+      budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
       categories: { schema: categorySchema },
       transactions: { schema: transactionSchema },
       accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
@@ -722,6 +729,10 @@ describe('BudgetsStore', () => {
     it('is a neutral "info" state with more than a week left in the month', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-08-10T00:00:00Z'));
+      // store was constructed in the outer beforeEach under the real (pre-fake-timer) clock, so
+      // its period signal needs resyncing to match — a real session never has this skew, since
+      // the clock doesn't jump after construction.
+      store.period.set(currentYearMonth());
 
       await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }));
       await fakeDb['budgets'].insert(seedBudget({ categoryId: 'paycheck', amount: 4000 }));
@@ -735,6 +746,7 @@ describe('BudgetsStore', () => {
     it('resumes real green/amber/red state during the final week of the month', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-08-28T00:00:00Z'));
+      store.period.set(currentYearMonth());
 
       await fakeDb['categories'].insert(seedCategory({ id: 'paycheck', name: 'Paycheck', type: 'income' }));
       await fakeDb['budgets'].insert(seedBudget({ categoryId: 'paycheck', amount: 4000 }));
