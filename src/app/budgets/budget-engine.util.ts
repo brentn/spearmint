@@ -1,10 +1,15 @@
 import type { Budget, Category, CategoryType, Transaction, YearMonth } from '../data/models';
-import { nextYearMonth, previousYearMonth } from './period.util';
+import { elapsedMonthFraction, formatYearMonth, isFinalWeekOfMonth, nextYearMonth, previousYearMonth } from './period.util';
 
 /**
- * The rollover engine. `Transaction.amount` follows SimpleFIN's "positive = deposit"
+ * The budget engine. `Transaction.amount` follows SimpleFIN's "positive = deposit"
  * convention, so expense/transfer spend arrives as negative numbers and must be negated
  * to get a positive "amount spent" for budget math.
+ *
+ * Two entry points: `computeBudgetPeriodView` builds everything the Budgets screen renders
+ * for one period (rows, the month aggregate, and the income/expenses flow-progress widget)
+ * in a single pass over a signed-actuals map computed once. `recomputeRollovers` is separate —
+ * persisted `Rollover` state, recomputed on load rather than derived per-render.
  */
 
 const EXPENSE_WARNING_THRESHOLD = 1.01;
@@ -16,8 +21,9 @@ const INCOME_WARNING_THRESHOLD = 0.7;
  * chevron/label render once the true magnitude exceeds it. */
 const REVERSED_CAP = 0.9;
 
-/** 'info' is a presentation-only override applied above this engine (BudgetsStore) for income
- * rows before the final week of the month (issue #21) — never produced by computeBudgetStatus. */
+/** 'info' is a presentation-only override — applied to a per-category income row before the
+ * final week of the month (issue #21), and unconditionally to the flow-progress widget's income
+ * row — never produced by computeBudgetStatus itself. */
 export type BudgetState = 'normal' | 'warning' | 'over' | 'info';
 
 export interface BudgetStatus {
@@ -46,7 +52,7 @@ export interface BudgetStatus {
  * skipped, matching that field's purpose (carried forward from old Spearmint's
  * `hideFromBudget`).
  */
-export function buildSignedActualsMap(transactions: Transaction[], categories: Category[]): Map<string, number> {
+function buildSignedActualsMap(transactions: Transaction[], categories: Category[]): Map<string, number> {
   const categoryTypeById = new Map(categories.map((c) => [c.id, c.type]));
   const map = new Map<string, number>();
 
@@ -72,7 +78,7 @@ export function getBudgetForExactPeriod(budgets: Budget[], categoryId: string, p
 }
 
 /** Most recent monthly budget at or before `period` for this category. */
-export function getEffectiveBudgetForScope(budgets: Budget[], categoryId: string, period: YearMonth): Budget | null {
+function getEffectiveBudgetForScope(budgets: Budget[], categoryId: string, period: YearMonth): Budget | null {
   const candidate = budgets
     .filter((b) => b.categoryId === categoryId && b.periodType === 'month' && b.period <= period)
     .sort((a, b) => b.period.localeCompare(a.period))[0];
@@ -128,7 +134,7 @@ export function getDescendantCategories(categoryId: string, categories: Category
  * has its own budget: a display total should read as "everything under this category," not
  * "just what this category's own envelope is on the hook for."
  */
-export function getCombinedActualAmount(
+function getCombinedActualAmount(
   period: YearMonth,
   categoryId: string,
   categories: Category[],
@@ -143,7 +149,7 @@ export function getCombinedActualAmount(
   return direct + descendantContribution;
 }
 
-export interface CombinedBudgetAmounts {
+interface CombinedBudgetAmounts {
   /** Own explicit amount (0 if none) plus every budgeted descendant's own amount. */
   amount: number;
   /** Own explicit rolloverAmount (0 if none) plus every budgeted descendant's own rolloverAmount. */
@@ -161,7 +167,7 @@ export interface CombinedBudgetAmounts {
  * and implied rows (own budget absent, `hasBudgetedDescendant` true) — the same formula degrades
  * to "just its own budget" for a leaf category, matching pre-#15 behavior exactly.
  */
-export function getCombinedBudgetAmounts(
+function getCombinedBudgetAmounts(
   categoryId: string,
   categories: Category[],
   budgets: Budget[],
@@ -199,7 +205,7 @@ export function getCombinedBudgetAmounts(
  * budget at all) still reverses at full magnitude rather than the two effectively canceling out
  * to an invisible 0%.
  */
-export function computeBudgetStatus(
+function computeBudgetStatus(
   categoryType: CategoryType,
   spent: number,
   amount: number,
@@ -209,9 +215,7 @@ export function computeBudgetStatus(
   const percent = amount > 0 ? progress / amount : progress > 0 ? 1 : progress < 0 ? -1 : 0;
   const reversed = percent < 0;
   const reversedCapped = reversed && Math.abs(percent) > REVERSED_CAP;
-  const barPercent = reversed
-    ? Math.min(REVERSED_CAP, Math.abs(percent))
-    : Math.max(0, Math.min(1, percent));
+  const barPercent = reversed ? Math.min(REVERSED_CAP, Math.abs(percent)) : Math.max(0, Math.min(1, percent));
 
   let state: BudgetState;
   if (categoryType === 'income') {
@@ -240,7 +244,7 @@ export function computeBudgetStatus(
   return { percent, barPercent, reversed, reversedCapped, state };
 }
 
-export interface UncategorizedTotals {
+interface UncategorizedTotals {
   /** Sum of uncategorized (`categoryId === null`) positive-amount transactions for the period. */
   income: number;
   /** Sum of uncategorized negative-amount transactions for the period, negated to a positive spend. */
@@ -254,16 +258,12 @@ export interface UncategorizedTotals {
  * in the app (row spend, `BudgetsAggregate.totalSpent`/`earned`) excludes uncategorized
  * transactions entirely (see ADR-0018).
  */
-export function computeUncategorizedTotals(transactions: Transaction[], period: YearMonth): UncategorizedTotals {
+function computeUncategorizedTotals(transactions: Transaction[], period: YearMonth): UncategorizedTotals {
   let income = 0;
   let expenses = 0;
 
   for (const transaction of transactions) {
-    if (
-      transaction.categoryId !== null ||
-      transaction.excludeFromBudget ||
-      transaction.date.slice(0, 7) !== period
-    ) {
+    if (transaction.categoryId !== null || transaction.excludeFromBudget || transaction.date.slice(0, 7) !== period) {
       continue;
     }
     if (transaction.amount > 0) {
@@ -310,7 +310,7 @@ export interface FlowProgressViewModel {
  * three-state, both against the *combined* (categorized + uncategorized) actual so the bar's
  * color matches what it visually fills.
  */
-export function buildFlowProgressRow(
+function buildFlowProgressRow(
   categoryType: 'income' | 'expense',
   categorizedActual: number,
   uncategorizedActual: number,
@@ -453,4 +453,243 @@ export function recomputeRollovers(
   }
 
   return { budgets: workingBudgets, changedBudgetIds, createdBudgets };
+}
+
+// ---------------------------------------------------------------------------
+// Period view: rows + aggregate + flow-progress for one period, in one pass.
+// ---------------------------------------------------------------------------
+
+export interface BudgetRowViewModel {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  categoryType: CategoryType;
+  parentCategoryId: string | null;
+  /** Combined amount: own explicit budget's amount (0 if none) plus every budgeted descendant's
+   * own amount (issue #15's unified amount rule) — what the progress bar and hero display. */
+  amount: number;
+  /** This category's own explicit budget amount (0 if none/implied) — distinct from `amount`
+   * whenever it has a budgeted descendant. Editing a real budget must prefill/persist this, not
+   * the combined `amount`, or saving with no changes would silently inflate it every time. */
+  ownAmount: number;
+  rollOver: boolean;
+  rolloverAmount: number;
+  /** True when this period's rolloverAmount was manually set (see Budget.rolloverManual) — the
+   * engine never recomputes it. Always false for an implied row. */
+  rolloverManual: boolean;
+  available: number;
+  spent: number;
+  percent: number;
+  pctRounded: number;
+  barPercent: number;
+  /** Whether the percentage label sits on top of the filled portion of the bar (vs. beside it).
+   * Direction-agnostic by construction, not by coincidence: the templates anchor the on-fill
+   * label at the track's right edge regardless of `reversed`, and a reversed fill is itself
+   * anchored flush to that same right edge, so once the fill is large enough to trigger this the
+   * label always lands on colored area either direction. Ignored entirely when `reversedCapped`
+   * is true — the label moves into the chevron/overflow group instead. */
+  pctLabelOnFill: boolean;
+  state: BudgetState;
+  /** True when the category's actual went negative (e.g. a refund/reversal) — the bar fills from
+   * the opposite edge. Direction only; `state`'s color already lands correctly either way. */
+  reversed: boolean;
+  /** True when a reversed bar's true magnitude exceeds the rendering cap — see `BudgetStatus.reversedCapped`. */
+  reversedCapped: boolean;
+  /** True for a synthetic row: no explicit budget of its own, computed from budgeted descendants
+   * (issue #15). `id` is a stable synthetic identifier in this case, not a real Budget id. */
+  implied: boolean;
+}
+
+/** Stable synthetic id for an implied row — distinct from real budget ids (randomUUID). */
+const impliedRowId = (categoryId: string): string => `implied:${categoryId}`;
+
+export interface BudgetsAggregate {
+  monthName: string;
+  totalSpent: number;
+  totalBudget: number;
+  remaining: number;
+  overallPercent: number;
+  overallBarPercent: number;
+  overallState: BudgetState;
+  message: string;
+  todayPercent: number;
+  earned: number;
+  spent: number;
+  cashFlowNet: number;
+  /** Sum of top-level income rows' `available` (real or implied) — the income progress
+   * widget's/cash-flow box's budget target, mirroring totalBudget's expense-side scope. */
+  budgetedIncome: number;
+}
+
+export interface BudgetPeriodView {
+  rows: BudgetRowViewModel[];
+  aggregate: BudgetsAggregate;
+  flowProgress: FlowProgressViewModel;
+}
+
+function buildRows(
+  budgets: Budget[],
+  categories: Category[],
+  period: YearMonth,
+  actualsByPeriodAndCategory: Map<string, number>,
+): BudgetRowViewModel[] {
+  const isIncomeInfoPeriod = !isFinalWeekOfMonth(period);
+
+  const rows: BudgetRowViewModel[] = [];
+  for (const category of categories) {
+    const combined = getCombinedBudgetAmounts(category.id, categories, budgets, period);
+    // `spent` already rolls up the whole subtree (getCombinedActualAmount), so a parent whose
+    // only expense activity comes from an unbudgeted child qualifies here too — no separate
+    // check needed to cover the "child or parent" half of issue #21's $0-computed-budget rule.
+    const spent = getCombinedActualAmount(period, category.id, categories, actualsByPeriodAndCategory);
+    const hasUnbudgetedExpenseActivity = category.type !== 'income' && spent !== 0;
+    // Neither an explicit budget of its own, a budgeted descendant to imply one from, nor any
+    // expense activity to imply a $0 budget from (issue #21) — no budget activity at all, so
+    // this category stays out of the list entirely.
+    if (!combined.hasOwnBudget && !combined.hasBudgetedDescendant && !hasUnbudgetedExpenseActivity) {
+      continue;
+    }
+    const ownBudget = getEffectiveBudgetForScope(budgets, category.id, period);
+    const status = computeBudgetStatus(category.type, spent, combined.amount, combined.rolloverAmount);
+
+    rows.push({
+      id: ownBudget?.id ?? impliedRowId(category.id),
+      categoryId: category.id,
+      categoryName: category.name,
+      categoryType: category.type,
+      parentCategoryId: category.parentCategoryId,
+      amount: combined.amount,
+      ownAmount: ownBudget?.amount ?? 0,
+      rollOver: ownBudget?.rollOver ?? false,
+      rolloverAmount: combined.rolloverAmount,
+      rolloverManual: ownBudget?.rolloverManual ?? false,
+      available: combined.amount + combined.rolloverAmount,
+      spent,
+      percent: status.percent,
+      pctRounded: Math.round(status.percent * 100),
+      barPercent: status.barPercent,
+      pctLabelOnFill: status.barPercent > 0.22,
+      reversed: status.reversed,
+      reversedCapped: status.reversedCapped,
+      // Neutral "too early to judge" color for an income target (issue #21) — the real
+      // green/amber/red state resumes once the final week gives "behind target" real meaning.
+      state: category.type === 'income' && isIncomeInfoPeriod ? 'info' : status.state,
+      implied: ownBudget === null,
+    });
+  }
+
+  return orderByCategoryTree(rows);
+}
+
+/** Parent-above-children ordering within each type group (issue #21): top-level rows sorted
+ * alphabetically, each immediately followed by its own children (also alphabetical) — the
+ * income group still sorts after expense/transfer, matching the pre-#21 group split. */
+function orderByCategoryTree(rows: BudgetRowViewModel[]): BudgetRowViewModel[] {
+  const byParent = new Map<string | null, BudgetRowViewModel[]>();
+  for (const row of rows) {
+    const siblings = byParent.get(row.parentCategoryId) ?? [];
+    siblings.push(row);
+    byParent.set(row.parentCategoryId, siblings);
+  }
+  for (const siblings of byParent.values()) {
+    siblings.sort((a, b) => a.categoryName.localeCompare(b.categoryName));
+  }
+
+  const ordered: BudgetRowViewModel[] = [];
+  const appendTree = (row: BudgetRowViewModel): void => {
+    ordered.push(row);
+    for (const child of byParent.get(row.categoryId) ?? []) {
+      appendTree(child);
+    }
+  };
+
+  const topLevel = byParent.get(null) ?? [];
+  for (const row of topLevel.filter((r) => r.categoryType !== 'income')) {
+    appendTree(row);
+  }
+  for (const row of topLevel.filter((r) => r.categoryType === 'income')) {
+    appendTree(row);
+  }
+
+  return ordered;
+}
+
+function buildAggregate(
+  rows: BudgetRowViewModel[],
+  categories: Category[],
+  period: YearMonth,
+  actualsByPeriodAndCategory: Map<string, number>,
+  monthPhrase: string,
+): BudgetsAggregate {
+  // Top-level rows only (real or implied): a parent row already fully absorbs its descendants'
+  // amount/rollover/spend (issue #15's unified rollup), so counting a child's own row here too
+  // would double-count it. Independent of the "Show subcategories" toggle, which is purely
+  // presentational over this same row set.
+  const topLevelRows = rows.filter((row) => row.parentCategoryId === null);
+  const expenseRows = topLevelRows.filter((row) => row.categoryType !== 'income');
+  const topLevelIncomeRows = topLevelRows.filter((row) => row.categoryType === 'income');
+
+  const totalSpent = expenseRows.reduce((sum, row) => sum + row.spent, 0);
+  const totalBudget = expenseRows.reduce((sum, row) => sum + row.available, 0);
+  const budgetedIncome = topLevelIncomeRows.reduce((sum, row) => sum + row.available, 0);
+  const remaining = totalBudget - totalSpent;
+  const overallStatus = computeBudgetStatus('expense', totalSpent, totalBudget, 0);
+  // Deliberately not derived from `rows`/incomeRows (issue #21): a wholly unbudgeted income
+  // category never gets a row (bullet 3's $0-computed-budget rule is scoped to expenses only —
+  // see buildRows), but its earnings must still count toward the cash-flow box's "Earned" total
+  // and its "unbudgeted actual" overage, so this sums every income category's actuals directly.
+  const earned = categories
+    .filter((category) => category.type === 'income')
+    .reduce((sum, category) => sum + (actualsByPeriodAndCategory.get(`${period}:${category.id}`) ?? 0), 0);
+
+  return {
+    monthName: formatYearMonth(period),
+    totalSpent,
+    totalBudget,
+    remaining,
+    overallPercent: overallStatus.percent,
+    overallBarPercent: overallStatus.barPercent,
+    overallState: overallStatus.state,
+    message:
+      remaining >= 0
+        ? `$${Math.round(remaining)} remaining ${monthPhrase}`
+        : `You're $${Math.round(Math.abs(remaining))} over budget ${monthPhrase}`,
+    todayPercent: elapsedMonthFraction(period) * 100,
+    earned,
+    spent: totalSpent,
+    cashFlowNet: earned - totalSpent,
+    budgetedIncome,
+  };
+}
+
+/**
+ * The one entry point for "what should the Budgets screen show for this period" — rows
+ * (ordered, parent-above-children), the month aggregate, and the income/expenses flow-progress
+ * widget, built from a single signed-actuals pass over `transactions`/`categories`.
+ *
+ * `monthPhrase` is caller-supplied ("this month" vs. "in July 2026") rather than derived here,
+ * since whether `period` is the real current month depends on live wall-clock context the engine
+ * has no other reason to know about, and the same phrase is reused by callers outside this view
+ * (a screen's hero label, Budget Detail's category label).
+ */
+export function computeBudgetPeriodView(
+  budgets: Budget[],
+  categories: Category[],
+  transactions: Transaction[],
+  period: YearMonth,
+  monthPhrase: string,
+): BudgetPeriodView {
+  const actualsByPeriodAndCategory = buildSignedActualsMap(transactions, categories);
+  const rows = buildRows(budgets, categories, period, actualsByPeriodAndCategory);
+  const aggregate = buildAggregate(rows, categories, period, actualsByPeriodAndCategory, monthPhrase);
+  const uncategorized = computeUncategorizedTotals(transactions, period);
+
+  return {
+    rows,
+    aggregate,
+    flowProgress: {
+      income: buildFlowProgressRow('income', aggregate.earned, uncategorized.income, aggregate.budgetedIncome),
+      expenses: buildFlowProgressRow('expense', aggregate.spent, uncategorized.expenses, aggregate.totalBudget),
+    },
+  };
 }

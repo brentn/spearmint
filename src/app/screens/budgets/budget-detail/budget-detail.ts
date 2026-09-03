@@ -3,7 +3,8 @@ import { Component, ElementRef, computed, effect, inject, input, signal, viewChi
 import { Router, RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import { faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
-import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
+import type { BudgetRowViewModel } from '../../../budgets/budget-engine.util';
+import { BudgetsStore } from '../../../budgets/budgets.store';
 import { isYearMonth } from '../../../budgets/period.util';
 import type { Transaction } from '../../../data/models';
 import { TransactionEditDialog, type TransactionEditSave } from '../../../transactions/transaction-edit-dialog/transaction-edit-dialog';

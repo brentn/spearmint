@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, input } from '@angular/core';
 import { RouterLink, type Params } from '@angular/router';
-import type { BudgetRowViewModel } from '../budgets.store';
+import type { BudgetRowViewModel } from '../budget-engine.util';
 
 /**
  * A single category-budget row (name, spent-of-available, three-state bar), linking

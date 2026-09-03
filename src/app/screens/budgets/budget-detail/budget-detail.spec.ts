@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Category, Transaction } from '../../../data/models';
-import { type BudgetRowViewModel, type BudgetsAggregate, BudgetsStore } from '../../../budgets/budgets.store';
+import type { BudgetRowViewModel, BudgetsAggregate } from '../../../budgets/budget-engine.util';
+import { BudgetsStore } from '../../../budgets/budgets.store';
 import { stubDialogMethods } from '../../../testing/stub-dialog-methods';
 import { BudgetDetail } from './budget-detail';
 

@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Budget, Category, Transaction } from '../data/models';
+import type { Budget, Category, Transaction, YearMonth } from '../data/models';
 import {
-  buildFlowProgressRow,
-  buildSignedActualsMap,
-  computeBudgetStatus,
-  computeUncategorizedTotals,
+  type BudgetPeriodView,
+  computeBudgetPeriodView,
   getBudgetForExactPeriod,
-  getCombinedActualAmount,
-  getCombinedBudgetAmounts,
   getDescendantCategories,
-  getEffectiveBudgetForScope,
   getEnvelopeActualAmount,
   recomputeRollovers,
 } from './budget-engine.util';
@@ -46,67 +41,120 @@ function budget(overrides: Partial<Budget> = {}): Budget {
   };
 }
 
-describe('buildSignedActualsMap', () => {
-  it('negates expense transaction amounts so spend is a positive number', () => {
+/** computeBudgetPeriodView is the interface every scenario below goes through — `monthPhrase` is
+ * irrelevant to every assertion here (it only feeds `aggregate.message`), so it's fixed to one
+ * value throughout. */
+function view(
+  categories: Category[],
+  budgets: Budget[],
+  transactions: Transaction[],
+  period: YearMonth = '2026-08',
+): BudgetPeriodView {
+  return computeBudgetPeriodView(budgets, categories, transactions, period, 'this month');
+}
+
+function rowFor(v: BudgetPeriodView, categoryId: string) {
+  return v.rows.find((r) => r.categoryId === categoryId);
+}
+
+/** A single-category row scenario for computeBudgetStatus's threshold/rollover/reversed-bar
+ * behavior. `period` defaults to a period safely in the past so an income category's row never
+ * hits the pre-final-week 'info' override (period.util's isFinalWeekOfMonth treats any period
+ * before the real current month as final-week, unconditionally). */
+function statusRow(
+  categoryType: 'expense' | 'income',
+  spent: number,
+  amount: number,
+  rolloverAmount = 0,
+  period: YearMonth = '2020-01',
+) {
+  const categories = [category({ id: 'cat-1', type: categoryType })];
+  const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', period, amount, rolloverAmount })];
+  const rawAmount = categoryType === 'income' ? spent : -spent;
+  const transactions = spent === 0 ? [] : [txn({ categoryId: 'cat-1', amount: rawAmount, date: `${period}-14` })];
+  const row = rowFor(view(categories, budgets, transactions, period), 'cat-1');
+  if (!row) {
+    throw new Error('expected a row for cat-1');
+  }
+  return row;
+}
+
+describe('computeBudgetPeriodView — signed actuals (spend vs. earned)', () => {
+  it('negates expense transaction amounts so spent is a positive number', () => {
     const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
     const transactions = [txn({ categoryId: 'cat-1', amount: -50, date: '2026-08-14' })];
-    const map = buildSignedActualsMap(transactions, categories);
-    expect(map.get('2026-08:cat-1')).toBe(50);
+    expect(rowFor(view(categories, budgets, transactions), 'cat-1')?.spent).toBe(50);
   });
 
   it('keeps income transaction amounts positive as earned', () => {
     const categories = [category({ id: 'cat-1', type: 'income' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 4000 })];
     const transactions = [txn({ categoryId: 'cat-1', amount: 2000, date: '2026-08-01' })];
-    const map = buildSignedActualsMap(transactions, categories);
-    expect(map.get('2026-08:cat-1')).toBe(2000);
+    expect(rowFor(view(categories, budgets, transactions), 'cat-1')?.spent).toBe(2000);
   });
 
   it('excludes transactions flagged excludeFromBudget', () => {
     const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
     const transactions = [txn({ categoryId: 'cat-1', amount: -50, excludeFromBudget: true })];
-    const map = buildSignedActualsMap(transactions, categories);
-    expect(map.get('2026-08:cat-1')).toBeUndefined();
+    expect(rowFor(view(categories, budgets, transactions), 'cat-1')?.spent).toBe(0);
   });
 
-  it('excludes uncategorized transactions', () => {
+  it('excludes uncategorized transactions from every category row, but still counts them in flow-progress', () => {
     const categories = [category({ id: 'cat-1', type: 'expense' })];
-    const transactions = [txn({ categoryId: null, amount: -50 })];
-    const map = buildSignedActualsMap(transactions, categories);
-    expect(map.size).toBe(0);
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
+    const transactions = [txn({ categoryId: null, amount: -50, date: '2026-08-14' })];
+    const v = view(categories, budgets, transactions);
+    expect(rowFor(v, 'cat-1')?.spent).toBe(0);
+    expect(v.flowProgress.expenses.uncategorizedActual).toBe(50);
   });
 
   it('sums multiple transactions in the same period/category, including a refund', () => {
     const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
     const transactions = [
       txn({ id: 't1', categoryId: 'cat-1', amount: -60, date: '2026-08-05' }),
       txn({ id: 't2', categoryId: 'cat-1', amount: -40, date: '2026-08-20' }),
       txn({ id: 't3', categoryId: 'cat-1', amount: 15, date: '2026-08-22' }), // refund
     ];
-    const map = buildSignedActualsMap(transactions, categories);
-    expect(map.get('2026-08:cat-1')).toBe(85);
+    expect(rowFor(view(categories, budgets, transactions), 'cat-1')?.spent).toBe(85);
   });
 });
 
-describe('getBudgetForExactPeriod / getEffectiveBudgetForScope', () => {
-  const budgets = [
-    budget({ id: 'b-jan', period: '2026-01' }),
-    budget({ id: 'b-mar', period: '2026-03' }),
-  ];
-
-  it('getBudgetForExactPeriod only matches an exact period', () => {
+describe('getBudgetForExactPeriod', () => {
+  it('only matches an exact period', () => {
+    const budgets = [budget({ id: 'b-jan', period: '2026-01' }), budget({ id: 'b-mar', period: '2026-03' })];
     expect(getBudgetForExactPeriod(budgets, 'cat-1', '2026-03')?.id).toBe('b-mar');
     expect(getBudgetForExactPeriod(budgets, 'cat-1', '2026-02')).toBeNull();
   });
+});
 
-  it('getEffectiveBudgetForScope returns the most recent budget at or before the target period', () => {
-    expect(getEffectiveBudgetForScope(budgets, 'cat-1', '2026-02')?.id).toBe('b-jan');
-    expect(getEffectiveBudgetForScope(budgets, 'cat-1', '2026-06')?.id).toBe('b-mar');
-    expect(getEffectiveBudgetForScope(budgets, 'cat-1', '2025-12')).toBeNull();
+describe('computeBudgetPeriodView — effective budget scope (most recent at-or-before period)', () => {
+  it('a category with only an earlier budget still shows that budget when viewed later', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [budget({ id: 'b-jan', period: '2026-01', amount: 500 })];
+    expect(rowFor(view(categories, budgets, [], '2026-06'), 'cat-1')?.amount).toBe(500);
+  });
+
+  it('picks up the most recent budget at or before the viewed period, not an earlier one', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [
+      budget({ id: 'b-jan', period: '2026-01', amount: 500 }),
+      budget({ id: 'b-mar', period: '2026-03', amount: 800 }),
+    ];
+    expect(rowFor(view(categories, budgets, [], '2026-06'), 'cat-1')?.amount).toBe(800);
+  });
+
+  it('a category with no budget at or before the viewed period, and no activity, gets no row at all', () => {
+    const categories = [category({ id: 'cat-1' })];
+    const budgets = [budget({ id: 'b-mar', period: '2026-03', amount: 500 })];
+    expect(rowFor(view(categories, budgets, [], '2026-01'), 'cat-1')).toBeUndefined();
   });
 });
 
 describe('getEnvelopeActualAmount (rollover engine own-envelope math)', () => {
-  it('rolls an unbudgeted child\'s spend up into its budgeted parent', () => {
+  it("rolls an unbudgeted child's spend up into its budgeted parent", () => {
     const categories = [
       category({ id: 'housing', name: 'Housing', parentCategoryId: null }),
       category({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
@@ -177,25 +225,32 @@ describe('getDescendantCategories', () => {
       category({ id: 'c', parentCategoryId: 'b' }),
       category({ id: 'd', parentCategoryId: 'a' }),
     ];
-    expect(getDescendantCategories('a', categories).map((c) => c.id).sort()).toEqual(['b', 'c', 'd']);
+    expect(
+      getDescendantCategories('a', categories)
+        .map((c) => c.id)
+        .sort(),
+    ).toEqual(['b', 'c', 'd']);
     expect(getDescendantCategories('c', categories)).toEqual([]);
   });
 });
 
-describe('getCombinedActualAmount (unified rollup rule)', () => {
-  it('includes a budgeted descendant\'s spend too, unlike getEnvelopeActualAmount', () => {
+describe('computeBudgetPeriodView — combined actual (full-subtree rollup)', () => {
+  it("a parent's spent includes a budgeted descendant's spend too", () => {
     const categories = [
       category({ id: 'housing', name: 'Housing', parentCategoryId: null }),
       category({ id: 'rent', name: 'Rent', parentCategoryId: 'housing' }),
       category({ id: 'utilities', name: 'Utilities', parentCategoryId: 'housing' }),
     ];
-    const actuals = new Map([
-      ['2026-08:rent', 1200],
-      ['2026-08:utilities', 150],
-      ['2026-08:housing', 20],
-    ]);
-
-    expect(getCombinedActualAmount('2026-08', 'housing', categories, actuals)).toBe(1370);
+    const budgets = [
+      budget({ id: 'b-housing', categoryId: 'housing', amount: 300 }),
+      budget({ id: 'b-rent', categoryId: 'rent', amount: 1500 }),
+    ];
+    const transactions = [
+      txn({ id: 't-rent', categoryId: 'rent', amount: -1200, date: '2026-08-05' }),
+      txn({ id: 't-util', categoryId: 'utilities', amount: -150, date: '2026-08-05' }),
+      txn({ id: 't-housing', categoryId: 'housing', amount: -20, date: '2026-08-05' }),
+    ];
+    expect(rowFor(view(categories, budgets, transactions), 'housing')?.spent).toBe(1370);
   });
 
   it('recurses through multiple levels', () => {
@@ -204,205 +259,206 @@ describe('getCombinedActualAmount (unified rollup rule)', () => {
       category({ id: 'b', parentCategoryId: 'a' }),
       category({ id: 'c', parentCategoryId: 'b' }),
     ];
-    const actuals = new Map([['2026-08:c', 75]]);
-
-    expect(getCombinedActualAmount('2026-08', 'a', categories, actuals)).toBe(75);
+    const budgets = [budget({ id: 'b-a', categoryId: 'a', amount: 100 })];
+    const transactions = [txn({ categoryId: 'c', amount: -75, date: '2026-08-05' })];
+    expect(rowFor(view(categories, budgets, transactions), 'a')?.spent).toBe(75);
   });
 });
 
-describe('getCombinedBudgetAmounts (unified amount rule)', () => {
-  it('is just the own budget for a leaf category with no descendants', () => {
+describe('computeBudgetPeriodView — combined budget amount (unified amount rule)', () => {
+  it('a leaf category with no descendants shows just its own budget', () => {
     const categories = [category({ id: 'cat-1', parentCategoryId: null })];
-    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', period: '2026-08', amount: 500, rolloverAmount: 40 })];
-
-    const result = getCombinedBudgetAmounts('cat-1', categories, budgets, '2026-08');
-
-    expect(result).toEqual({ amount: 500, rolloverAmount: 40, hasOwnBudget: true, hasBudgetedDescendant: false });
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500, rolloverAmount: 40 })];
+    const row = rowFor(view(categories, budgets, []), 'cat-1');
+    expect(row?.amount).toBe(500);
+    expect(row?.rolloverAmount).toBe(40);
+    expect(row?.implied).toBe(false);
   });
 
-  it('adds a budgeted child\'s amount/rollover onto the parent\'s own explicit budget', () => {
+  it("adds a budgeted child's amount/rollover onto the parent's own explicit budget", () => {
     const categories = [
       category({ id: 'housing', parentCategoryId: null }),
       category({ id: 'rent', parentCategoryId: 'housing' }),
     ];
     const budgets = [
-      budget({ id: 'b-housing', categoryId: 'housing', period: '2026-08', amount: 300, rolloverAmount: 10 }),
-      budget({ id: 'b-rent', categoryId: 'rent', period: '2026-08', amount: 1500, rolloverAmount: 50 }),
+      budget({ id: 'b-housing', categoryId: 'housing', amount: 300, rolloverAmount: 10 }),
+      budget({ id: 'b-rent', categoryId: 'rent', amount: 1500, rolloverAmount: 50 }),
     ];
-
-    const result = getCombinedBudgetAmounts('housing', categories, budgets, '2026-08');
-
-    expect(result).toEqual({ amount: 1800, rolloverAmount: 60, hasOwnBudget: true, hasBudgetedDescendant: true });
+    const row = rowFor(view(categories, budgets, []), 'housing');
+    expect(row?.amount).toBe(1800);
+    expect(row?.rolloverAmount).toBe(60);
+    expect(row?.ownAmount).toBe(300);
+    expect(row?.implied).toBe(false);
   });
 
-  it('is implied (zero own amount, hasOwnBudget false) when only a descendant is budgeted', () => {
+  it('is implied (own amount zero) when only a descendant is budgeted', () => {
     const categories = [
       category({ id: 'transportation', parentCategoryId: null }),
       category({ id: 'auto-payment', parentCategoryId: 'transportation' }),
     ];
-    const budgets = [
-      budget({ id: 'b-auto', categoryId: 'auto-payment', period: '2026-08', amount: 400, rolloverAmount: 0 }),
-    ];
-
-    const result = getCombinedBudgetAmounts('transportation', categories, budgets, '2026-08');
-
-    expect(result).toEqual({ amount: 400, rolloverAmount: 0, hasOwnBudget: false, hasBudgetedDescendant: true });
+    const budgets = [budget({ id: 'b-auto', categoryId: 'auto-payment', amount: 400, rolloverAmount: 0 })];
+    const row = rowFor(view(categories, budgets, []), 'transportation');
+    expect(row?.amount).toBe(400);
+    expect(row?.ownAmount).toBe(0);
+    expect(row?.implied).toBe(true);
   });
 
-  it('has neither an own budget nor a budgeted descendant when nothing in the tree is budgeted', () => {
+  it('gets no row at all when nothing in the tree is budgeted and there is no expense activity', () => {
     const categories = [
       category({ id: 'transportation', parentCategoryId: null }),
       category({ id: 'gas', parentCategoryId: 'transportation' }),
     ];
-
-    const result = getCombinedBudgetAmounts('transportation', categories, [], '2026-08');
-
-    expect(result).toEqual({ amount: 0, rolloverAmount: 0, hasOwnBudget: false, hasBudgetedDescendant: false });
+    expect(rowFor(view(categories, [], []), 'transportation')).toBeUndefined();
   });
 });
 
-describe('computeBudgetStatus', () => {
+describe('computeBudgetPeriodView — budget status thresholds', () => {
   it('expense: green up to and including 101%', () => {
-    expect(computeBudgetStatus('expense', 410, 500, 40).state).toBe('normal'); // 82%
-    expect(computeBudgetStatus('expense', 101, 100, 0).state).toBe('normal'); // exactly 101%
+    expect(statusRow('expense', 410, 500, 40).state).toBe('normal');
+    expect(statusRow('expense', 101, 100, 0).state).toBe('normal'); // exactly 101%
   });
 
   it('expense: amber from just above 101% up to and including 110%', () => {
-    expect(computeBudgetStatus('expense', 105, 100, 0).state).toBe('warning'); // 105%
-    expect(computeBudgetStatus('expense', 110, 100, 0).state).toBe('warning'); // exactly 110%
+    expect(statusRow('expense', 105, 100, 0).state).toBe('warning'); // 105%
+    expect(statusRow('expense', 110, 100, 0).state).toBe('warning'); // exactly 110%
   });
 
   it('expense: red above 110%', () => {
-    expect(computeBudgetStatus('expense', 138, 100, 0).state).toBe('over'); // 138%
+    expect(statusRow('expense', 138, 100, 0).state).toBe('over'); // 138%
   });
 
   describe('rollover adjusts progress, never capacity', () => {
     it('a positive rollover (credit) reduces progress against the unchanged capacity', () => {
       // $100 budget, $60 spent, $50 credit rolled in -> only $10 counts as new progress
-      const status = computeBudgetStatus('expense', 60, 100, 50);
-      expect(status.percent).toBeCloseTo(0.1, 5);
-      expect(status.state).toBe('normal');
+      const row = statusRow('expense', 60, 100, 50);
+      expect(row.percent).toBeCloseTo(0.1, 5);
+      expect(row.state).toBe('normal');
     });
 
     it('a large positive rollover can push progress negative, reusing the reversed-bar rendering', () => {
-      const status = computeBudgetStatus('expense', 0, 100, 50);
-      expect(status.percent).toBeCloseTo(-0.5, 5);
-      expect(status.reversed).toBe(true);
-      expect(status.barPercent).toBeCloseTo(0.5, 5);
+      const row = statusRow('expense', 0, 100, 50);
+      expect(row.percent).toBeCloseTo(-0.5, 5);
+      expect(row.reversed).toBe(true);
+      expect(row.barPercent).toBeCloseTo(0.5, 5);
     });
 
     it('a negative rollover (debt) adds to progress as if already spent, against the unchanged capacity', () => {
       // $100 budget, nothing spent yet, $30 debt carried in -> 30% filled before a dollar spent
-      const status = computeBudgetStatus('expense', 0, 100, -30);
-      expect(status.percent).toBeCloseTo(0.3, 5);
-      expect(status.state).toBe('normal');
+      const row = statusRow('expense', 0, 100, -30);
+      expect(row.percent).toBeCloseTo(0.3, 5);
+      expect(row.state).toBe('normal');
     });
 
     it('a debt larger than this month\'s budget crosses into "over" through the normal threshold, not a hard override', () => {
-      const status = computeBudgetStatus('expense', 0, 100, -150);
-      expect(status.percent).toBeCloseTo(1.5, 5);
-      expect(status.state).toBe('over');
+      const row = statusRow('expense', 0, 100, -150);
+      expect(row.percent).toBeCloseTo(1.5, 5);
+      expect(row.state).toBe('over');
     });
   });
 
   it('income: inverted logic — green at/above target', () => {
-    expect(computeBudgetStatus('income', 4200, 4200, 0).state).toBe('normal');
-    expect(computeBudgetStatus('income', 5000, 4200, 0).state).toBe('normal');
+    expect(statusRow('income', 4200, 4200, 0).state).toBe('normal');
+    expect(statusRow('income', 5000, 4200, 0).state).toBe('normal');
   });
 
   it('income: amber approaching from below', () => {
-    expect(computeBudgetStatus('income', 3200, 4200, 0).state).toBe('warning'); // ~76%
+    expect(statusRow('income', 3200, 4200, 0).state).toBe('warning'); // ~76%
   });
 
   it('income: red well under target', () => {
-    expect(computeBudgetStatus('income', 1000, 4200, 0).state).toBe('over'); // ~24%
+    expect(statusRow('income', 1000, 4200, 0).state).toBe('over'); // ~24%
   });
 
   it('barPercent clamps to 1 even when percent exceeds it', () => {
-    expect(computeBudgetStatus('expense', 138, 100, 0).barPercent).toBe(1);
+    expect(statusRow('expense', 138, 100, 0).barPercent).toBe(1);
   });
 
   it('positive percent is never reversed', () => {
-    expect(computeBudgetStatus('expense', 50, 100, 0).reversed).toBe(false);
+    expect(statusRow('expense', 50, 100, 0).reversed).toBe(false);
   });
 
   it('expense: a refund (negative spent) reverses the bar, sized by magnitude, still green', () => {
-    const status = computeBudgetStatus('expense', -20, 100, 0);
-    expect(status.percent).toBeCloseTo(-0.2, 5);
-    expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBeCloseTo(0.2, 5);
-    expect(status.state).toBe('normal');
+    const row = statusRow('expense', -20, 100, 0);
+    expect(row.percent).toBeCloseTo(-0.2, 5);
+    expect(row.reversed).toBe(true);
+    expect(row.barPercent).toBeCloseTo(0.2, 5);
+    expect(row.state).toBe('normal');
   });
 
   it('income: a reversal (negative spent) reverses the bar, sized by magnitude, still red', () => {
-    const status = computeBudgetStatus('income', -20, 100, 0);
-    expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBeCloseTo(0.2, 5);
-    expect(status.state).toBe('over');
+    const row = statusRow('income', -20, 100, 0);
+    expect(row.reversed).toBe(true);
+    expect(row.barPercent).toBeCloseTo(0.2, 5);
+    expect(row.state).toBe('over');
   });
 
   it('reversed barPercent caps at 90% (not 100%) for a refund larger than the available amount, and flags reversedCapped', () => {
-    const status = computeBudgetStatus('expense', -150, 100, 0);
-    expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBe(0.9);
-    expect(status.reversedCapped).toBe(true);
+    const row = statusRow('expense', -150, 100, 0);
+    expect(row.reversed).toBe(true);
+    expect(row.barPercent).toBe(0.9);
+    expect(row.reversedCapped).toBe(true);
   });
 
   it('a reversed bar at exactly 90% magnitude is not capped — the boundary itself still reads as uncapped', () => {
-    const status = computeBudgetStatus('expense', -90, 100, 0);
-    expect(status.barPercent).toBeCloseTo(0.9, 5);
-    expect(status.reversedCapped).toBe(false);
+    const row = statusRow('expense', -90, 100, 0);
+    expect(row.barPercent).toBeCloseTo(0.9, 5);
+    expect(row.reversedCapped).toBe(false);
   });
 
   it('a modest reversed bar (well under the cap) is not flagged as capped', () => {
-    expect(computeBudgetStatus('expense', -20, 100, 0).reversedCapped).toBe(false);
+    expect(statusRow('expense', -20, 100, 0).reversedCapped).toBe(false);
   });
 
   it('reversedCapped is always false when not reversed, regardless of magnitude', () => {
-    expect(computeBudgetStatus('expense', 500, 100, 0).reversedCapped).toBe(false);
+    expect(statusRow('expense', 500, 100, 0).reversedCapped).toBe(false);
   });
 
   it('a $0-budget expense category with a refund (negative spent, no budget at all) still reverses instead of showing 0%, capped at 90%', () => {
-    const status = computeBudgetStatus('expense', -20, 0, 0);
-    expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBe(0.9);
-    expect(status.reversedCapped).toBe(true);
-    expect(status.state).toBe('normal');
+    const row = statusRow('expense', -20, 0, 0);
+    expect(row.reversed).toBe(true);
+    expect(row.barPercent).toBe(0.9);
+    expect(row.reversedCapped).toBe(true);
+    expect(row.state).toBe('normal');
   });
 
   it('a $0-budget income category with a reversal (negative spent, no budget at all) still reverses instead of showing 0%, capped at 90%', () => {
-    const status = computeBudgetStatus('income', -20, 0, 0);
-    expect(status.reversed).toBe(true);
-    expect(status.barPercent).toBe(0.9);
-    expect(status.reversedCapped).toBe(true);
-    expect(status.state).toBe('over');
+    const row = statusRow('income', -20, 0, 0);
+    expect(row.reversed).toBe(true);
+    expect(row.barPercent).toBe(0.9);
+    expect(row.reversedCapped).toBe(true);
+    expect(row.state).toBe('over');
   });
 });
 
-describe('computeUncategorizedTotals', () => {
+describe('computeBudgetPeriodView — flow-progress uncategorized totals', () => {
   it('sums a positive-amount uncategorized transaction as income', () => {
     const transactions = [txn({ categoryId: null, amount: 200, date: '2026-08-05' })];
-    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 200, expenses: 0 });
+    const v = view([], [], transactions);
+    expect(v.flowProgress.income.uncategorizedActual).toBe(200);
+    expect(v.flowProgress.expenses.uncategorizedActual).toBe(0);
   });
 
   it('sums a negative-amount uncategorized transaction as a positive expense', () => {
     const transactions = [txn({ categoryId: null, amount: -75, date: '2026-08-05' })];
-    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 75 });
+    const v = view([], [], transactions);
+    expect(v.flowProgress.expenses.uncategorizedActual).toBe(75);
+    expect(v.flowProgress.income.uncategorizedActual).toBe(0);
   });
 
-  it('excludes a categorized transaction', () => {
+  it('excludes a categorized transaction from the uncategorized totals', () => {
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
     const transactions = [txn({ categoryId: 'cat-1', amount: -75, date: '2026-08-05' })];
-    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 0 });
+    expect(view(categories, [], transactions).flowProgress.expenses.uncategorizedActual).toBe(0);
   });
 
   it('excludes an uncategorized transaction flagged excludeFromBudget', () => {
     const transactions = [txn({ categoryId: null, amount: -75, date: '2026-08-05', excludeFromBudget: true })];
-    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 0 });
+    expect(view([], [], transactions).flowProgress.expenses.uncategorizedActual).toBe(0);
   });
 
   it('excludes a transaction outside the given period', () => {
     const transactions = [txn({ categoryId: null, amount: -75, date: '2026-07-05' })];
-    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 0, expenses: 0 });
+    expect(view([], [], transactions, '2026-08').flowProgress.expenses.uncategorizedActual).toBe(0);
   });
 
   it('sums multiple uncategorized transactions of both signs', () => {
@@ -411,68 +467,101 @@ describe('computeUncategorizedTotals', () => {
       txn({ id: 't2', categoryId: null, amount: -30, date: '2026-08-10' }),
       txn({ id: 't3', categoryId: null, amount: -20, date: '2026-08-11' }),
     ];
-    expect(computeUncategorizedTotals(transactions, '2026-08')).toEqual({ income: 500, expenses: 50 });
+    const v = view([], [], transactions);
+    expect(v.flowProgress.income.uncategorizedActual).toBe(500);
+    expect(v.flowProgress.expenses.uncategorizedActual).toBe(50);
   });
 });
 
-describe('buildFlowProgressRow', () => {
+describe('computeBudgetPeriodView — flow-progress row composition', () => {
   it('combines categorized and uncategorized actuals into totalActual', () => {
-    const row = buildFlowProgressRow('expense', 300, 50, 500);
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
+    const transactions = [
+      txn({ id: 't1', categoryId: 'cat-1', amount: -300, date: '2026-08-05' }),
+      txn({ id: 't2', categoryId: null, amount: -50, date: '2026-08-06' }),
+    ];
+    const row = view(categories, budgets, transactions).flowProgress.expenses;
     expect(row.totalActual).toBe(350);
     expect(row.barPercent).toBeCloseTo(0.7, 5);
   });
 
   it('income is always the "info" state regardless of percent', () => {
-    const under = buildFlowProgressRow('income', 100, 0, 4000);
-    const over = buildFlowProgressRow('income', 5000, 0, 4000);
-    expect(under.state).toBe('info');
-    expect(over.state).toBe('info');
+    const categories = [category({ id: 'cat-1', type: 'income' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 4000 })];
+    const under = view(categories, budgets, [txn({ categoryId: 'cat-1', amount: 100, date: '2026-08-05' })]);
+    const over = view(categories, budgets, [txn({ categoryId: 'cat-1', amount: 5000, date: '2026-08-05' })]);
+    expect(under.flowProgress.income.state).toBe('info');
+    expect(over.flowProgress.income.state).toBe('info');
   });
 
   it('expenses use the normal/warning/over three-state against the combined actual', () => {
-    expect(buildFlowProgressRow('expense', 400, 0, 500).state).toBe('normal'); // 80%
-    expect(buildFlowProgressRow('expense', 400, 120, 500).state).toBe('warning'); // 104%
-    expect(buildFlowProgressRow('expense', 400, 200, 500).state).toBe('over'); // 120%
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
+    const categorized = txn({ id: 't1', categoryId: 'cat-1', amount: -400, date: '2026-08-05' });
+
+    const normal = view(categories, budgets, [categorized]);
+    expect(normal.flowProgress.expenses.state).toBe('normal'); // 80%
+
+    const warning = view(categories, budgets, [
+      categorized,
+      txn({ id: 't2', categoryId: null, amount: -120, date: '2026-08-06' }),
+    ]);
+    expect(warning.flowProgress.expenses.state).toBe('warning'); // 104%
+
+    const over = view(categories, budgets, [
+      categorized,
+      txn({ id: 't2', categoryId: null, amount: -200, date: '2026-08-06' }),
+    ]);
+    expect(over.flowProgress.expenses.state).toBe('over'); // 120%
   });
 
-  it('a zero budget target forces a full-width bar', () => {
-    const row = buildFlowProgressRow('expense', 40, 0, 0);
+  it('a zero budget target forces a full-width bar, and any spend reads "over" (issue #21\'s $0-budget convention)', () => {
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const transactions = [txn({ categoryId: 'cat-1', amount: -40, date: '2026-08-05' })];
+    const row = view(categories, [], transactions).flowProgress.expenses;
     expect(row.zeroBudget).toBe(true);
     expect(row.barPercent).toBe(1);
+    expect(row.state).toBe('over');
   });
 
-  it('a zero-budget expense row with any spend is "over" (red) — matches the existing $0-budget row convention (issue #21)', () => {
-    expect(buildFlowProgressRow('expense', 40, 0, 0).state).toBe('over');
-  });
-
-  it('a zero-budget expense row with no spend at all is "normal" (green), not "over"', () => {
-    expect(buildFlowProgressRow('expense', 0, 0, 0).state).toBe('normal');
-  });
-
-  it('a zero-budget income row is still "info" (blue), not routed through normal/warning/over', () => {
-    expect(buildFlowProgressRow('income', 40, 0, 0).state).toBe('info');
+  it('with nothing budgeted or spent, expenses read "normal" and income stays "info"', () => {
+    const v = view([], [], []);
+    expect(v.flowProgress.expenses.state).toBe('normal');
+    expect(v.flowProgress.income.state).toBe('info');
   });
 
   it('a non-zero budget clamps barPercent to 1 even over 100%', () => {
-    const row = buildFlowProgressRow('expense', 600, 0, 500);
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 500 })];
+    const transactions = [txn({ categoryId: 'cat-1', amount: -600, date: '2026-08-05' })];
+    const row = view(categories, budgets, transactions).flowProgress.expenses;
     expect(row.zeroBudget).toBe(false);
     expect(row.barPercent).toBe(1);
   });
 
   it('threads reversed through for a negative combined actual (expense)', () => {
-    const row = buildFlowProgressRow('expense', -30, 0, 100);
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 100 })];
+    const transactions = [txn({ categoryId: 'cat-1', amount: 30, date: '2026-08-05' })]; // refund exceeds spend
+    const row = view(categories, budgets, transactions).flowProgress.expenses;
     expect(row.reversed).toBe(true);
     expect(row.barPercent).toBeCloseTo(0.3, 5);
   });
 
   it('threads reversed through for income too, even though color stays info', () => {
-    const row = buildFlowProgressRow('income', -30, 0, 100);
+    const categories = [category({ id: 'cat-1', type: 'income' })];
+    const budgets = [budget({ id: 'b-1', categoryId: 'cat-1', amount: 100 })];
+    const transactions = [txn({ categoryId: 'cat-1', amount: -30, date: '2026-08-05' })]; // a reversal
+    const row = view(categories, budgets, transactions).flowProgress.income;
     expect(row.reversed).toBe(true);
     expect(row.state).toBe('info');
   });
 
   it('a zero-budget row with a negative total still reverses instead of rendering a full forward bar, keeping the reversed cap', () => {
-    const row = buildFlowProgressRow('expense', -20, 0, 0);
+    const categories = [category({ id: 'cat-1', type: 'expense' })];
+    const transactions = [txn({ categoryId: 'cat-1', amount: 20, date: '2026-08-05' })]; // refund, no budget at all
+    const row = view(categories, [], transactions).flowProgress.expenses;
     expect(row.zeroBudget).toBe(true);
     expect(row.reversed).toBe(true);
     expect(row.reversedCapped).toBe(true);
@@ -491,9 +580,7 @@ describe('recomputeRollovers', () => {
 
   it('carries unused budget forward into a newly-created next-period row', () => {
     const categories = [category({ id: 'cat-1' })];
-    const budgets = [
-      budget({ id: 'b-jul', period: '2026-07', amount: 500, rollOver: true, rolloverAmount: 0 }),
-    ];
+    const budgets = [budget({ id: 'b-jul', period: '2026-07', amount: 500, rollOver: true, rolloverAmount: 0 })];
     const transactions = [txn({ categoryId: 'cat-1', amount: -300, date: '2026-07-10' })];
 
     const result = recomputeRollovers(budgets, transactions, categories, '2026-08');
@@ -506,9 +593,7 @@ describe('recomputeRollovers', () => {
 
   it('compounds rollover across multiple skipped months in one call', () => {
     const categories = [category({ id: 'cat-1' })];
-    const budgets = [
-      budget({ id: 'b-jun', period: '2026-06', amount: 500, rollOver: true, rolloverAmount: 0 }),
-    ];
+    const budgets = [budget({ id: 'b-jun', period: '2026-06', amount: 500, rollOver: true, rolloverAmount: 0 })];
     const transactions = [
       txn({ id: 't-jun', categoryId: 'cat-1', amount: -300, date: '2026-06-10' }), // -> rollover into Jul: 200
       txn({ id: 't-jul', categoryId: 'cat-1', amount: -100, date: '2026-07-10' }), // available Jul = 700, actual 100 -> rollover into Aug: 600
@@ -537,9 +622,7 @@ describe('recomputeRollovers', () => {
 
   it('excludes income-typed categories from carry-forward entirely', () => {
     const categories = [category({ id: 'paycheck', name: 'Paycheck', type: 'income' })];
-    const budgets = [
-      budget({ id: 'b-jul', categoryId: 'paycheck', period: '2026-07', amount: 4000, rollOver: true }),
-    ];
+    const budgets = [budget({ id: 'b-jul', categoryId: 'paycheck', period: '2026-07', amount: 4000, rollOver: true })];
     const transactions = [txn({ categoryId: 'paycheck', amount: 3000, date: '2026-07-15' })];
 
     const result = recomputeRollovers(budgets, transactions, categories, '2026-08');
@@ -637,9 +720,7 @@ describe('recomputeRollovers', () => {
 
   it('is idempotent when run twice with the same inputs', () => {
     const categories = [category({ id: 'cat-1' })];
-    const budgets = [
-      budget({ id: 'b-jul', period: '2026-07', amount: 500, rollOver: true, rolloverAmount: 0 }),
-    ];
+    const budgets = [budget({ id: 'b-jul', period: '2026-07', amount: 500, rollOver: true, rolloverAmount: 0 })];
     const transactions = [txn({ categoryId: 'cat-1', amount: -300, date: '2026-07-10' })];
 
     const first = recomputeRollovers(budgets, transactions, categories, '2026-08');
