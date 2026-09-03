@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import type { AccountType, Transaction } from '../data/models';
 import { addIgnoredExternalAccountIfAbsent, getAppSettingsDoc, upsertAppSettings } from '../data/app-settings.util';
 import { DatabaseService, type SpearmintDatabase } from '../data/database.service';
+import { AccountsService } from '../accounts/accounts.service';
 import { TransactionIngestionService } from '../transactions/transaction-ingestion.service';
 import { epochSecondsToDateOnly, parseDecimalAmount } from './simplefin-mapping.util';
 import { SimplefinApiService } from './simplefin-api.service';
@@ -54,6 +55,7 @@ export class SimplefinSyncService {
   private readonly api = inject(SimplefinApiService);
   private readonly linkService = inject(SimplefinLinkService);
   private readonly transactionIngestion = inject(TransactionIngestionService);
+  private readonly accountsService = inject(AccountsService);
 
   readonly syncing = signal(false);
   readonly lastSyncError = signal<string | null>(null);
@@ -105,7 +107,7 @@ export class SimplefinSyncService {
       const plan = planIngest(trackedAccounts, merged, settingsDoc?.ignoredExternalAccounts ?? []);
 
       for (const institution of plan.institutions) {
-        await db.institutions.upsert(institution);
+        await this.accountsService.upsertInstitution(institution);
       }
       for (const outcome of plan.outcomes) {
         await this.applyOutcome(db, outcome);
@@ -144,25 +146,7 @@ export class SimplefinSyncService {
         return;
       }
 
-      await db.institutions.upsert({ id: discovered.orgId, name: discovered.orgName, url: null });
-
-      const accountId = crypto.randomUUID();
-      await db.accounts.insert({
-        id: accountId,
-        institutionId: discovered.orgId,
-        connId: discovered.connId,
-        externalAccountId: discovered.externalAccountId,
-        originalAccountName: discovered.name,
-        name: discovered.name,
-        type,
-        currencyCode: discovered.currencyCode,
-        balance: parseDecimalAmount(discovered.balance),
-        balanceDate: epochSecondsToDateOnly(discovered.balanceDateEpoch),
-        needsReconnect: false,
-        syncIssue: null,
-        missing: false,
-        isManual: false,
-      });
+      const account = await this.accountsService.createFromDiscovery(discovered, type);
 
       const response = this.lastMergedSet?.accounts.find(
         (a) => a.id === discovered.externalAccountId && a.conn_id === discovered.connId
@@ -170,8 +154,8 @@ export class SimplefinSyncService {
       if (response) {
         const posted = response.transactions.filter((t) => !t.pending);
         const pending = response.transactions.filter((t) => t.pending);
-        await this.upsertPostedTransactions(db, accountId, posted);
-        await this.replacePendingTransactions(db, accountId, pending);
+        await this.upsertPostedTransactions(db, account.id, posted);
+        await this.replacePendingTransactions(db, account.id, pending);
       }
 
       this.removeDiscovered(discovered);
@@ -220,29 +204,13 @@ export class SimplefinSyncService {
   }
 
   private async applyOutcome(db: SpearmintDatabase, outcome: AccountSyncOutcome): Promise<void> {
-    const doc = await db.accounts.findOne(outcome.accountId).exec();
-    if (!doc) {
+    const applied = await this.accountsService.applySyncOutcome(outcome);
+    if (!applied || !outcome.data) {
       return;
     }
 
-    await doc.incrementalPatch({
-      needsReconnect: outcome.needsReconnect,
-      syncIssue: outcome.syncIssue,
-      missing: outcome.missing,
-      ...(outcome.remappedExternalAccountId ? { externalAccountId: outcome.remappedExternalAccountId } : {}),
-      ...(outcome.data
-        ? {
-            currencyCode: outcome.data.currencyCode,
-            balance: outcome.data.balance,
-            balanceDate: outcome.data.balanceDate,
-          }
-        : {}),
-    });
-
-    if (outcome.data) {
-      await this.upsertPostedTransactions(db, outcome.accountId, outcome.data.postedTransactions);
-      await this.replacePendingTransactions(db, outcome.accountId, outcome.data.pendingTransactions);
-    }
+    await this.upsertPostedTransactions(db, outcome.accountId, outcome.data.postedTransactions);
+    await this.replacePendingTransactions(db, outcome.accountId, outcome.data.pendingTransactions);
   }
 
   /** Never re-categorizes an already-known id — only mutable fields are patched. New ids are

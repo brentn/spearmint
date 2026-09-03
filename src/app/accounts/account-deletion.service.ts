@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { addIgnoredExternalAccountIfAbsent } from '../data/app-settings.util';
 import { DatabaseService } from '../data/database.service';
 import { externalAccountKey } from '../simplefin/simplefin-ingest-plan.util';
+import { AccountsService } from './accounts.service';
 
 /**
  * General account-deletion primitive (ADR-0017): usable on any Account, not just a
@@ -20,20 +21,20 @@ import { externalAccountKey } from '../simplefin/simplefin-ingest-plan.util';
 @Injectable({ providedIn: 'root' })
 export class AccountDeletionService {
   private readonly databaseService = inject(DatabaseService);
+  private readonly accountsService = inject(AccountsService);
 
   async deleteAccount(accountId: string): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const accountDoc = await db.accounts.findOne(accountId).exec();
-    if (!accountDoc) {
+    const account = await this.accountsService.findById(accountId);
+    if (!account) {
       return;
     }
-    const account = accountDoc.toJSON();
+    const db = await this.databaseService.getDatabase();
 
     await db.transactions.find({ selector: { accountId } }).remove();
     await db.categorizationRules.find({ selector: { accountId } }).remove();
 
     if (!account.isManual) {
-      const institution = await db.institutions.findOne(account.institutionId).exec();
+      const institution = await this.accountsService.findInstitutionById(account.institutionId);
       await addIgnoredExternalAccountIfAbsent(db, {
         key: externalAccountKey(account.connId, account.externalAccountId),
         name: account.originalAccountName,
@@ -41,6 +42,6 @@ export class AccountDeletionService {
       });
     }
 
-    await accountDoc.remove();
+    await this.accountsService.remove(accountId);
   }
 }

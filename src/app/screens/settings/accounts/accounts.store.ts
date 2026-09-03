@@ -1,9 +1,9 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { AccountDeletionService } from '../../../accounts/account-deletion.service';
+import { AccountsService } from '../../../accounts/accounts.service';
 import { getAppSettingsDoc } from '../../../data/app-settings.util';
 import { DatabaseService } from '../../../data/database.service';
 import type { Account, AccountType, IgnoredExternalAccount, Institution } from '../../../data/models';
-import { todayDateOnlyUtc } from '../../../simplefin/date-only.util';
 import type { DiscoveredSimplefinAccount } from '../../../simplefin/simplefin-ingest-plan.util';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
@@ -24,6 +24,7 @@ export class AccountsStore {
   private readonly syncService = inject(SimplefinSyncService);
   private readonly statementImportService = inject(StatementImportService);
   private readonly accountDeletionService = inject(AccountDeletionService);
+  private readonly accountsService = inject(AccountsService);
 
   readonly loading = signal(true);
   readonly accounts = signal<Account[]>([]);
@@ -109,16 +110,12 @@ export class AccountsStore {
   }
 
   async renameAccount(accountId: string, name: string): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(accountId).exec();
-    await doc?.incrementalPatch({ name });
+    await this.accountsService.rename(accountId, name);
     await this.refresh();
   }
 
   async setAccountType(accountId: string, type: AccountType): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const doc = await db.accounts.findOne(accountId).exec();
-    await doc?.incrementalPatch({ type });
+    await this.accountsService.setType(accountId, type);
     await this.refresh();
   }
 
@@ -127,34 +124,10 @@ export class AccountsStore {
     await this.refresh();
   }
 
-  /** Creates a Manual Account (ADR-0016): a synthetic Institution row for the named bank,
-   * plus an Account with no live SimpleFIN identity — `connId`/`externalAccountId` are
-   * placeholders unique to this account, never real SimpleFIN ids, so the sync loop's
-   * matching logic can never accidentally claim them. Starts at a zero balance; both the
-   * balance and its transactions are populated later by a Statement Import. */
+  /** Creates a Manual Account (ADR-0016) via AccountsService — see that service for the
+   * synthetic-identity policy. */
   async createManualAccount(bankName: string, accountName: string, type: AccountType): Promise<void> {
-    const db = await this.databaseService.getDatabase();
-    const institutionId = crypto.randomUUID();
-    await db.institutions.insert({ id: institutionId, name: bankName, url: null });
-
-    const accountId = crypto.randomUUID();
-    await db.accounts.insert({
-      id: accountId,
-      institutionId,
-      connId: `manual:${accountId}`,
-      externalAccountId: accountId,
-      originalAccountName: accountName,
-      name: accountName,
-      type,
-      currencyCode: 'USD',
-      balance: 0,
-      balanceDate: todayDateOnlyUtc(),
-      needsReconnect: false,
-      syncIssue: null,
-      missing: false,
-      isManual: true,
-    });
-
+    await this.accountsService.createManualAccount(bankName, accountName, type);
     await this.refresh();
   }
 
