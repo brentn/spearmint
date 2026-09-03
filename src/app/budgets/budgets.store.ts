@@ -3,7 +3,7 @@ import { CategoriesService } from '../categories/categories.service';
 import { DatabaseService } from '../data/database.service';
 import type { Account, Budget, Category, CategoryType, Transaction, YearMonth } from '../data/models';
 import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
-import { TransactionMutationService } from '../transactions/transaction-mutation.service';
+import { TransactionMutationService, type TransactionEditFields } from '../transactions/transaction-mutation.service';
 import {
   type BudgetState,
   type FlowProgressViewModel,
@@ -238,20 +238,10 @@ export class BudgetsStore {
     return this.accounts().find((a) => a.id === accountId)?.name ?? '';
   }
 
-  /** Delegates to TransactionMutationService (issue #19), mirroring TransactionsStore's own
-   * delegate methods so a category correction is recorded consistently regardless of screen. */
-  async assignCategory(transactionId: string, categoryId: string | null): Promise<void> {
-    await this.mutationService.assignCategory(transactionId, categoryId);
-    await this.refresh();
-  }
-
-  async setNotes(transactionId: string, notes: string | null): Promise<void> {
-    await this.mutationService.setNotes(transactionId, notes);
-    await this.refresh();
-  }
-
-  async setExcludeFromBudget(transactionId: string, excludeFromBudget: boolean): Promise<void> {
-    await this.mutationService.setExcludeFromBudget(transactionId, excludeFromBudget);
+  /** The transaction-edit dialog's Save button — one write, one refresh for all three
+   * editable fields, mirroring TransactionsStore's own saveEdit (issue #19). */
+  async saveEdit(transactionId: string, changes: TransactionEditFields): Promise<void> {
+    await this.mutationService.saveEdit(transactionId, changes);
     await this.refresh();
   }
 

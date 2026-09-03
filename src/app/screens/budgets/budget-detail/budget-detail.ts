@@ -6,7 +6,6 @@ import { faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import { type BudgetRowViewModel, BudgetsStore } from '../../../budgets/budgets.store';
 import { isYearMonth } from '../../../budgets/period.util';
 import type { Transaction } from '../../../data/models';
-import { TransactionsStore } from '../../transactions/transactions.store';
 import { TransactionEditDialog, type TransactionEditSave } from '../../../transactions/transaction-edit-dialog/transaction-edit-dialog';
 
 @Component({
@@ -14,7 +13,7 @@ import { TransactionEditDialog, type TransactionEditSave } from '../../../transa
   imports: [RouterLink, DecimalPipe, FaIconComponent, TransactionEditDialog],
   templateUrl: './budget-detail.html',
   styleUrl: './budget-detail.scss',
-  providers: [BudgetsStore, TransactionsStore],
+  providers: [BudgetsStore],
 })
 export class BudgetDetail {
   readonly id = input.required<string>();
@@ -24,10 +23,6 @@ export class BudgetDetail {
   readonly period = input<string>();
 
   protected readonly store = inject(BudgetsStore);
-  // Screen-scoped instance used only for its assignCategory/setNotes/setExcludeFromBudget
-  // delegate methods (issue #19) — same DI pattern as the Transactions screen. Its own read side
-  // is unused here; BudgetsStore.refresh() is what the category-detail view actually reads from.
-  private readonly transactionsStore = inject(TransactionsStore);
   private readonly router = inject(Router);
   protected readonly icons = { edit: faPencil, add: faPlus };
 
@@ -174,10 +169,7 @@ export class BudgetDetail {
   /** Recategorizing out of the currently-viewed category just drops the row from
    * categoryTransactions() once BudgetsStore.refresh() re-reads — no special handling. */
   protected async saveTransactionEdit(transactionId: string, changes: TransactionEditSave): Promise<void> {
-    await this.transactionsStore.assignCategory(transactionId, changes.categoryId);
-    await this.transactionsStore.setNotes(transactionId, changes.notes);
-    await this.transactionsStore.setExcludeFromBudget(transactionId, changes.excludeFromBudget);
-    await this.store.refresh();
+    await this.store.saveEdit(transactionId, changes);
     this.editingTransaction.set(null);
   }
 }

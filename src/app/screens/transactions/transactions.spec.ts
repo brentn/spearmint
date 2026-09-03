@@ -4,6 +4,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Account, Category, Transaction } from '../../data/models';
+import type { TransactionEditSave } from '../../transactions/transaction-edit-dialog/transaction-edit-dialog';
 import { TransactionsStore } from './transactions.store';
 import { Transactions } from './transactions';
 
@@ -74,8 +75,7 @@ class FakeTransactionsStore {
   }
 
   readonly assignCategory = vi.fn(async (_transactionId: string, _categoryId: string | null) => {});
-  readonly setNotes = vi.fn(async (_transactionId: string, _notes: string | null) => {});
-  readonly setExcludeFromBudget = vi.fn(async (_transactionId: string, _excludeFromBudget: boolean) => {});
+  readonly saveEdit = vi.fn(async (_transactionId: string, _changes: TransactionEditSave) => {});
   readonly acceptSuggestion = vi.fn(async (_transactionId: string) => {});
 }
 
@@ -171,7 +171,7 @@ describe('Transactions', () => {
     expect(fakeStore.acceptSuggestion).toHaveBeenCalledWith('txn-1');
   });
 
-  it("the dialog's save output calls the store's mutation methods and closes the dialog", async () => {
+  it("the dialog's save output calls the store's saveEdit in one call and closes the dialog", async () => {
     const fixture = createFixture();
     fakeStore.accounts.set([account()]);
     fakeStore.categories.set([category()]);
@@ -185,9 +185,9 @@ describe('Transactions', () => {
     root.querySelector<HTMLButtonElement>('.transaction-edit-dialog__save')?.click();
     fixture.detectChanges();
 
-    await vi.waitFor(() => expect(fakeStore.assignCategory).toHaveBeenCalledWith('txn-1', null));
-    await vi.waitFor(() => expect(fakeStore.setNotes).toHaveBeenCalledWith('txn-1', null));
-    await vi.waitFor(() => expect(fakeStore.setExcludeFromBudget).toHaveBeenCalledWith('txn-1', false));
+    await vi.waitFor(() =>
+      expect(fakeStore.saveEdit).toHaveBeenCalledWith('txn-1', { categoryId: null, notes: null, excludeFromBudget: false }),
+    );
     fixture.detectChanges();
     expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
   });
@@ -279,6 +279,6 @@ describe('Transactions', () => {
     fixture.detectChanges();
 
     expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
-    expect(fakeStore.assignCategory).not.toHaveBeenCalled();
+    expect(fakeStore.saveEdit).not.toHaveBeenCalled();
   });
 });

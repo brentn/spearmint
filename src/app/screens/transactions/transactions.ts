@@ -105,9 +105,7 @@ export class Transactions {
   }
 
   protected async saveEdit(transactionId: string, changes: TransactionEditSave): Promise<void> {
-    await this.store.assignCategory(transactionId, changes.categoryId);
-    await this.store.setNotes(transactionId, changes.notes);
-    await this.store.setExcludeFromBudget(transactionId, changes.excludeFromBudget);
+    await this.store.saveEdit(transactionId, changes);
     this.editingTransaction.set(null);
   }
 }

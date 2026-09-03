@@ -5,7 +5,7 @@ import { CategorizationSuggestionsService } from '../../categorization/categoriz
 import { DatabaseService } from '../../data/database.service';
 import type { Account, Category, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
-import { TransactionMutationService } from '../../transactions/transaction-mutation.service';
+import { TransactionMutationService, type TransactionEditFields } from '../../transactions/transaction-mutation.service';
 
 /**
  * Screen-scoped store for the Transaction list: loads transactions/categories from RxDB
@@ -98,13 +98,11 @@ export class TransactionsStore {
     await this.refresh();
   }
 
-  async setNotes(transactionId: string, notes: string | null): Promise<void> {
-    await this.mutationService.setNotes(transactionId, notes);
-    await this.refresh();
-  }
-
-  async setExcludeFromBudget(transactionId: string, excludeFromBudget: boolean): Promise<void> {
-    await this.mutationService.setExcludeFromBudget(transactionId, excludeFromBudget);
+  /** The transaction-edit dialog's Save button — one write, one refresh for all three
+   * editable fields (issue #19's other delegate methods stay one-field-at-a-time for their own
+   * standalone callers: CategoryPicker's tap, acceptSuggestion). */
+  async saveEdit(transactionId: string, changes: TransactionEditFields): Promise<void> {
+    await this.mutationService.saveEdit(transactionId, changes);
     await this.refresh();
   }
 

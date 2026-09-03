@@ -105,52 +105,65 @@ describe('TransactionMutationService', () => {
     });
   });
 
-  describe('setNotes', () => {
-    it("patches a posted transaction's notes", async () => {
+  describe('saveEdit', () => {
+    it('patches all three editable fields in one write', async () => {
       await fakeDb['transactions'].insert(seedTransaction());
 
-      await service.setNotes('txn-1', 'Reimbursed by roommate');
+      await service.saveEdit('txn-1', { categoryId: 'cat-1', notes: 'Reimbursed by roommate', excludeFromBudget: true });
 
       const doc = await fakeDb['transactions'].findOne('txn-1').exec();
-      expect(doc?.toJSON().notes).toBe('Reimbursed by roommate');
-    });
-
-    it('clears notes back to null', async () => {
-      await fakeDb['transactions'].insert(seedTransaction({ notes: 'old note' }));
-
-      await service.setNotes('txn-1', null);
-
-      const doc = await fakeDb['transactions'].findOne('txn-1').exec();
-      expect(doc?.toJSON().notes).toBeNull();
+      expect(doc?.toJSON()).toMatchObject({
+        categoryId: 'cat-1',
+        notes: 'Reimbursed by roommate',
+        excludeFromBudget: true,
+      });
     });
 
     it('does not modify a pending transaction', async () => {
       await fakeDb['transactions'].insert(seedTransaction({ pending: true }));
 
-      await service.setNotes('txn-1', 'note');
+      await service.saveEdit('txn-1', { categoryId: 'cat-1', notes: 'note', excludeFromBudget: true });
 
       const doc = await fakeDb['transactions'].findOne('txn-1').exec();
-      expect(doc?.toJSON().notes).toBeNull();
-    });
-  });
-
-  describe('setExcludeFromBudget', () => {
-    it("patches a posted transaction's excludeFromBudget flag", async () => {
-      await fakeDb['transactions'].insert(seedTransaction());
-
-      await service.setExcludeFromBudget('txn-1', true);
-
-      const doc = await fakeDb['transactions'].findOne('txn-1').exec();
-      expect(doc?.toJSON().excludeFromBudget).toBe(true);
+      expect(doc?.toJSON()).toMatchObject({ categoryId: null, notes: null, excludeFromBudget: false });
     });
 
-    it('does not modify a pending transaction', async () => {
-      await fakeDb['transactions'].insert(seedTransaction({ pending: true }));
+    it('records a CategorizationRule correction when categoryId changed', async () => {
+      await fakeDb['transactions'].insert(seedTransaction({ description: 'Starbucks', amount: -5, date: '2026-08-12' }));
 
-      await service.setExcludeFromBudget('txn-1', true);
+      await service.saveEdit('txn-1', { categoryId: 'cat-1', notes: null, excludeFromBudget: false });
 
-      const doc = await fakeDb['transactions'].findOne('txn-1').exec();
-      expect(doc?.toJSON().excludeFromBudget).toBe(false);
+      const rules = await fakeDb['categorizationRules'].find().exec();
+      expect(rules).toHaveLength(1);
+      expect((rules[0].toJSON() as CategorizationRule).categoryId).toBe('cat-1');
+    });
+
+    it('does not re-record a rule when categoryId is unchanged (a notes-only edit)', async () => {
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'cat-1' }));
+
+      await service.saveEdit('txn-1', { categoryId: 'cat-1', notes: 'unrelated edit', excludeFromBudget: false });
+
+      const rules = await fakeDb['categorizationRules'].find().exec();
+      expect(rules).toHaveLength(0);
+    });
+
+    it('does not record a rule when clearing a category back to null', async () => {
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'cat-1' }));
+
+      await service.saveEdit('txn-1', { categoryId: null, notes: null, excludeFromBudget: false });
+
+      const rules = await fakeDb['categorizationRules'].find().exec();
+      expect(rules).toHaveLength(0);
+    });
+
+    it('clears any pending suggestion for the transaction even on an unrelated field edit', async () => {
+      const suggestions = TestBed.inject(CategorizationSuggestionsService);
+      suggestions.set('txn-1', 'cat-2');
+      await fakeDb['transactions'].insert(seedTransaction({ categoryId: 'cat-1' }));
+
+      await service.saveEdit('txn-1', { categoryId: 'cat-1', notes: 'unrelated edit', excludeFromBudget: false });
+
+      expect(suggestions.get('txn-1')).toBeNull();
     });
   });
 });

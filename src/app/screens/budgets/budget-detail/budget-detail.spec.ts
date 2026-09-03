@@ -4,7 +4,6 @@ import { Router, provideRouter } from '@angular/router';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Category, Transaction } from '../../../data/models';
 import { type BudgetRowViewModel, type BudgetsAggregate, BudgetsStore } from '../../../budgets/budgets.store';
-import { TransactionsStore } from '../../transactions/transactions.store';
 import { stubDialogMethods } from '../../../testing/stub-dialog-methods';
 import { BudgetDetail } from './budget-detail';
 
@@ -102,12 +101,9 @@ class FakeBudgetsStore {
   );
   readonly deleteBudget = vi.fn(async (_id: string) => {});
   readonly refresh = vi.fn(async () => {});
-}
-
-class FakeTransactionsStore {
-  readonly assignCategory = vi.fn(async (_transactionId: string, _categoryId: string | null) => {});
-  readonly setNotes = vi.fn(async (_transactionId: string, _notes: string | null) => {});
-  readonly setExcludeFromBudget = vi.fn(async (_transactionId: string, _excludeFromBudget: boolean) => {});
+  readonly saveEdit = vi.fn(
+    async (_transactionId: string, _changes: { categoryId: string | null; notes: string | null; excludeFromBudget: boolean }) => {},
+  );
 }
 
 @Component({ selector: 'app-stub-budgets-list', template: '' })
@@ -115,7 +111,6 @@ class StubBudgetsList {}
 
 describe('BudgetDetail', () => {
   let fakeStore: FakeBudgetsStore;
-  let fakeTransactionsStore: FakeTransactionsStore;
 
   beforeAll(stubDialogMethods);
 
@@ -125,13 +120,9 @@ describe('BudgetDetail', () => {
       providers: [provideZonelessChangeDetection(), provideRouter([{ path: 'budgets', component: StubBudgetsList }])],
     });
     fakeStore = new FakeBudgetsStore();
-    fakeTransactionsStore = new FakeTransactionsStore();
     TestBed.overrideComponent(BudgetDetail, {
       set: {
-        providers: [
-          { provide: BudgetsStore, useValue: fakeStore },
-          { provide: TransactionsStore, useValue: fakeTransactionsStore },
-        ],
+        providers: [{ provide: BudgetsStore, useValue: fakeStore }],
       },
     });
     const fixture = TestBed.createComponent(BudgetDetail);
@@ -593,7 +584,7 @@ describe('BudgetDetail', () => {
       expect(root.querySelector('app-transaction-edit-dialog')).toBeTruthy();
     });
 
-    it("the dialog's save output calls TransactionsStore's mutation methods, then refreshes BudgetsStore and closes the dialog", async () => {
+    it("the dialog's save output calls BudgetsStore's saveEdit in one call and closes the dialog", async () => {
       const fixture = createFixture('b-housing');
       fakeStore.rows.set([row({ id: 'b-housing', categoryId: 'housing', categoryName: 'Housing', implied: false })]);
       fakeStore.setTransactionTree('housing', [txn({ id: 't-1', description: 'Groceries', categoryId: 'housing' })]);
@@ -604,10 +595,9 @@ describe('BudgetDetail', () => {
       fixture.detectChanges();
 
       root.querySelector<HTMLButtonElement>('.transaction-edit-dialog__save')?.click();
-      await vi.waitFor(() => expect(fakeTransactionsStore.assignCategory).toHaveBeenCalledWith('t-1', 'housing'));
-      await vi.waitFor(() => expect(fakeTransactionsStore.setNotes).toHaveBeenCalledWith('t-1', null));
-      await vi.waitFor(() => expect(fakeTransactionsStore.setExcludeFromBudget).toHaveBeenCalledWith('t-1', false));
-      await vi.waitFor(() => expect(fakeStore.refresh).toHaveBeenCalled());
+      await vi.waitFor(() =>
+        expect(fakeStore.saveEdit).toHaveBeenCalledWith('t-1', { categoryId: 'housing', notes: null, excludeFromBudget: false }),
+      );
       fixture.detectChanges();
       expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
     });
@@ -626,7 +616,7 @@ describe('BudgetDetail', () => {
       fixture.detectChanges();
 
       expect(root.querySelector('app-transaction-edit-dialog')).toBeNull();
-      expect(fakeTransactionsStore.assignCategory).not.toHaveBeenCalled();
+      expect(fakeStore.saveEdit).not.toHaveBeenCalled();
     });
   });
 });

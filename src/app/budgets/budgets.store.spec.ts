@@ -74,9 +74,7 @@ describe('BudgetsStore', () => {
   let fakeDb: RxDatabase;
   let store: BudgetsStore;
   let mutationService: {
-    assignCategory: ReturnType<typeof vi.fn>;
-    setNotes: ReturnType<typeof vi.fn>;
-    setExcludeFromBudget: ReturnType<typeof vi.fn>;
+    saveEdit: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -92,9 +90,7 @@ describe('BudgetsStore', () => {
     });
 
     mutationService = {
-      assignCategory: vi.fn(async () => {}),
-      setNotes: vi.fn(async () => {}),
-      setExcludeFromBudget: vi.fn(async () => {}),
+      saveEdit: vi.fn(async () => {}),
     };
 
     TestBed.configureTestingModule({
@@ -167,22 +163,14 @@ describe('BudgetsStore', () => {
     expect(store.accountName('missing')).toBe('');
   });
 
-  it('assignCategory delegates to TransactionMutationService and refreshes', async () => {
-    await store.assignCategory('txn-1', 'cat-1');
+  it('saveEdit delegates to TransactionMutationService in one call and refreshes', async () => {
+    await store.saveEdit('txn-1', { categoryId: 'cat-1', notes: 'Reimbursed by roommate', excludeFromBudget: true });
 
-    expect(mutationService.assignCategory).toHaveBeenCalledWith('txn-1', 'cat-1');
-  });
-
-  it('setNotes delegates to TransactionMutationService and refreshes', async () => {
-    await store.setNotes('txn-1', 'Reimbursed by roommate');
-
-    expect(mutationService.setNotes).toHaveBeenCalledWith('txn-1', 'Reimbursed by roommate');
-  });
-
-  it('setExcludeFromBudget delegates to TransactionMutationService and refreshes', async () => {
-    await store.setExcludeFromBudget('txn-1', true);
-
-    expect(mutationService.setExcludeFromBudget).toHaveBeenCalledWith('txn-1', true);
+    expect(mutationService.saveEdit).toHaveBeenCalledWith('txn-1', {
+      categoryId: 'cat-1',
+      notes: 'Reimbursed by roommate',
+      excludeFromBudget: true,
+    });
   });
 
   it('rolls an unbudgeted child\'s spend up into a budgeted parent row, and also gives the child its own $0 computed row (issue #21)', async () => {
