@@ -1,11 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { accountMigrationStrategies, accountSchema, categorizationRuleSchema, transactionSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Account, CategorizationRule } from '../data/models';
+import type { Account } from '../data/models';
+import { seedAccount, seedCategorizationRule } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { StatementImportService } from './statement-import.service';
 import { StatementImportError } from './ofx-parser.util';
 
@@ -40,23 +39,15 @@ const SGML_OFX = (opts: { amount?: string; balance?: string; balanceDate?: strin
 `;
 
 function seedManualAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
+  return seedAccount({
     connId: 'manual:acc-1',
     externalAccountId: 'acc-1',
     originalAccountName: 'Stopgap Checking',
     name: 'Stopgap Checking',
-    type: 'bank',
-    currencyCode: 'USD',
     balance: 0,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
     isManual: true,
     ...overrides,
-  };
+  });
 }
 
 describe('StatementImportService', () => {
@@ -64,15 +55,7 @@ describe('StatementImportService', () => {
   let service: StatementImportService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `statement-import-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      transactions: { schema: transactionSchema },
-      categorizationRules: { schema: categorizationRuleSchema },
-    });
+    fakeDb = await createTestDatabase('accounts', 'transactions', 'categorizationRules');
 
     TestBed.configureTestingModule({
       providers: [
@@ -88,13 +71,17 @@ describe('StatementImportService', () => {
   });
 
   it('throws when the account does not exist', async () => {
-    await expect(service.importStatement('missing-acc', SGML_OFX())).rejects.toThrow(StatementImportError);
+    await expect(service.importStatement('missing-acc', SGML_OFX())).rejects.toThrow(
+      StatementImportError,
+    );
   });
 
   it('throws when the account is not a Manual Account', async () => {
     await fakeDb['accounts'].insert(seedManualAccount({ isManual: false }));
 
-    await expect(service.importStatement('acc-1', SGML_OFX())).rejects.toThrow(StatementImportError);
+    await expect(service.importStatement('acc-1', SGML_OFX())).rejects.toThrow(
+      StatementImportError,
+    );
   });
 
   it('throws when a later FITID would make the composite id too long, without writing the earlier, valid transaction', async () => {
@@ -114,7 +101,9 @@ describe('StatementImportService', () => {
   it('throws on a malformed file and writes nothing', async () => {
     await fakeDb['accounts'].insert(seedManualAccount());
 
-    await expect(service.importStatement('acc-1', 'not a statement file')).rejects.toThrow(StatementImportError);
+    await expect(service.importStatement('acc-1', 'not a statement file')).rejects.toThrow(
+      StatementImportError,
+    );
 
     const txns = await fakeDb['transactions'].find().exec();
     expect(txns).toHaveLength(0);
@@ -144,16 +133,16 @@ describe('StatementImportService', () => {
 
   it('auto-categorizes a new transaction that matches a stored CategorizationRule', async () => {
     await fakeDb['accounts'].insert(seedManualAccount());
-    await fakeDb['categorizationRules'].insert({
-      id: 'rule-1',
-      accountId: 'acc-1',
-      normalizedDescription: 'COFFEE SHOP',
-      amount: -42.5,
-      dayOfMonth: 10,
-      categoryId: 'cat-coffee',
-      createdAtUtc: '2026-01-01T00:00:00.000Z',
-      updatedAtUtc: '2026-01-01T00:00:00.000Z',
-    } satisfies CategorizationRule);
+    await fakeDb['categorizationRules'].insert(
+      seedCategorizationRule({
+        normalizedDescription: 'COFFEE SHOP',
+        amount: -42.5,
+        dayOfMonth: 10,
+        categoryId: 'cat-coffee',
+        createdAtUtc: '2026-01-01T00:00:00.000Z',
+        updatedAtUtc: '2026-01-01T00:00:00.000Z',
+      }),
+    );
 
     await service.importStatement('acc-1', SGML_OFX());
 
@@ -174,16 +163,16 @@ describe('StatementImportService', () => {
 
   it('re-importing an overlapping statement updates a changed field without duplicating or re-categorizing', async () => {
     await fakeDb['accounts'].insert(seedManualAccount());
-    await fakeDb['categorizationRules'].insert({
-      id: 'rule-1',
-      accountId: 'acc-1',
-      normalizedDescription: 'COFFEE SHOP',
-      amount: -42.5,
-      dayOfMonth: 10,
-      categoryId: 'cat-coffee',
-      createdAtUtc: '2026-01-01T00:00:00.000Z',
-      updatedAtUtc: '2026-01-01T00:00:00.000Z',
-    } satisfies CategorizationRule);
+    await fakeDb['categorizationRules'].insert(
+      seedCategorizationRule({
+        normalizedDescription: 'COFFEE SHOP',
+        amount: -42.5,
+        dayOfMonth: 10,
+        categoryId: 'cat-coffee',
+        createdAtUtc: '2026-01-01T00:00:00.000Z',
+        updatedAtUtc: '2026-01-01T00:00:00.000Z',
+      }),
+    );
     await service.importStatement('acc-1', SGML_OFX());
     const coffee = await fakeDb['transactions'].findOne('acc-1:fitid-1').exec();
     await coffee.incrementalPatch({ categoryId: 'cat-user-corrected' });

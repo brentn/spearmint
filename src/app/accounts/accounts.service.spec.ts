@@ -1,48 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { accountMigrationStrategies, accountSchema, institutionSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Account } from '../data/models';
 import type { AccountSyncOutcome, DiscoveredSimplefinAccount } from '../simplefin/simplefin-ingest-plan.util';
+import { seedAccount, seedInstitution } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { AccountsService } from './accounts.service';
-
-function seedAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
-    connId: 'CON-1',
-    externalAccountId: 'ext-1',
-    originalAccountName: 'Checking',
-    name: 'Checking',
-    type: 'bank',
-    currencyCode: 'USD',
-    balance: 100,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
-    isManual: false,
-    ...overrides,
-  };
-}
 
 describe('AccountsService', () => {
   let fakeDb: RxDatabase;
   let service: AccountsService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `accounts-service-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      institutions: { schema: institutionSchema },
-    });
-    await fakeDb['institutions'].insert({ id: 'org-1', name: 'My Bank', url: null });
+    fakeDb = await createTestDatabase('accounts', 'institutions');
+    await fakeDb['institutions'].insert(seedInstitution());
 
     TestBed.configureTestingModule({
       providers: [

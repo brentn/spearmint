@@ -1,73 +1,25 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  budgetMigrationStrategies,
-  budgetSchema,
-  categorySchema,
-  transactionSchema,
-} from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Account, Budget, Category, Transaction } from '../data/models';
+import type { Transaction } from '../data/models';
 import { SimplefinSyncService } from '../simplefin/simplefin-sync.service';
 import { TransactionMutationService } from '../transactions/transaction-mutation.service';
+import {
+  seedAccount,
+  seedBudget,
+  seedCategory,
+  seedTransaction as buildTransaction,
+} from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { currentYearMonth, formatYearMonth, previousYearMonth } from './period.util';
 import { BudgetsStore } from './budgets.store';
 
-function seedCategory(overrides: Partial<Category> = {}): Category {
-  return { id: 'cat-1', name: 'Groceries', parentCategoryId: null, type: 'expense', ...overrides };
-}
-
-function seedAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
-    connId: 'CON-1',
-    externalAccountId: 'ext-1',
-    originalAccountName: 'Checking',
-    name: 'Checking',
-    type: 'bank',
-    currencyCode: 'USD',
-    balance: 100,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
-    isManual: false,
-    ...overrides,
-  };
-}
-
-function seedBudget(overrides: Partial<Budget> = {}): Budget {
-  return {
-    id: 'budget-1',
-    categoryId: 'cat-1',
-    periodType: 'month',
-    period: currentYearMonth(),
-    rollOver: false,
-    rolloverAmount: 0,
-    amount: 500,
-    ...overrides,
-  };
-}
-
+// This suite's transactions are always tied to the default seedCategory() ('cat-1'), unlike
+// the fixture's generic uncategorized default — every budget test here cares about spend
+// landing against a specific category, in the current period unless overridden.
 function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 'txn-1',
-    accountId: 'acc-1',
-    date: `${currentYearMonth()}-10`,
-    description: 'Test',
-    amount: -50,
-    pending: false,
-    categoryId: 'cat-1',
-    excludeFromBudget: false,
-    notes: null,
-    ...overrides,
-  };
+  return buildTransaction({ date: `${currentYearMonth()}-10`, categoryId: 'cat-1', ...overrides });
 }
 
 describe('BudgetsStore', () => {
@@ -78,16 +30,7 @@ describe('BudgetsStore', () => {
   };
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `budgets-store-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
-      categories: { schema: categorySchema },
-      transactions: { schema: transactionSchema },
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-    });
+    fakeDb = await createTestDatabase('budgets', 'categories', 'transactions', 'accounts');
 
     mutationService = {
       saveEdit: vi.fn(async () => {}),

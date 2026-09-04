@@ -1,11 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { appSettingsMigrationStrategies, appSettingsSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
 import type { PasswordHash, WebauthnCredential } from '../data/models';
+import { seedAppSettings } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { AuthService } from './auth.service';
 
 vi.mock('@passwordless-id/webauthn', () => ({
@@ -30,16 +29,7 @@ describe('AuthService', () => {
     passwordHash?: PasswordHash | null;
     biometricsEnabled?: boolean;
   }): Promise<void> {
-    await fakeDb['appSettings'].upsert({
-      id: 'settings',
-      lastSyncDate: null,
-      webauthnCredential: null,
-      passwordHash: null,
-      biometricsEnabled: false,
-      ignoredExternalAccounts: [],
-      exportEncryptionDefault: false,
-      ...overrides,
-    });
+    await fakeDb['appSettings'].upsert(seedAppSettings(overrides));
   }
 
   /** AuthService kicks off its stage lookup in the constructor, so tests that need to
@@ -52,13 +42,7 @@ describe('AuthService', () => {
     vi.clearAllMocks();
     (server.randomChallenge as ReturnType<typeof vi.fn>).mockReturnValue('fixed-challenge');
 
-    fakeDb = await createRxDatabase({
-      name: `auth-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
-    });
+    fakeDb = await createTestDatabase('appSettings');
 
     TestBed.configureTestingModule({
       providers: [
@@ -115,15 +99,13 @@ describe('AuthService', () => {
     });
 
     it('patches the existing settings doc rather than replacing it', async () => {
-      await fakeDb['appSettings'].upsert({
-        id: 'settings',
-        lastSyncDate: '2026-08-01',
-        webauthnCredential: null,
-        passwordHash: null,
-        biometricsEnabled: false,
-        ignoredExternalAccounts: [{ key: 'conn-1:acct-9', name: 'Old Savings', institutionName: 'My Bank' }],
-        exportEncryptionDefault: true,
-      });
+      await fakeDb['appSettings'].upsert(
+        seedAppSettings({
+          lastSyncDate: '2026-08-01',
+          ignoredExternalAccounts: [{ key: 'conn-1:acct-9', name: 'Old Savings', institutionName: 'My Bank' }],
+          exportEncryptionDefault: true,
+        })
+      );
       const service = createService();
       await vi.waitFor(() => expect(service.stage()).toBe('create-password'));
 

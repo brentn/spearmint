@@ -1,28 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { categorizationRuleSchema, transactionSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { CategorizationRule, Transaction } from '../data/models';
+import type { CategorizationRule } from '../data/models';
 import { CategorizationSuggestionsService } from '../categorization/categorization-suggestions.service';
+import { seedTransaction } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { TransactionMutationService } from './transaction-mutation.service';
-
-function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 'txn-1',
-    accountId: 'acc-1',
-    date: '2026-08-14',
-    description: "Trader Joe's",
-    amount: -64.2,
-    pending: false,
-    categoryId: null,
-    excludeFromBudget: false,
-    notes: null,
-    ...overrides,
-  };
-}
 
 /**
  * Integration-tested against a real in-memory RxDB, following transactions.store.spec.ts's
@@ -34,14 +18,7 @@ describe('TransactionMutationService', () => {
   let service: TransactionMutationService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `transaction-mutation-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      transactions: { schema: transactionSchema },
-      categorizationRules: { schema: categorizationRuleSchema },
-    });
+    fakeDb = await createTestDatabase('transactions', 'categorizationRules');
 
     TestBed.configureTestingModule({
       providers: [TransactionMutationService, { provide: DatabaseService, useValue: { getDatabase: () => Promise.resolve(fakeDb) } }],

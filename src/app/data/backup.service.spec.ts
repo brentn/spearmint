@@ -1,39 +1,21 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  appSettingsMigrationStrategies,
-  appSettingsSchema,
-  budgetMigrationStrategies,
-  budgetSchema,
-  categorizationRuleSchema,
-  categorySchema,
-  institutionSchema,
-  simplefinLinkSchema,
-  transactionSchema,
-} from './schemas';
 import { BackupService } from './backup.service';
 import { DatabaseService, type SpearmintCollections, type SpearmintDatabase } from './database.service';
-import type { Account, AppSettings, Category } from './models';
 import { seedDefaultCategoriesIfEmpty } from '../categories/default-category-seed';
+import { seedAccount, seedAppSettings, seedCategory } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 
 // A hand-rolled fake DatabaseService (real RxDB memory storage underneath, same
 // trick as auth.service.spec.ts) rather than routing through the production
 // DatabaseService: this service's own import/reset behavior is what's under test
 // here, not DatabaseService's storage/migration internals — that's
-// database.service.spec.ts's job. The storage is still wrapped with
-// wrappedValidateAjvStorage: RxDB's dev-mode plugin is a module-level toggle
-// (registered via addRxPlugin), so once any spec file in the same vitest worker
-// enables it, every createRxDatabase() call in that worker must use a
-// schema-validating storage or fail with RxDB error DVM1 — regardless of which
-// file triggered it. It still calls seedDefaultCategoriesIfEmpty on every open,
-// same as the real DatabaseService.openDatabase() — that's the one behavior of the
-// real class this file's round-trip tests need to reproduce faithfully, since a
-// reset-then-reopen mid-import re-triggers it on the now-empty categories collection.
+// database.service.spec.ts's job. It still calls seedDefaultCategoriesIfEmpty on
+// every open, same as the real DatabaseService.openDatabase() — that's the one
+// behavior of the real class this file's round-trip tests need to reproduce
+// faithfully, since a reset-then-reopen mid-import re-triggers it on the
+// now-empty categories collection.
 class FakeDatabaseService {
   private db: RxDatabase<SpearmintCollections> | null = null;
 
@@ -51,26 +33,21 @@ class FakeDatabaseService {
   }
 
   private async createDatabase(): Promise<RxDatabase<SpearmintCollections>> {
-    const db = await createRxDatabase<SpearmintCollections>({
-      name: `backup-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-      multiInstance: false,
-    });
-    await db.addCollections({
-      institutions: { schema: institutionSchema },
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      categories: { schema: categorySchema },
-      transactions: { schema: transactionSchema },
-      budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
-      categorizationRules: { schema: categorizationRuleSchema },
-      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
-      simplefinLinks: { schema: simplefinLinkSchema },
-    });
+    const db = await createTestDatabase(
+      'institutions',
+      'accounts',
+      'categories',
+      'transactions',
+      'budgets',
+      'categorizationRules',
+      'appSettings',
+      'simplefinLinks'
+    );
     // seedDefaultCategoriesIfEmpty is typed against SpearmintDatabase's Angular
     // reactivity factory param, which this plain test db doesn't provide —
     // same cast default-category-seed.spec.ts already uses for the same reason.
     await seedDefaultCategoriesIfEmpty(db as unknown as SpearmintDatabase);
-    return db;
+    return db as unknown as RxDatabase<SpearmintCollections>;
   }
 }
 
@@ -87,39 +64,15 @@ function readBlobText(blob: Blob): Promise<string> {
   });
 }
 
-const checking: Account = {
-  id: 'acc-1',
-  institutionId: 'org-1',
-  connId: 'CON-1',
-  externalAccountId: 'ext-1',
-  originalAccountName: 'Checking',
-  name: 'Checking',
-  type: 'bank',
-  currencyCode: 'USD',
-  balance: 123.45,
-  balanceDate: '2026-08-01',
-  needsReconnect: false,
-  syncIssue: null,
-  missing: false,
-  isManual: false,
-};
+const checking = seedAccount({ balance: 123.45 });
 
-const groceries: Category = {
-  id: 'cat-1',
-  name: 'Groceries',
-  parentCategoryId: null,
-  type: 'expense',
-};
+const groceries = seedCategory();
 
-const settingsDoc: AppSettings = {
-  id: 'settings',
+const settingsDoc = seedAppSettings({
   lastSyncDate: '2026-08-01',
   webauthnCredential: { id: 'cred-1', publicKey: 'pk', algorithm: 'ES256', transports: ['internal'] },
-  ignoredExternalAccounts: [],
-  exportEncryptionDefault: false,
-  passwordHash: null,
   biometricsEnabled: true,
-};
+});
 
 describe('BackupService', () => {
   let fakeDatabaseService: FakeDatabaseService;

@@ -1,7 +1,18 @@
 import { InjectionToken, Injectable, Injector, inject } from '@angular/core';
-import { RxCollection, RxDatabase, RxError, RxStorage, addRxPlugin, createRxDatabase, removeRxDatabase } from 'rxdb';
+import {
+  RxCollection,
+  RxDatabase,
+  RxError,
+  RxStorage,
+  addRxPlugin,
+  createRxDatabase,
+  removeRxDatabase,
+} from 'rxdb';
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
-import { AngularSignalReactivityLambda, createReactivityFactory } from 'rxdb/plugins/reactivity-angular';
+import {
+  AngularSignalReactivityLambda,
+  createReactivityFactory,
+} from 'rxdb/plugins/reactivity-angular';
 import { isDevMode } from '@angular/core';
 import type {
   Account,
@@ -13,19 +24,7 @@ import type {
   SimplefinLink,
   Transaction,
 } from './models';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  appSettingsMigrationStrategies,
-  appSettingsSchema,
-  budgetMigrationStrategies,
-  budgetSchema,
-  categorizationRuleSchema,
-  categorySchema,
-  institutionSchema,
-  simplefinLinkSchema,
-  transactionSchema,
-} from './schemas';
+import { collectionsConfig } from './schemas';
 import { seedDefaultCategoriesIfEmpty } from '../categories/default-category-seed';
 
 export type SpearmintCollections = {
@@ -39,7 +38,12 @@ export type SpearmintCollections = {
   simplefinLinks: RxCollection<SimplefinLink>;
 };
 
-export type SpearmintDatabase = RxDatabase<SpearmintCollections, unknown, unknown, AngularSignalReactivityLambda>;
+export type SpearmintDatabase = RxDatabase<
+  SpearmintCollections,
+  unknown,
+  unknown,
+  AngularSignalReactivityLambda
+>;
 
 const DATABASE_NAME = 'spearmint';
 
@@ -114,7 +118,12 @@ export class DatabaseService {
   }
 
   private async openDatabase(storage: RxStorage<unknown, unknown>): Promise<SpearmintDatabase> {
-    const db: SpearmintDatabase = await createRxDatabase<SpearmintCollections, unknown, unknown, AngularSignalReactivityLambda>({
+    const db: SpearmintDatabase = await createRxDatabase<
+      SpearmintCollections,
+      unknown,
+      unknown,
+      AngularSignalReactivityLambda
+    >({
       name: DATABASE_NAME,
       storage,
       reactivity: createReactivityFactory(this.injector),
@@ -131,16 +140,7 @@ export class DatabaseService {
       // in its new shape by the time callers read from the returned db. It's
       // also where a DM5 startup error (see createDatabase()) actually
       // surfaces — createRxDatabase() above succeeds regardless.
-      await db.addCollections({
-        institutions: { schema: institutionSchema },
-        accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-        categories: { schema: categorySchema },
-        transactions: { schema: transactionSchema },
-        budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
-        categorizationRules: { schema: categorizationRuleSchema },
-        appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
-        simplefinLinks: { schema: simplefinLinkSchema },
-      });
+      await db.addCollections(collectionsConfig);
     } catch (error) {
       // Close this half-open instance so it doesn't linger registered under
       // this name — otherwise a DM5 retry's fresh createRxDatabase() call

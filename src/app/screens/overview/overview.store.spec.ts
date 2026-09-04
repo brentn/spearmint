@@ -1,64 +1,20 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { accountMigrationStrategies, accountSchema, transactionSchema } from '../../data/schemas';
 import { DatabaseService } from '../../data/database.service';
-import type { Account, Transaction } from '../../data/models';
 import { SimplefinSyncService } from '../../simplefin/simplefin-sync.service';
 import { currentYearMonth } from '../../budgets/period.util';
+import { seedAccount, seedTransaction } from '../../testing/fixtures';
+import { createTestDatabase } from '../../testing/test-database';
 import { OverviewStore } from './overview.store';
-
-function seedAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
-    connId: 'CON-1',
-    externalAccountId: 'ext-1',
-    originalAccountName: 'Checking',
-    name: 'Checking',
-    type: 'bank',
-    currencyCode: 'USD',
-    balance: 100,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
-    isManual: false,
-    ...overrides,
-  };
-}
-
-function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 'txn-1',
-    accountId: 'acc-1',
-    date: `${currentYearMonth()}-10`,
-    description: 'Test',
-    amount: -50,
-    pending: false,
-    categoryId: null,
-    excludeFromBudget: false,
-    notes: null,
-    ...overrides,
-  };
-}
 
 describe('OverviewStore', () => {
   let fakeDb: RxDatabase;
   let store: OverviewStore;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `overview-store-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      transactions: { schema: transactionSchema },
-    });
+    fakeDb = await createTestDatabase('accounts', 'transactions');
 
     TestBed.configureTestingModule({
       providers: [

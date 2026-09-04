@@ -1,43 +1,15 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  appSettingsMigrationStrategies,
-  appSettingsSchema,
-  institutionSchema,
-} from '../../../data/schemas';
 import { AccountDeletionService } from '../../../accounts/account-deletion.service';
 import { DatabaseService } from '../../../data/database.service';
-import type { Account } from '../../../data/models';
 import { SimplefinLinkService } from '../../../simplefin/simplefin-link.service';
 import { SimplefinSyncService } from '../../../simplefin/simplefin-sync.service';
 import { StatementImportService } from '../../../statement-import/statement-import.service';
+import { seedAccount, seedAppSettings, seedInstitution } from '../../../testing/fixtures';
+import { createTestDatabase } from '../../../testing/test-database';
 import { AccountsStore } from './accounts.store';
-
-function seedAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
-    connId: 'CON-1',
-    externalAccountId: 'ext-1',
-    originalAccountName: 'Checking',
-    name: 'Checking',
-    type: 'bank',
-    currencyCode: 'USD',
-    balance: 100,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
-    isManual: false,
-    ...overrides,
-  };
-}
 
 describe('AccountsStore', () => {
   let fakeDb: RxDatabase;
@@ -51,25 +23,13 @@ describe('AccountsStore', () => {
   let store: AccountsStore;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `accounts-store-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      institutions: { schema: institutionSchema },
-      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
-    });
-    await fakeDb['institutions'].insert({ id: 'org-1', name: 'My Bank', url: null });
-    await fakeDb['appSettings'].upsert({
-      id: 'settings',
-      lastSyncDate: null,
-      webauthnCredential: null,
-      passwordHash: null,
-      biometricsEnabled: false,
-      ignoredExternalAccounts: [{ key: 'CON-1:ext-ignored', name: 'Old Savings', institutionName: 'My Bank' }],
-      exportEncryptionDefault: false,
-    });
+    fakeDb = await createTestDatabase('accounts', 'institutions', 'appSettings');
+    await fakeDb['institutions'].insert(seedInstitution());
+    await fakeDb['appSettings'].upsert(
+      seedAppSettings({
+        ignoredExternalAccounts: [{ key: 'CON-1:ext-ignored', name: 'Old Savings', institutionName: 'My Bank' }],
+      })
+    );
 
     claim = vi.fn().mockResolvedValue(undefined);
     syncNow = vi.fn().mockResolvedValue({ success: true, error: null });

@@ -1,39 +1,21 @@
-import { createRxDatabase, randomToken, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  appSettingsMigrationStrategies,
-  appSettingsSchema,
-  budgetMigrationStrategies,
-  budgetSchema,
-  categorizationRuleSchema,
-  categorySchema,
-  institutionSchema,
-  simplefinLinkSchema,
-  transactionSchema,
-} from './schemas';
+import { createTestDatabase } from '../testing/test-database';
 
 describe('domain schemas', () => {
   let db: RxDatabase;
 
   beforeEach(async () => {
-    db = await createRxDatabase({
-      name: `spearmint-test-${randomToken(10)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await db.addCollections({
-      institutions: { schema: institutionSchema },
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      categories: { schema: categorySchema },
-      transactions: { schema: transactionSchema },
-      budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
-      categorizationRules: { schema: categorizationRuleSchema },
-      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
-      simplefinLinks: { schema: simplefinLinkSchema },
-    });
+    db = await createTestDatabase(
+      'institutions',
+      'accounts',
+      'categories',
+      'transactions',
+      'budgets',
+      'categorizationRules',
+      'appSettings',
+      'simplefinLinks'
+    );
   });
 
   afterEach(async () => {

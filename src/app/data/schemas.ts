@@ -237,7 +237,7 @@ export const appSettingsMigrationStrategies: MigrationStrategies = {
     ...oldDoc,
     ignoredExternalAccounts: Array.isArray(oldDoc.ignoredExternalAccounts)
       ? oldDoc.ignoredExternalAccounts.map((entry: unknown) =>
-          typeof entry === 'string' ? { key: entry, name: entry, institutionName: '' } : entry
+          typeof entry === 'string' ? { key: entry, name: entry, institutionName: '' } : entry,
         )
       : [],
   }),
@@ -254,3 +254,20 @@ export const appSettingsMigrationStrategies: MigrationStrategies = {
     biometricsEnabled: !!oldDoc.webauthnCredential,
   }),
 };
+
+/**
+ * Every collection this app defines, keyed by name, paired with its schema and (where the
+ * schema has been versioned) migration strategies. The single source of truth for "what
+ * collections exist" — DatabaseService's production `addCollections` call and the test suite's
+ * `createTestDatabase` both build off this instead of each re-listing the same eight pairs.
+ */
+export const collectionsConfig = {
+  institutions: { schema: institutionSchema },
+  accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
+  categories: { schema: categorySchema },
+  transactions: { schema: transactionSchema },
+  budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
+  categorizationRules: { schema: categorizationRuleSchema },
+  appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
+  simplefinLinks: { schema: simplefinLinkSchema },
+} as const;

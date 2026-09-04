@@ -1,31 +1,18 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { budgetMigrationStrategies, budgetSchema, categorySchema, transactionSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Budget, Category, Transaction } from '../data/models';
+import type { Budget, Transaction } from '../data/models';
+import { seedCategory, seedTransaction as buildTransaction } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { currentYearMonth, previousYearMonth } from './period.util';
 import { BudgetsService } from './budgets.service';
 
-function seedCategory(overrides: Partial<Category> = {}): Category {
-  return { id: 'cat-1', name: 'Groceries', parentCategoryId: null, type: 'expense', ...overrides };
-}
-
+// This suite's transactions are always tied to the default seedCategory() ('cat-1'), unlike
+// the fixture's generic uncategorized default — every budget test here cares about spend
+// landing against a specific category.
 function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 'txn-1',
-    accountId: 'acc-1',
-    date: '2026-08-14',
-    description: 'Test',
-    amount: -50,
-    pending: false,
-    categoryId: 'cat-1',
-    excludeFromBudget: false,
-    notes: null,
-    ...overrides,
-  };
+  return buildTransaction({ categoryId: 'cat-1', ...overrides });
 }
 
 describe('BudgetsService', () => {
@@ -33,15 +20,7 @@ describe('BudgetsService', () => {
   let service: BudgetsService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `budgets-service-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      budgets: { schema: budgetSchema, migrationStrategies: budgetMigrationStrategies },
-      categories: { schema: categorySchema },
-      transactions: { schema: transactionSchema },
-    });
+    fakeDb = await createTestDatabase('budgets', 'categories', 'transactions');
 
     TestBed.configureTestingModule({
       providers: [

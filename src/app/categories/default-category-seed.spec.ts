@@ -1,10 +1,8 @@
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { categorySchema } from '../data/schemas';
 import type { Category } from '../data/models';
 import type { SpearmintDatabase } from '../data/database.service';
+import { createTestDatabase } from '../testing/test-database';
 import { DEFAULT_CATEGORY_SEEDS, seedDefaultCategoriesIfEmpty } from './default-category-seed';
 import { validateCategoryWrite } from './category-validation.util';
 
@@ -67,15 +65,11 @@ describe('DEFAULT_CATEGORY_SEEDS', () => {
 });
 
 describe('seedDefaultCategoriesIfEmpty', () => {
-  let rawDb: RxDatabase<{ categories: import('rxdb').RxCollection<Category> }>;
+  let rawDb: RxDatabase;
   let db: SpearmintDatabase;
 
   beforeEach(async () => {
-    rawDb = await createRxDatabase({
-      name: `default-category-seed-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await rawDb.addCollections({ categories: { schema: categorySchema } });
+    rawDb = await createTestDatabase('categories');
     db = rawDb as unknown as SpearmintDatabase;
   });
 
@@ -86,14 +80,14 @@ describe('seedDefaultCategoriesIfEmpty', () => {
   it('inserts every seed entry into an empty collection', async () => {
     await seedDefaultCategoriesIfEmpty(db);
 
-    const docs = await rawDb.categories.find().exec();
+    const docs = await rawDb['categories'].find().exec();
     expect(docs).toHaveLength(DEFAULT_CATEGORY_SEEDS.length);
   });
 
   it('links each subcategory to its parent by id, not by name', async () => {
     await seedDefaultCategoriesIfEmpty(db);
 
-    const docs = (await rawDb.categories.find().exec()).map((d) => d.toJSON());
+    const docs = (await rawDb['categories'].find().exec()).map((d) => d.toJSON());
     const housing = docs.find((c) => c.name === 'Housing');
     const rent = docs.find((c) => c.name === 'Rent');
     expect(housing).toBeDefined();
@@ -101,11 +95,11 @@ describe('seedDefaultCategoriesIfEmpty', () => {
   });
 
   it('does nothing when categories already exist', async () => {
-    await rawDb.categories.insert({ id: 'existing-1', name: 'Custom', parentCategoryId: null, type: 'expense' });
+    await rawDb['categories'].insert({ id: 'existing-1', name: 'Custom', parentCategoryId: null, type: 'expense' });
 
     await seedDefaultCategoriesIfEmpty(db);
 
-    const docs = await rawDb.categories.find().exec();
+    const docs = await rawDb['categories'].find().exec();
     expect(docs).toHaveLength(1);
   });
 });

@@ -1,20 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  appSettingsMigrationStrategies,
-  appSettingsSchema,
-  categorizationRuleSchema,
-  institutionSchema,
-  transactionSchema,
-} from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
-import type { Account, CategorizationRule, IgnoredExternalAccount, Transaction } from '../data/models';
+import type { IgnoredExternalAccount, Transaction } from '../data/models';
 import { CategorizationSuggestionsService } from '../categorization/categorization-suggestions.service';
+import { seedAccount, seedAppSettings, seedCategorizationRule } from '../testing/fixtures';
+import { createTestDatabase } from '../testing/test-database';
 import { SimplefinApiService } from './simplefin-api.service';
 import { SimplefinLinkService } from './simplefin-link.service';
 import { SimplefinSyncService } from './simplefin-sync.service';
@@ -33,26 +24,6 @@ const connection = {
   org_url: 'https://mybank.example',
 };
 
-function seedAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
-    connId: 'CON-1',
-    externalAccountId: 'ext-1',
-    originalAccountName: 'Checking',
-    name: 'Checking',
-    type: 'bank',
-    currencyCode: 'USD',
-    balance: 0,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
-    isManual: false,
-    ...overrides,
-  };
-}
-
 describe('SimplefinSyncService', () => {
   let fakeDb: RxDatabase;
   let fetchAccounts: ReturnType<typeof vi.fn>;
@@ -60,20 +31,18 @@ describe('SimplefinSyncService', () => {
   let service: SimplefinSyncService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `simplefin-sync-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      institutions: { schema: institutionSchema },
-      transactions: { schema: transactionSchema },
-      categorizationRules: { schema: categorizationRuleSchema },
-      appSettings: { schema: appSettingsSchema, migrationStrategies: appSettingsMigrationStrategies },
-    });
+    fakeDb = await createTestDatabase(
+      'accounts',
+      'institutions',
+      'transactions',
+      'categorizationRules',
+      'appSettings',
+    );
 
     fetchAccounts = vi.fn();
-    getAllAccessUrls = vi.fn().mockResolvedValue(['https://demo:pass@bridge.simplefin.org/simplefin']);
+    getAllAccessUrls = vi
+      .fn()
+      .mockResolvedValue(['https://demo:pass@bridge.simplefin.org/simplefin']);
 
     TestBed.configureTestingModule({
       providers: [
@@ -91,18 +60,12 @@ describe('SimplefinSyncService', () => {
   });
 
   async function seedSettings(
-    overrides: Partial<{ lastSyncDate: string | null; ignoredExternalAccounts: IgnoredExternalAccount[] }> = {}
+    overrides: Partial<{
+      lastSyncDate: string | null;
+      ignoredExternalAccounts: IgnoredExternalAccount[];
+    }> = {},
   ) {
-    await fakeDb['appSettings'].upsert({
-      id: 'settings',
-      lastSyncDate: null,
-      webauthnCredential: null,
-      passwordHash: null,
-      biometricsEnabled: false,
-      ignoredExternalAccounts: [],
-      exportEncryptionDefault: false,
-      ...overrides,
-    });
+    await fakeDb['appSettings'].upsert(seedAppSettings(overrides));
   }
 
   it('does nothing and reports success when no access URLs are stored', async () => {
@@ -129,7 +92,13 @@ describe('SimplefinSyncService', () => {
           'balance-date': 1786608000,
           conn_id: 'CON-1',
           transactions: [
-            { id: 'txn-1', posted: 1786521600, amount: '-10.00', description: 'Coffee', pending: false },
+            {
+              id: 'txn-1',
+              posted: 1786521600,
+              amount: '-10.00',
+              description: 'Coffee',
+              pending: false,
+            },
           ],
         },
       ],
@@ -159,7 +128,8 @@ describe('SimplefinSyncService', () => {
         connId: 'manual:acc-manual',
         externalAccountId: 'acc-manual',
         isManual: true,
-      })
+        balance: 0,
+      }),
     );
     fetchAccounts.mockResolvedValue({
       errlist: [],
@@ -203,7 +173,13 @@ describe('SimplefinSyncService', () => {
           'balance-date': 1786608000,
           conn_id: 'CON-1',
           transactions: [
-            { id: 'txn-1', posted: 1786521600, amount: '-10.50', description: 'Coffee settled', pending: false },
+            {
+              id: 'txn-1',
+              posted: 1786521600,
+              amount: '-10.50',
+              description: 'Coffee settled',
+              pending: false,
+            },
           ],
         },
       ],
@@ -220,16 +196,16 @@ describe('SimplefinSyncService', () => {
   it('auto-applies a category to a new posted transaction that confidently matches a stored rule', async () => {
     await seedSettings({ lastSyncDate: RECENT_PAST });
     await fakeDb['accounts'].insert(seedAccount());
-    await fakeDb['categorizationRules'].insert({
-      id: 'rule-1',
-      accountId: 'acc-1',
-      normalizedDescription: 'STARBUCKS',
-      amount: -5,
-      dayOfMonth: 12,
-      categoryId: 'cat-coffee',
-      createdAtUtc: '2026-01-01T00:00:00.000Z',
-      updatedAtUtc: '2026-01-01T00:00:00.000Z',
-    } satisfies CategorizationRule);
+    await fakeDb['categorizationRules'].insert(
+      seedCategorizationRule({
+        normalizedDescription: 'STARBUCKS',
+        amount: -5,
+        dayOfMonth: 12,
+        categoryId: 'cat-coffee',
+        createdAtUtc: '2026-01-01T00:00:00.000Z',
+        updatedAtUtc: '2026-01-01T00:00:00.000Z',
+      }),
+    );
     fetchAccounts.mockResolvedValue({
       errlist: [],
       connections: [connection],
@@ -242,7 +218,13 @@ describe('SimplefinSyncService', () => {
           'balance-date': 1786608000,
           conn_id: 'CON-1',
           transactions: [
-            { id: 'txn-new', posted: 1786521600, amount: '-5.00', description: 'Starbucks', pending: false },
+            {
+              id: 'txn-new',
+              posted: 1786521600,
+              amount: '-5.00',
+              description: 'Starbucks',
+              pending: false,
+            },
           ],
         },
       ],
@@ -257,16 +239,16 @@ describe('SimplefinSyncService', () => {
   it('records a dismissible suggestion instead of auto-applying a mid-confidence match', async () => {
     await seedSettings({ lastSyncDate: RECENT_PAST });
     await fakeDb['accounts'].insert(seedAccount());
-    await fakeDb['categorizationRules'].insert({
-      id: 'rule-1',
-      accountId: 'acc-1',
-      normalizedDescription: 'TARGET STORE DOWNTOWN',
-      amount: -40,
-      dayOfMonth: 12,
-      categoryId: 'cat-shopping',
-      createdAtUtc: '2026-01-01T00:00:00.000Z',
-      updatedAtUtc: '2026-01-01T00:00:00.000Z',
-    } satisfies CategorizationRule);
+    await fakeDb['categorizationRules'].insert(
+      seedCategorizationRule({
+        normalizedDescription: 'TARGET STORE DOWNTOWN',
+        amount: -40,
+        dayOfMonth: 12,
+        categoryId: 'cat-shopping',
+        createdAtUtc: '2026-01-01T00:00:00.000Z',
+        updatedAtUtc: '2026-01-01T00:00:00.000Z',
+      }),
+    );
     fetchAccounts.mockResolvedValue({
       errlist: [],
       connections: [connection],
@@ -302,16 +284,16 @@ describe('SimplefinSyncService', () => {
   it('re-categorizes pending transactions fresh every sync since they are always wiped and reinserted', async () => {
     await seedSettings({ lastSyncDate: RECENT_PAST });
     await fakeDb['accounts'].insert(seedAccount());
-    await fakeDb['categorizationRules'].insert({
-      id: 'rule-1',
-      accountId: 'acc-1',
-      normalizedDescription: 'STARBUCKS',
-      amount: -5,
-      dayOfMonth: 12,
-      categoryId: 'cat-coffee',
-      createdAtUtc: '2026-01-01T00:00:00.000Z',
-      updatedAtUtc: '2026-01-01T00:00:00.000Z',
-    } satisfies CategorizationRule);
+    await fakeDb['categorizationRules'].insert(
+      seedCategorizationRule({
+        normalizedDescription: 'STARBUCKS',
+        amount: -5,
+        dayOfMonth: 12,
+        categoryId: 'cat-coffee',
+        createdAtUtc: '2026-01-01T00:00:00.000Z',
+        updatedAtUtc: '2026-01-01T00:00:00.000Z',
+      }),
+    );
     fetchAccounts.mockResolvedValue({
       errlist: [],
       connections: [connection],
@@ -324,7 +306,13 @@ describe('SimplefinSyncService', () => {
           'balance-date': 1786608000,
           conn_id: 'CON-1',
           transactions: [
-            { id: 'txn-pending', posted: 1786608000, amount: '-5.00', description: 'Starbucks', pending: true },
+            {
+              id: 'txn-pending',
+              posted: 1786608000,
+              amount: '-5.00',
+              description: 'Starbucks',
+              pending: true,
+            },
           ],
         },
       ],
@@ -362,7 +350,13 @@ describe('SimplefinSyncService', () => {
           'balance-date': 1786608000,
           conn_id: 'CON-1',
           transactions: [
-            { id: 'new-pending', posted: 1786608000, amount: '-2.00', description: 'Fresh pending', pending: true },
+            {
+              id: 'new-pending',
+              posted: 1786608000,
+              amount: '-2.00',
+              description: 'Fresh pending',
+              pending: true,
+            },
           ],
         },
       ],
@@ -446,7 +440,15 @@ describe('SimplefinSyncService', () => {
           balance: '500.00',
           'balance-date': 1786608000,
           conn_id: 'CON-1',
-          transactions: [{ id: 'txn-new', posted: 1786521600, amount: '500.00', description: 'Opening', pending: false }],
+          transactions: [
+            {
+              id: 'txn-new',
+              posted: 1786521600,
+              amount: '500.00',
+              description: 'Opening',
+              pending: false,
+            },
+          ],
         },
       ],
     } satisfies SimplefinAccountSet);
@@ -565,7 +567,9 @@ describe('SimplefinSyncService', () => {
   it('unignoreDiscoveredAccount falls back to a full resync when nothing has synced this session', async () => {
     await seedSettings({
       lastSyncDate: RECENT_PAST,
-      ignoredExternalAccounts: [{ key: 'CON-1:ext-new', name: 'New Savings', institutionName: 'My Bank' }],
+      ignoredExternalAccounts: [
+        { key: 'CON-1:ext-new', name: 'New Savings', institutionName: 'My Bank' },
+      ],
     });
     fetchAccounts.mockResolvedValue({
       errlist: [],

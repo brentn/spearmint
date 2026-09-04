@@ -1,10 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { categorySchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
+import { createTestDatabase } from '../testing/test-database';
 import { CategoriesService } from './categories.service';
 
 describe('CategoriesService', () => {
@@ -12,11 +10,7 @@ describe('CategoriesService', () => {
   let service: CategoriesService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `categories-service-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({ categories: { schema: categorySchema } });
+    fakeDb = await createTestDatabase('categories');
 
     TestBed.configureTestingModule({
       providers: [

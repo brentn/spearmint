@@ -1,65 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  accountMigrationStrategies,
-  accountSchema,
-  categorizationRuleSchema,
-  categorySchema,
-  transactionSchema,
-} from '../../data/schemas';
 import { DatabaseService } from '../../data/database.service';
-import type { Account, CategorizationRule, Category, Transaction } from '../../data/models';
 import { CategorizationSuggestionsService } from '../../categorization/categorization-suggestions.service';
 import { TransactionMutationService } from '../../transactions/transaction-mutation.service';
+import {
+  seedAccount,
+  seedCategorizationRule,
+  seedCategory,
+  seedTransaction,
+} from '../../testing/fixtures';
+import { createTestDatabase } from '../../testing/test-database';
 import { TransactionsStore } from './transactions.store';
-
-function seedTransaction(overrides: Partial<Transaction> = {}): Transaction {
-  return {
-    id: 'txn-1',
-    accountId: 'acc-1',
-    date: '2026-08-14',
-    description: "Trader Joe's",
-    amount: -64.2,
-    pending: false,
-    categoryId: null,
-    excludeFromBudget: false,
-    notes: null,
-    ...overrides,
-  };
-}
-
-function seedCategory(overrides: Partial<Category> = {}): Category {
-  return {
-    id: 'cat-1',
-    name: 'Groceries',
-    parentCategoryId: null,
-    type: 'expense',
-    ...overrides,
-  };
-}
-
-function seedAccount(overrides: Partial<Account> = {}): Account {
-  return {
-    id: 'acc-1',
-    institutionId: 'org-1',
-    connId: 'CON-1',
-    externalAccountId: 'ext-1',
-    originalAccountName: 'Checking',
-    name: 'Checking',
-    type: 'bank',
-    currencyCode: 'USD',
-    balance: 100,
-    balanceDate: '2026-08-01',
-    needsReconnect: false,
-    syncIssue: null,
-    missing: false,
-    isManual: false,
-    ...overrides,
-  };
-}
 
 describe('TransactionsStore', () => {
   let fakeDb: RxDatabase;
@@ -70,16 +22,12 @@ describe('TransactionsStore', () => {
   };
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `transactions-store-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({
-      transactions: { schema: transactionSchema },
-      categories: { schema: categorySchema },
-      accounts: { schema: accountSchema, migrationStrategies: accountMigrationStrategies },
-      categorizationRules: { schema: categorizationRuleSchema },
-    });
+    fakeDb = await createTestDatabase(
+      'transactions',
+      'categories',
+      'accounts',
+      'categorizationRules',
+    );
 
     mutationService = {
       assignCategory: vi.fn(async () => {}),
@@ -136,7 +84,11 @@ describe('TransactionsStore', () => {
     await fakeDb['transactions'].insert(seedTransaction());
     await store.refresh();
 
-    await store.saveEdit('txn-1', { categoryId: 'cat-1', notes: 'Reimbursed by roommate', excludeFromBudget: true });
+    await store.saveEdit('txn-1', {
+      categoryId: 'cat-1',
+      notes: 'Reimbursed by roommate',
+      excludeFromBudget: true,
+    });
 
     expect(mutationService.saveEdit).toHaveBeenCalledWith('txn-1', {
       categoryId: 'cat-1',
@@ -152,7 +104,10 @@ describe('TransactionsStore', () => {
       const suggestions = TestBed.inject(CategorizationSuggestionsService);
       suggestions.set('txn-1', 'cat-1');
 
-      expect(store.suggestionFor('txn-1')).toEqual({ categoryId: 'cat-1', categoryName: 'Groceries' });
+      expect(store.suggestionFor('txn-1')).toEqual({
+        categoryId: 'cat-1',
+        categoryName: 'Groceries',
+      });
       expect(store.suggestionFor('txn-missing')).toBeNull();
     });
 
@@ -168,18 +123,22 @@ describe('TransactionsStore', () => {
     });
 
     it('recomputes a suggestion on refresh for an uncategorized transaction that lost it (e.g. across a reload)', async () => {
-      await fakeDb['categorizationRules'].insert({
-        id: 'rule-1',
-        accountId: 'acc-1',
-        normalizedDescription: 'TARGET STORE DOWNTOWN',
-        amount: -40,
-        dayOfMonth: 12,
-        categoryId: 'cat-shopping',
-        createdAtUtc: '2026-01-01T00:00:00.000Z',
-        updatedAtUtc: '2026-01-01T00:00:00.000Z',
-      } satisfies CategorizationRule);
+      await fakeDb['categorizationRules'].insert(
+        seedCategorizationRule({
+          normalizedDescription: 'TARGET STORE DOWNTOWN',
+          amount: -40,
+          dayOfMonth: 12,
+          categoryId: 'cat-shopping',
+          createdAtUtc: '2026-01-01T00:00:00.000Z',
+          updatedAtUtc: '2026-01-01T00:00:00.000Z',
+        }),
+      );
       await fakeDb['transactions'].insert(
-        seedTransaction({ description: 'Target Store Uptown Extra', amount: -40, date: '2026-08-12' }),
+        seedTransaction({
+          description: 'Target Store Uptown Extra',
+          amount: -40,
+          date: '2026-08-12',
+        }),
       );
 
       await store.refresh();
@@ -189,16 +148,16 @@ describe('TransactionsStore', () => {
     });
 
     it('never recomputes a suggestion for a categorized or pending transaction', async () => {
-      await fakeDb['categorizationRules'].insert({
-        id: 'rule-1',
-        accountId: 'acc-1',
-        normalizedDescription: 'TARGET STORE DOWNTOWN',
-        amount: -40,
-        dayOfMonth: 12,
-        categoryId: 'cat-shopping',
-        createdAtUtc: '2026-01-01T00:00:00.000Z',
-        updatedAtUtc: '2026-01-01T00:00:00.000Z',
-      } satisfies CategorizationRule);
+      await fakeDb['categorizationRules'].insert(
+        seedCategorizationRule({
+          normalizedDescription: 'TARGET STORE DOWNTOWN',
+          amount: -40,
+          dayOfMonth: 12,
+          categoryId: 'cat-shopping',
+          createdAtUtc: '2026-01-01T00:00:00.000Z',
+          updatedAtUtc: '2026-01-01T00:00:00.000Z',
+        }),
+      );
       await fakeDb['transactions'].insert(
         seedTransaction({
           id: 'txn-categorized',

@@ -1,11 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { createRxDatabase, type RxDatabase } from 'rxdb';
-import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
-import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import type { RxDatabase } from 'rxdb';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { categorizationRuleSchema } from '../data/schemas';
 import { DatabaseService } from '../data/database.service';
 import type { CategorizationRule } from '../data/models';
+import { createTestDatabase } from '../testing/test-database';
 import { CategorizationRulesService } from './categorization-rules.service';
 
 describe('CategorizationRulesService', () => {
@@ -13,11 +11,7 @@ describe('CategorizationRulesService', () => {
   let service: CategorizationRulesService;
 
   beforeEach(async () => {
-    fakeDb = await createRxDatabase({
-      name: `categorization-rules-test-${Math.random().toString(36).slice(2)}`,
-      storage: wrappedValidateAjvStorage({ storage: getRxStorageMemory() }),
-    });
-    await fakeDb.addCollections({ categorizationRules: { schema: categorizationRuleSchema } });
+    fakeDb = await createTestDatabase('categorizationRules');
 
     TestBed.configureTestingModule({
       providers: [
