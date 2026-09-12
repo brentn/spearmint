@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
-import { faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faPencil, faPlus } from '@fortawesome/free-solid-svg-icons';
 import type { BudgetRowViewModel } from '../../../budgets/budget-engine.util';
 import { BudgetsStore } from '../../../budgets/budgets.store';
 import { isYearMonth } from '../../../budgets/period.util';
@@ -25,7 +25,7 @@ export class BudgetDetail {
 
   protected readonly store = inject(BudgetsStore);
   private readonly router = inject(Router);
-  protected readonly icons = { edit: faPencil, add: faPlus };
+  protected readonly icons = { edit: faPencil, add: faPlus, back: faArrowLeft };
 
   protected readonly row = computed<BudgetRowViewModel | undefined>(() =>
     this.store.rows().find((row) => row.id === this.id()),

@@ -1,10 +1,9 @@
 @if (row(); as row) {
   <div class="budget-detail">
-    <div class="budget-detail__topbar">
-      <a class="budget-detail__back" routerLink="/budgets" [queryParams]="store.linkQueryParams()">&larr; Budgets</a>
-    </div>
-
     <header class="budget-detail__hero">
+      <a class="budget-detail__back" routerLink="/budgets" [queryParams]="store.linkQueryParams()" aria-label="Back">
+        <fa-icon [icon]="icons.back"></fa-icon>
+      </a>
       <div class="budget-detail__hero-label">{{ categoryLabel() }}</div>
       <h1 class="budget-detail__hero-title">
         {{ row.categoryName }}
@@ -202,6 +201,11 @@
 } @else if (!store.loading()) {
   <div class="empty-state">
     <h2 class="empty-state__title">Budget not found</h2>
-    <p class="empty-state__body"><a routerLink="/budgets" [queryParams]="store.linkQueryParams()">Back to Budgets</a></p>
+    <p class="empty-state__body">
+      <a class="budget-detail__empty-back" routerLink="/budgets" [queryParams]="store.linkQueryParams()">
+        <fa-icon [icon]="icons.back"></fa-icon>
+        Back to Budgets
+      </a>
+    </p>
   </div>
 }
