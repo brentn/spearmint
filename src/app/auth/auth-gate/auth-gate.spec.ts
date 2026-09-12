@@ -136,6 +136,68 @@ describe('AuthGate', () => {
     expect(compiled.querySelector('input[placeholder="Password"]')).toBeFalsy();
   });
 
+  it('offers a "Use passkey" retry once the auto-fired biometric prompt fails', async () => {
+    stage.set('unlock');
+    biometricsEnabled.set(true);
+    configure();
+    const fixture = TestBed.createComponent(AuthGate);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const retryButton = Array.from(compiled.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Use passkey',
+    );
+    expect(retryButton).toBeTruthy();
+  });
+
+  it('does not offer a passkey retry before the first attempt has failed, or when biometrics are disabled', async () => {
+    stage.set('unlock');
+    biometricsEnabled.set(false);
+    configure();
+    const fixture = TestBed.createComponent(AuthGate);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const retryButton = Array.from(compiled.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Use passkey',
+    );
+    expect(retryButton).toBeFalsy();
+  });
+
+  it('retrying the passkey re-runs authentication, disabling itself while in flight without touching the password field', async () => {
+    stage.set('unlock');
+    biometricsEnabled.set(true);
+    configure();
+    const fixture = TestBed.createComponent(AuthGate);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    let resolveRetry!: (ok: boolean) => void;
+    authenticate.mockReturnValue(new Promise<boolean>((resolve) => (resolveRetry = resolve)));
+
+    const retryButton = Array.from(compiled.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Use passkey',
+    ) as HTMLButtonElement;
+    retryButton.click();
+    fixture.detectChanges();
+
+    expect(authenticate).toHaveBeenCalledTimes(2);
+    expect(retryButton.disabled).toBe(true);
+    expect(compiled.querySelector<HTMLInputElement>('input[placeholder="Password"]')?.disabled).toBe(false);
+
+    resolveRetry(false);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(retryButton.disabled).toBe(false);
+  });
+
   it('does not auto-fire biometrics when disabled, and shows the password field immediately', async () => {
     stage.set('unlock');
     biometricsEnabled.set(false);

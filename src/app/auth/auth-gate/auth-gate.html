@@ -69,6 +69,16 @@
       <button class="auth-gate__button" type="button" [disabled]="busy() || !password()" (click)="unlockWithPassword()">
         {{ busy() ? 'Unlocking…' : 'Unlock' }}
       </button>
+      @if (biometricsEnabled() && biometricFailed()) {
+        <button
+          class="auth-gate__button auth-gate__button--secondary"
+          type="button"
+          [disabled]="retryingBiometric()"
+          (click)="retryBiometric()"
+        >
+          {{ retryingBiometric() ? 'Verifying…' : 'Use passkey' }}
+        </button>
+      }
     } @else {
       <p class="auth-gate__body">Waiting for biometric verification&hellip;</p>
     }

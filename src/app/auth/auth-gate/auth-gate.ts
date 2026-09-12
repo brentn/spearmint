@@ -21,6 +21,10 @@ export class AuthGate {
    * (declined, cancelled, or failed) — only then does the password field appear, so a
    * biometrics-enabled device isn't shown a redundant password box up front. */
   readonly biometricFailed = signal(false);
+  /** True while a manually-triggered retry of the biometric prompt is in flight — kept
+   * separate from `busy` so the password field (gated on `busy`) stays usable during a
+   * retry instead of a passkey attempt blocking the password fallback it's sitting next to. */
+  readonly retryingBiometric = signal(false);
   /** Steady-state unlock stage: password field is the fallback, not the default, when
    * biometrics are enabled — hidden until there's nothing else to fall back on. */
   readonly showPassword = computed(() => !this.biometricsEnabled() || this.biometricFailed());
@@ -55,6 +59,18 @@ export class AuthGate {
 
   reload(): void {
     window.location.reload();
+  }
+
+  async retryBiometric(): Promise<void> {
+    this.retryingBiometric.set(true);
+    try {
+      const ok = await this.authService.authenticate();
+      if (!ok) {
+        this.biometricFailed.set(true);
+      }
+    } finally {
+      this.retryingBiometric.set(false);
+    }
   }
 
   async welcomeBackUnlock(): Promise<void> {
