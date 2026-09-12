@@ -4,7 +4,7 @@
   <div class="settings__content">
     <ul class="settings__list">
       <li>
-        <a class="settings__link" routerLink="accounts">Accounts</a>
+        <a class="settings__link" routerLink="accounts" [queryParams]="{ from: 'settings' }">Accounts</a>
       </li>
       <li>
         <a class="settings__link" routerLink="categories">Categories</a>

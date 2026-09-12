@@ -5,6 +5,7 @@
       <a
         class="overview__hero-icon-btn"
         routerLink="/settings/accounts"
+        [queryParams]="{ from: 'overview' }"
         aria-label="Notifications"
       >
         <fa-icon [icon]="icons.bell"></fa-icon>

@@ -1,4 +1,4 @@
-import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, signal, viewChild } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FaIconComponent } from '@fortawesome/angular-fontawesome';
 import {
@@ -27,6 +27,15 @@ import { SettingsHeader } from '../settings-header/settings-header';
  * connections. Also used as the "don't have a token yet" link-out on the connect form. */
 const SIMPLEFIN_BRIDGE_URL = 'https://beta-bridge.simplefin.org/auth/login';
 
+/** Maps the `?from=` query param set by whichever screen links here (Overview's bell,
+ * the Settings menu) to where the back arrow should return to. Absent or unrecognized
+ * falls back to /settings, matching the pre-existing single-destination behavior — this
+ * covers direct URL entry, bookmarks, and any future linker that forgets to set it. */
+const BACK_LINK_BY_ORIGIN: Record<string, string> = {
+  overview: '/overview',
+  settings: '/settings',
+};
+
 @Component({
   selector: 'app-accounts',
   imports: [FaIconComponent, DecimalPipe, DatePipe, SettingsHeader],
@@ -38,6 +47,9 @@ export class AccountsScreen {
   protected readonly store = inject(AccountsStore);
   protected readonly syncService = inject(SimplefinSyncService);
   private readonly backupService = inject(BackupService);
+
+  readonly from = input<string>();
+  protected readonly backLink = computed(() => BACK_LINK_BY_ORIGIN[this.from() ?? ''] ?? '/settings');
 
   protected readonly bridgeUrl = SIMPLEFIN_BRIDGE_URL;
   protected readonly minPasswordLength = MIN_PASSWORD_LENGTH;

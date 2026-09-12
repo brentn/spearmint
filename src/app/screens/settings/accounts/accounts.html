@@ -1,5 +1,5 @@
 <div class="accounts">
-    <app-settings-header title="Accounts" backLink="/settings">
+    <app-settings-header title="Accounts" [backLink]="backLink()">
         <button class="accounts__sync-button" type="button" [disabled]="syncService.syncing()"
             (click)="store.syncNow()">
             <fa-icon [icon]="icons.sync" [class.accounts__sync-icon--spinning]="syncService.syncing()"></fa-icon>
