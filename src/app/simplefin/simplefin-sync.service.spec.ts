@@ -596,6 +596,262 @@ describe('SimplefinSyncService', () => {
     expect(service.discoveredAccounts()[0].externalAccountId).toBe('ext-new');
   });
 
+  describe('lastSyncChange', () => {
+    it('starts at zero', () => {
+      expect(service.lastSyncChange()).toEqual({ count: 0, syncId: 0 });
+    });
+
+    it('counts a brand-new posted transaction', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-new', posted: 1786521600, amount: '-5.00', description: 'Coffee', pending: false },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+
+      await service.syncNow();
+
+      expect(service.lastSyncChange().count).toBe(1);
+    });
+
+    it('counts an existing posted transaction whose fields actually changed', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      await fakeDb['transactions'].insert({
+        id: 'txn-1',
+        accountId: 'acc-1',
+        date: '2026-08-01',
+        description: 'Coffee',
+        amount: -10,
+        pending: false,
+        categoryId: 'cat-coffee',
+        excludeFromBudget: false,
+        notes: null,
+      } satisfies Transaction);
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-1', posted: 1786521600, amount: '-10.50', description: 'Coffee settled', pending: false },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+
+      await service.syncNow();
+
+      expect(service.lastSyncChange().count).toBe(1);
+    });
+
+    it('does not count a posted transaction re-synced with identical values', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      const response: SimplefinAccountSet = {
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-1', posted: 1786521600, amount: '-10.00', description: 'Coffee', pending: false },
+            ],
+          },
+        ],
+      };
+      fetchAccounts.mockResolvedValue(response);
+      await service.syncNow();
+      expect(service.lastSyncChange().count).toBe(1);
+
+      await service.syncNow();
+
+      expect(service.lastSyncChange().count).toBe(0);
+    });
+
+    it('counts a brand-new pending transaction', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-pending', posted: 1786608000, amount: '-5.00', description: 'Starbucks', pending: true },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+
+      await service.syncNow();
+
+      expect(service.lastSyncChange().count).toBe(1);
+    });
+
+    it('does not count a pending transaction re-synced with identical values, despite being wiped and reinserted', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      const response: SimplefinAccountSet = {
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-pending', posted: 1786608000, amount: '-5.00', description: 'Starbucks', pending: true },
+            ],
+          },
+        ],
+      };
+      fetchAccounts.mockResolvedValue(response);
+      await service.syncNow();
+      expect(service.lastSyncChange().count).toBe(1);
+
+      await service.syncNow();
+
+      expect(service.lastSyncChange().count).toBe(0);
+    });
+
+    it('counts a pending transaction whose amount changed since the last sync', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-pending', posted: 1786608000, amount: '-5.00', description: 'Starbucks', pending: true },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+      await service.syncNow();
+
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-pending', posted: 1786608000, amount: '-6.00', description: 'Starbucks', pending: true },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+      await service.syncNow();
+
+      expect(service.lastSyncChange().count).toBe(1);
+    });
+
+    it('increments syncId on every completed sync, even when the count repeats', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-a', posted: 1786521600, amount: '-5.00', description: 'Coffee', pending: false },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+      await service.syncNow();
+      const first = service.lastSyncChange();
+      expect(first.count).toBe(1);
+
+      fetchAccounts.mockResolvedValue({
+        errlist: [],
+        connections: [connection],
+        accounts: [
+          {
+            id: 'ext-1',
+            name: 'Checking',
+            currency: 'USD',
+            balance: '100',
+            'balance-date': 1786608000,
+            conn_id: 'CON-1',
+            transactions: [
+              { id: 'txn-a', posted: 1786521600, amount: '-5.00', description: 'Coffee', pending: false },
+              { id: 'txn-b', posted: 1786521600, amount: '-6.00', description: 'Tea', pending: false },
+            ],
+          },
+        ],
+      } satisfies SimplefinAccountSet);
+      await service.syncNow();
+      const second = service.lastSyncChange();
+
+      expect(second.count).toBe(1);
+      expect(second.syncId).not.toBe(first.syncId);
+    });
+
+    it('does not update lastSyncChange when the sync run fails outright', async () => {
+      await seedSettings({ lastSyncDate: RECENT_PAST });
+      await fakeDb['accounts'].insert(seedAccount());
+      fetchAccounts.mockRejectedValue(new Error('SimpleFIN sync request failed (HTTP 429).'));
+
+      await service.syncNow();
+
+      expect(service.lastSyncChange()).toEqual({ count: 0, syncId: 0 });
+    });
+  });
+
   describe('runAutoSyncIfDue', () => {
     it('syncs when lastSyncDate is not today', async () => {
       await seedSettings({ lastSyncDate: YESTERDAY });

@@ -6,7 +6,7 @@ import { App } from './app';
 import { AuthService, type AuthStage } from './auth/auth.service';
 import { IdleLockService } from './auth/idle-lock.service';
 import { routes } from './app.routes';
-import { SimplefinSyncService } from './simplefin/simplefin-sync.service';
+import { SimplefinSyncService, type SyncChangeSummary } from './simplefin/simplefin-sync.service';
 
 class NoopResizeObserver {
   observe(): void {}
@@ -23,7 +23,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function configureWithAuth(overrides: Partial<Pick<AuthService, 'isUnlocked' | 'stage'>>) {
+function configureWithAuth(
+  overrides: Partial<Pick<AuthService, 'isUnlocked' | 'stage'>>,
+  lastSyncChange = signal<SyncChangeSummary>({ count: 0, syncId: 0 }),
+) {
   const idleLockService = { start: vi.fn(), stop: vi.fn() };
   TestBed.configureTestingModule({
     imports: [App],
@@ -43,7 +46,7 @@ function configureWithAuth(overrides: Partial<Pick<AuthService, 'isUnlocked' | '
       { provide: IdleLockService, useValue: idleLockService },
       {
         provide: SimplefinSyncService,
-        useValue: { runAutoSyncIfDue: vi.fn().mockResolvedValue(undefined) },
+        useValue: { runAutoSyncIfDue: vi.fn().mockResolvedValue(undefined), lastSyncChange },
       },
     ],
   });
@@ -89,5 +92,50 @@ describe('App', () => {
 
     expect(syncService.runAutoSyncIfDue).toHaveBeenCalled();
     expect(idleLockService.start).toHaveBeenCalled();
+  });
+
+  it('shows a toast when a sync reports new or updated transactions', async () => {
+    const lastSyncChange = signal<SyncChangeSummary>({ count: 0, syncId: 0 });
+    configureWithAuth({ isUnlocked: signal(true), stage: signal('unlock') }, lastSyncChange);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    lastSyncChange.set({ count: 4, syncId: 1 });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-toast__message')?.textContent?.trim()).toBe('4 transactions updated');
+  });
+
+  it('does not show a toast when a sync reports zero changes', async () => {
+    const lastSyncChange = signal<SyncChangeSummary>({ count: 0, syncId: 0 });
+    configureWithAuth({ isUnlocked: signal(true), stage: signal('unlock') }, lastSyncChange);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    lastSyncChange.set({ count: 0, syncId: 1 });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-toast__message')).toBeFalsy();
+  });
+
+  it('uses singular wording for exactly one changed transaction', async () => {
+    const lastSyncChange = signal<SyncChangeSummary>({ count: 0, syncId: 0 });
+    configureWithAuth({ isUnlocked: signal(true), stage: signal('unlock') }, lastSyncChange);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    lastSyncChange.set({ count: 1, syncId: 1 });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.app-toast__message')?.textContent?.trim()).toBe('1 transaction updated');
   });
 });

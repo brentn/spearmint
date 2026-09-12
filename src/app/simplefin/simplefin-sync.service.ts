@@ -24,6 +24,18 @@ export interface SyncResult {
   error: string | null;
 }
 
+/** count: transactions inserted-or-changed in the sync run that just completed. syncId
+ * increments on every completed run so consumers can react even when count repeats
+ * across consecutive runs (a plain count signal would not re-fire on an equal value). */
+export interface SyncChangeSummary {
+  count: number;
+  syncId: number;
+}
+
+function hasCoreFieldsChanged(existing: Pick<Transaction, 'date' | 'description' | 'amount'>, draft: Transaction): boolean {
+  return existing.date !== draft.date || existing.description !== draft.description || existing.amount !== draft.amount;
+}
+
 function toDraftTransactions(
   accountId: string,
   transactions: SimplefinTransaction[],
@@ -60,6 +72,7 @@ export class SimplefinSyncService {
   readonly syncing = signal(false);
   readonly lastSyncError = signal<string | null>(null);
   readonly discoveredAccounts = signal<DiscoveredSimplefinAccount[]>([]);
+  readonly lastSyncChange = signal<SyncChangeSummary>({ count: 0, syncId: 0 });
 
   private lastMergedSet: SimplefinAccountSet | null = null;
   private readonly pendingAdds = new Set<string>();
@@ -109,12 +122,15 @@ export class SimplefinSyncService {
       for (const institution of plan.institutions) {
         await this.accountsService.upsertInstitution(institution);
       }
+      let changedCount = 0;
       for (const outcome of plan.outcomes) {
-        await this.applyOutcome(db, outcome);
+        changedCount += await this.applyOutcome(db, outcome);
       }
       this.discoveredAccounts.set(plan.discovered);
 
       await upsertAppSettings(db, { lastSyncDate: today });
+
+      this.lastSyncChange.update((prev) => ({ count: changedCount, syncId: prev.syncId + 1 }));
 
       return { success: true, error: null };
     } catch (error) {
@@ -203,27 +219,37 @@ export class SimplefinSyncService {
     );
   }
 
-  private async applyOutcome(db: SpearmintDatabase, outcome: AccountSyncOutcome): Promise<void> {
+  private async applyOutcome(db: SpearmintDatabase, outcome: AccountSyncOutcome): Promise<number> {
     const applied = await this.accountsService.applySyncOutcome(outcome);
     if (!applied || !outcome.data) {
-      return;
+      return 0;
     }
 
-    await this.upsertPostedTransactions(db, outcome.accountId, outcome.data.postedTransactions);
-    await this.replacePendingTransactions(db, outcome.accountId, outcome.data.pendingTransactions);
+    const postedChanged = await this.upsertPostedTransactions(db, outcome.accountId, outcome.data.postedTransactions);
+    const pendingChanged = await this.replacePendingTransactions(
+      db,
+      outcome.accountId,
+      outcome.data.pendingTransactions
+    );
+    return postedChanged + pendingChanged;
   }
 
   /** Never re-categorizes an already-known id — only mutable fields are patched. New ids are
-   * run once through the auto-categorization heuristic before insert (spec §3.1/§3). */
+   * run once through the auto-categorization heuristic before insert (spec §3.1/§3). Returns
+   * how many drafts were new or had a field actually change, for the lastSyncChange summary. */
   private async upsertPostedTransactions(
     db: SpearmintDatabase,
     accountId: string,
     transactions: SimplefinTransaction[]
-  ): Promise<void> {
+  ): Promise<number> {
     const newDrafts: Transaction[] = [];
+    let updatedCount = 0;
     for (const draft of toDraftTransactions(accountId, transactions, false)) {
       const existing = await db.transactions.findOne(draft.id).exec();
       if (existing) {
+        if (hasCoreFieldsChanged(existing, draft) || existing.pending !== draft.pending) {
+          updatedCount++;
+        }
         await existing.incrementalPatch({
           date: draft.date,
           description: draft.description,
@@ -235,21 +261,33 @@ export class SimplefinSyncService {
       }
     }
     await this.transactionIngestion.categorizeAndInsert(accountId, newDrafts);
+    return newDrafts.length + updatedCount;
   }
 
   /** Pending rows are fully transient: wiped and replaced every sync, never upserted — each
-   * fresh row is run through the auto-categorization heuristic again (spec §3.1/§3). */
+   * fresh row is run through the auto-categorization heuristic again (spec §3.1/§3). Despite
+   * the wipe/reinsert, the returned count only reflects rows that are new or actually changed
+   * (compared against the wiped rows), for the lastSyncChange summary. */
   private async replacePendingTransactions(
     db: SpearmintDatabase,
     accountId: string,
     transactions: SimplefinTransaction[]
-  ): Promise<void> {
+  ): Promise<number> {
     const existingPending = await db.transactions
       .find({ selector: { accountId, pending: true } })
       .exec();
+    const existingById = new Map(existingPending.map((doc) => [doc.id, doc]));
     await Promise.all(existingPending.map((doc) => doc.remove()));
 
     const drafts = toDraftTransactions(accountId, transactions, true);
+    let changedCount = 0;
+    for (const draft of drafts) {
+      const existing = existingById.get(draft.id);
+      if (!existing || hasCoreFieldsChanged(existing, draft)) {
+        changedCount++;
+      }
+    }
     await this.transactionIngestion.categorizeAndInsert(accountId, drafts);
+    return changedCount;
   }
 }

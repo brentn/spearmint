@@ -1,0 +1,5 @@
+<div class="app-toast">
+    @for (message of toastService.messages(); track message.id) {
+        <div class="app-toast__message">{{ message.text }}</div>
+    }
+</div>

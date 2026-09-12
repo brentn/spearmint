@@ -1,0 +1,45 @@
+// Above the nav-shell (z-index 100, see nav-shell.scss) so a toast is never hidden behind
+// it; top-anchored (rather than bottom) so it never overlaps the bottom nav bar at all.
+//
+// Named app-toast(__message) rather than the plainer .toast/.toast__message: styles.scss
+// pulls in the full Bootstrap stylesheet globally, and Bootstrap's own unscoped `.toast {
+// display: none; }` component rule wins the cascade over this component's scoped style at
+// equal specificity — a bare `.toast` class here silently renders `display: none` with no
+// visible error (reproducible by inspecting a `.toast` element's computed style with the
+// global Bootstrap import in place).
+.app-toast {
+  position: fixed;
+  top: calc(1rem + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.app-toast__message {
+  max-width: 90vw;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--spearmint-radius);
+  background: var(--spearmint-ink);
+  color: var(--spearmint-surface);
+  box-shadow: var(--spearmint-shadow-strong);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  animation: toast-in 0.2s ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
